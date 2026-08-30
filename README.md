@@ -13,8 +13,8 @@
 [![Local inference](https://img.shields.io/badge/inference-Intel%20OpenVINO-0068b5)](#the-reasoning-model)
 [![Licence](https://img.shields.io/badge/licence-MIT-555)](LICENSE)
 
-Built for the **India AI Impact Festival 2026**. Ahmedabad is the perfectly shipped city;
-any other is one config file and four data exports away.
+Built for the **India AI Impact Festival 2026**. **Five Indian cities ship with
+real data**; any other is one config file and four data exports away.
 
 </div>
 
@@ -27,8 +27,51 @@ through to a **costed, reviewable planting design on a specific plot**.
 
 | | |
 |---|---|
-| **`greenplan/`** | **The priority engine.** Ranks all **146 H3 cells** over Ahmedabad by where green cover is declining fastest against worsening air quality, forecasts which cells lose canopy next, and picks species against measured soil and pollution. Python, offline, one command. |
+| **`greenplan/`** | **The priority engine.** Ranks every H3 cell in a city by where green cover is declining fastest against worsening air quality, forecasts which cells lose canopy next, and picks species against measured soil and pollution. Python, offline, one command. |
 | **`index.html`** | **The design studio.** Click a place, read live conditions across 100 km², draw a plot, place trees, cost it in rupees, and get a twelve-check design review — plus a 3D builder that reconstructs the real buildings and streets around your site. One file, no build step. |
+
+---
+
+## The cities
+
+Each is real data on the same H3 res-7 grid — 42 months of NDVI and air quality,
+its own trained memory, its own ranking. Nothing is shared between them but code.
+
+| City | Config | Cells | AQI range | NDVI range | Notes |
+|---|---|---:|---|---|---|
+| **Ahmedabad** | `config/city.yaml` | 146 | 75–81 | 0.15–0.40 | reference city, soil included |
+| **Delhi** | `config/delhi.yaml` | 127 | 301–622 | 0.14–0.54 | ⚠️ 55 cells past the AQI scale — see below |
+| **Mumbai** | `config/mumbai.yaml` | 142 | 62–74 | −0.05–0.64 | coastal; 5 water cells carry no plantable estimate |
+| **Bengaluru** | `config/bengaluru.yaml` | 133 | 49–50 | 0.20–0.57 | cleanest air and greenest of the five |
+| **Chennai** | `config/chennai.yaml` | 84 | 70–75 | −0.07–0.64 | coastal; 2 water cells |
+
+```bash
+python -m greenplan.server --config config/delhi.yaml     # any city, same command
+python scripts/build_city.py --config config/mumbai.yaml  # run it and print a checkable summary
+```
+
+The differences are the point: Bengaluru really is the greenest and cleanest,
+Delhi's air really is an order of magnitude worse, and the two coastal cities
+really do have cells that are partly sea. If a new city's numbers came out
+looking like Ahmedabad's, that would be the bug.
+
+**Two caveats these cities exposed**, both left visible rather than smoothed away:
+
+*Delhi runs off the top of the AQI scale.* The US index is undefined above 500 —
+the EPA's own term is "Beyond the AQI" — and CAMS reports raw values well past it
+during the pre-monsoon dust season, up to a monthly mean of 1050. The value is
+kept because the ranking needs the ordering, but those cells are flagged
+`aqi_beyond_index` and the studio shows **"500+"** rather than a number the scale
+cannot express.
+
+*Coastal cells cannot be measured by the plantable proxy.* `1 − NDVI` reads open
+water as almost entirely plantable; Mumbai's top-ranked cell sits over Colaba,
+roughly half of it sea, and came out at 0.96. Cells with negative NDVI now carry
+**no plantable estimate at all** rather than a confident wrong one. Inland cities
+are unaffected.
+
+Soil is exported per city and is optional — without it species are matched on
+pollution tolerance alone, and the engine says so rather than pretending.
 
 ---
 
@@ -267,8 +310,11 @@ Stated here so nobody discovers them in a review meeting.
 - **42 months of history** — enough for a validated 12-month horizon, not enough
   for multi-year monsoon cycles, and not enough for a trained model to win.
 - **SoilGrids covers 120 of 146 cells**; it masks built-up land.
-- **One city so far.** Everything is parameterised, but portability is a design
-  claim until a second city is done.
+- **Five cities, one of them fully complete.** Ahmedabad has soil; the other
+  four are exporting it. Species there are matched on pollution tolerance alone
+  until it lands, which the interface states.
+- **Delhi carries a data caveat** (beyond-index AQI) and the coastal cities
+  carry another (water cells). Both are described above rather than hidden.
 
 ---
 

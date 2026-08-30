@@ -28,6 +28,8 @@ import csv
 import json
 import math
 import sys
+import concurrent.futures as cf
+import threading
 import time
 import urllib.parse
 import urllib.request
@@ -90,6 +92,8 @@ def main() -> int:
     ap.add_argument("--config", default="config/city.yaml")
     ap.add_argument("--out", default="data/soilgrids.csv")
     ap.add_argument("--sleep", type=float, default=1.0, help="seconds between calls")
+    ap.add_argument("--workers", type=int, default=4,
+                    help="concurrent requests, capped at 6 (1 = the old sequential behaviour)")
     ap.add_argument("--no-fallback", action="store_true", help="skip offset re-sampling")
     args = ap.parse_args()
 
@@ -97,12 +101,27 @@ def main() -> int:
     cells = cells_covering_bbox(cfg.city.bbox, cfg.grid.h3_resolution)
     print(f"{len(cells)} H3 res-{cfg.grid.h3_resolution} cells over {cfg.city.name}")
 
+    # A few cells at a time, not one.
+    #
+    # ISRIC answers a single query in about 10.5 s - that is their server
+    # thinking, not a rate limit aimed at us - so a sequential pass over ~130
+    # cells took the better part of half an hour per city, and a city that
+    # also needs offset re-sampling took longer still.
+    #
+    # The concurrency here is deliberately LOW. ISRIC is a small non-profit
+    # giving this data away with no key and no account; four in flight keeps
+    # the wall time sane without turning their service into our batch queue.
+    # `--sleep` still applies per worker, so the request rate stays gentle.
+    # Raising --workers much above this would be taking advantage.
     rows, direct, recovered, missed = [], 0, 0, 0
-    for i, cell in enumerate(sorted(cells), 1):
+    done = 0
+    lock = threading.Lock()
+    ordered = sorted(cells)
+
+    def one(cell):
         lat, lon = cell_center(cell)
         vals = query(lat, lon)
         source = "centre"
-
         if vals is None and not args.no_fallback:
             for olat, olon in offsets(lat, lon, FALLBACK_KM):
                 time.sleep(args.sleep)
@@ -110,25 +129,33 @@ def main() -> int:
                 if vals:
                     source = "offset"
                     break
-
-        if vals is None:
-            missed += 1
-            status = "masked"
-        else:
-            direct += source == "centre"
-            recovered += source == "offset"
-            status = source
-            rows.append(
-                {
-                    "zone": cell,
-                    "lat": round(lat, 5),
-                    "lon": round(lon, 5),
-                    **{p: round(vals[p], 1) for p in PROPS if p in vals},
-                }
-            )
-
-        print(f"  [{i}/{len(cells)}] {cell} {status}", flush=True)
         time.sleep(args.sleep)
+        return cell, lat, lon, vals, source
+
+    workers = max(1, min(args.workers, 6))
+    with cf.ThreadPoolExecutor(max_workers=workers) as pool:
+        for cell, lat, lon, vals, source in pool.map(one, ordered):
+            with lock:
+                done += 1
+                if vals is None:
+                    missed += 1
+                    status = "masked"
+                else:
+                    direct += source == "centre"
+                    recovered += source == "offset"
+                    status = source
+                    rows.append(
+                        {
+                            "zone": cell,
+                            "lat": round(lat, 5),
+                            "lon": round(lon, 5),
+                            **{p: round(vals[p], 1) for p in PROPS if p in vals},
+                        }
+                    )
+                print(f"  [{done}/{len(cells)}] {cell} {status}", flush=True)
+
+    # Deterministic file order regardless of which worker finished first.
+    rows.sort(key=lambda r: r["zone"])
 
     if not rows:
         print("error: every cell came back masked — nothing written", file=sys.stderr)

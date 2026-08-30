@@ -1,0 +1,21 @@
+{
+  "max_month": 41,
+  "trained_at": "2026-08-30T10:56:35.360449+00:00",
+  "memory_records": 60,
+  "last_report": {
+    "iterations": 60,
+    "horizon": 12,
+    "mae": {
+      "traffic": 0.0,
+      "aqi": 17.992019485625885,
+      "ndvi": 0.050787228607277045
+    },
+    "norm_error_overall": 0.5453442551446999,
+    "norm_error_first_half": 0.5309869650626182,
+    "norm_error_second_half": 0.5597015452267815,
+    "skill_vs_baseline_first_half": 0.16695127996456904,
+    "skill_vs_baseline_second_half": 0.22999846427993983,
+    "memory_helped": true,
+    "skill_gain_first_to_second_half": 0.063
+  }
+}

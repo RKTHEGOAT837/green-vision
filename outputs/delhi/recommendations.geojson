@@ -1,0 +1,7167 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.32701436659592,
+              28.670254947991744
+            ],
+            [
+              77.33287907649027,
+              28.658731624340792
+            ],
+            [
+              77.34781949324493,
+              28.657452442340293
+            ],
+            [
+              77.3568999246544,
+              28.66769556058126
+            ],
+            [
+              77.35103890977321,
+              28.67922080356507
+            ],
+            [
+              77.33609376726729,
+              28.680501009274032
+            ],
+            [
+              77.32701436659592,
+              28.670254947991744
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1ab3ffffff",
+        "rank": 1,
+        "reasoned": true,
+        "priority_score": 0.9124,
+        "aqi_latest": 300.6,
+        "aqi_pred_delta": -0.4,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.22,
+        "ndvi_trend_per_year": -0.0091,
+        "ndvi_pred_delta": 0.0317,
+        "plantable_space": 0.63,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [
+          "Siris",
+          "Neem",
+          "Shisham",
+          "Banyan"
+        ],
+        "justification": "Priority score 0.912: predicted AQI change -0.4, NDVI trend -0.0091/yr with canopy at 0.22 and plantable-space 0.63. Species chosen for pollution tolerance and fit to available space."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.18930743984733,
+              28.65991742194732
+            ],
+            [
+              77.19519691809077,
+              28.64839965168242
+            ],
+            [
+              77.21014224999784,
+              28.647135700346396
+            ],
+            [
+              77.21920283540075,
+              28.65738851254058
+            ],
+            [
+              77.2133170349574,
+              28.668908215215648
+            ],
+            [
+              77.19836697010476,
+              28.67017317358086
+            ],
+            [
+              77.18930743984733,
+              28.65991742194732
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1163ffffff",
+        "rank": 2,
+        "reasoned": true,
+        "priority_score": 0.9078,
+        "aqi_latest": 300.6,
+        "aqi_pred_delta": 2.7,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.268,
+        "ndvi_trend_per_year": -0.0131,
+        "ndvi_pred_delta": -0.0034,
+        "plantable_space": 0.55,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [
+          "Siris",
+          "Neem",
+          "Shisham",
+          "Banyan"
+        ],
+        "justification": "Priority score 0.908: predicted AQI change +2.7, NDVI trend -0.0132/yr with canopy at 0.27 and plantable-space 0.55. Species chosen for pollution tolerance and fit to available space."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.26774018319801,
+              28.730442240579787
+            ],
+            [
+              77.2736212796861,
+              28.71891267935903
+            ],
+            [
+              77.28857837240001,
+              28.71763806360259
+            ],
+            [
+              77.29765910549432,
+              28.72789199190046
+            ],
+            [
+              77.29178170380875,
+              28.739423478366156
+            ],
+            [
+              77.27681987301888,
+              28.740699111586366
+            ],
+            [
+              77.26774018319801,
+              28.730442240579787
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1b98ffffff",
+        "rank": 3,
+        "reasoned": true,
+        "priority_score": 0.8703,
+        "aqi_latest": 300.6,
+        "aqi_pred_delta": 1.1,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.141,
+        "ndvi_trend_per_year": -0.0052,
+        "ndvi_pred_delta": 0.0313,
+        "plantable_space": 0.77,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [
+          "Siris",
+          "Neem",
+          "Shisham",
+          "Banyan"
+        ],
+        "justification": "Priority score 0.870: predicted AQI change +1.1, NDVI trend -0.0053/yr with canopy at 0.14 and plantable-space 0.77. Species chosen for pollution tolerance and fit to available space."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.14130393903498,
+              28.641924387094555
+            ],
+            [
+              77.14720076145427,
+              28.630410488368952
+            ],
+            [
+              77.16214453812395,
+              28.62915228270023
+            ],
+            [
+              77.17119622453689,
+              28.639406975046608
+            ],
+            [
+              77.16530307230093,
+              28.650922810660642
+            ],
+            [
+              77.15035456226174,
+              28.652182017332706
+            ],
+            [
+              77.14130393903498,
+              28.641924387094555
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1175ffffff",
+        "rank": 4,
+        "reasoned": true,
+        "priority_score": 0.8377,
+        "aqi_latest": 300.6,
+        "aqi_pred_delta": -20.2,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.324,
+        "ndvi_trend_per_year": -0.0125,
+        "ndvi_pred_delta": 0.0207,
+        "plantable_space": 0.46,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [
+          "Palash",
+          "Pongamia (Karanj)",
+          "Siris",
+          "Neem"
+        ],
+        "justification": "Priority score 0.838: predicted AQI change -20.2, NDVI trend -0.0125/yr with canopy at 0.32 and plantable-space 0.46. Species chosen for pollution tolerance and fit to available space."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.26454499607406,
+              28.708657790580514
+            ],
+            [
+              77.27042476080466,
+              28.697131228567102
+            ],
+            [
+              77.28537711834753,
+              28.69585762957743
+            ],
+            [
+              77.29445444512444,
+              28.706109576131524
+            ],
+            [
+              77.28857837240001,
+              28.71763806360259
+            ],
+            [
+              77.2736212796861,
+              28.71891267935903
+            ],
+            [
+              77.26454499607406,
+              28.708657790580514
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1b9affffff",
+        "rank": 5,
+        "reasoned": true,
+        "priority_score": 0.8314,
+        "aqi_latest": 300.6,
+        "aqi_pred_delta": 1.1,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.171,
+        "ndvi_trend_per_year": -0.0032,
+        "ndvi_pred_delta": 0.0263,
+        "plantable_space": 0.71,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [
+          "Siris",
+          "Neem",
+          "Shisham",
+          "Banyan"
+        ],
+        "justification": "Priority score 0.831: predicted AQI change +1.1, NDVI trend -0.0032/yr with canopy at 0.17 and plantable-space 0.71. Species chosen for pollution tolerance and fit to available space."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.24370387460039,
+              28.721457155094175
+            ],
+            [
+              77.24958866208178,
+              28.709929521373176
+            ],
+            [
+              77.26454499607406,
+              28.708657790580514
+            ],
+            [
+              77.2736212796861,
+              28.71891267935903
+            ],
+            [
+              77.26774018319801,
+              28.730442240579787
+            ],
+            [
+              77.2527791108968,
+              28.731714985818773
+            ],
+            [
+              77.24370387460039,
+              28.721457155094175
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1b9effffff",
+        "rank": 6,
+        "reasoned": true,
+        "priority_score": 0.8265,
+        "aqi_latest": 300.6,
+        "aqi_pred_delta": 6.2,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.216,
+        "ndvi_trend_per_year": -0.0031,
+        "ndvi_pred_delta": 0.0144,
+        "plantable_space": 0.64,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [
+          "Siris",
+          "Neem",
+          "Shisham",
+          "Banyan"
+        ],
+        "justification": "Priority score 0.827: predicted AQI change +6.2, NDVI trend -0.0031/yr with canopy at 0.22 and plantable-space 0.64. Species chosen for pollution tolerance and fit to available space."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.33022773534877,
+              28.692027337622466
+            ],
+            [
+              77.33609376726729,
+              28.680501009274032
+            ],
+            [
+              77.35103890977321,
+              28.67922080356507
+            ],
+            [
+              77.36012274780306,
+              28.68946590209318
+            ],
+            [
+              77.35426041369485,
+              28.700994149558564
+            ],
+            [
+              77.33931054254332,
+              28.70227537967807
+            ],
+            [
+              77.33022773534877,
+              28.692027337622466
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1ab1ffffff",
+        "rank": 7,
+        "reasoned": true,
+        "priority_score": 0.8134,
+        "aqi_latest": 300.6,
+        "aqi_pred_delta": 6.2,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.218,
+        "ndvi_trend_per_year": -0.0024,
+        "ndvi_pred_delta": 0.059,
+        "plantable_space": 0.64,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [
+          "Siris",
+          "Neem",
+          "Shisham",
+          "Banyan"
+        ],
+        "justification": "Priority score 0.813: predicted AQI change +6.2, NDVI trend -0.0024/yr with canopy at 0.22 and plantable-space 0.64. Species chosen for pollution tolerance and fit to available space."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.33344318815588,
+              28.71380471068302
+            ],
+            [
+              77.33931054254332,
+              28.70227537967807
+            ],
+            [
+              77.35426041369485,
+              28.700994149558564
+            ],
+            [
+              77.3633476607972,
+              28.711241225630648
+            ],
+            [
+              77.35748400702026,
+              28.72277247553536
+            ],
+            [
+              77.3425294043262,
+              28.72405473076761
+            ],
+            [
+              77.33344318815588,
+              28.71380471068302
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1aa2ffffff",
+        "rank": 8,
+        "reasoned": true,
+        "priority_score": 0.8103,
+        "aqi_latest": 300.6,
+        "aqi_pred_delta": 14.7,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.358,
+        "ndvi_trend_per_year": -0.0071,
+        "ndvi_pred_delta": 0.1971,
+        "plantable_space": 0.4,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [
+          "Palash",
+          "Pongamia (Karanj)",
+          "Bakul (Maulsari)",
+          "Putranjiva"
+        ],
+        "justification": "Priority score 0.810: predicted AQI change +14.7, NDVI trend -0.0071/yr with canopy at 0.36 and plantable-space 0.40. Species chosen for pollution tolerance and fit to available space."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.32059387323437,
+              28.626725138135793
+            ],
+            [
+              77.32645594041472,
+              28.61520782998634
+            ],
+            [
+              77.34138691433967,
+              28.61393069329696
+            ],
+            [
+              77.35046053985451,
+              28.624169842750977
+            ],
+            [
+              77.34460216210218,
+              28.635689070661318
+            ],
+            [
+              77.329666468207,
+              28.63696722965533
+            ],
+            [
+              77.32059387323437,
+              28.626725138135793
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1a96ffffff",
+        "rank": 9,
+        "reasoned": true,
+        "priority_score": 0.8094,
+        "aqi_latest": 300.6,
+        "aqi_pred_delta": 6.8,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.217,
+        "ndvi_trend_per_year": -0.0021,
+        "ndvi_pred_delta": 0.0231,
+        "plantable_space": 0.64,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [
+          "Siris",
+          "Neem",
+          "Shisham",
+          "Banyan"
+        ],
+        "justification": "Priority score 0.809: predicted AQI change +6.8, NDVI trend -0.0020/yr with canopy at 0.22 and plantable-space 0.64. Species chosen for pollution tolerance and fit to available space."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.27898083431343,
+              28.65231172289035
+            ],
+            [
+              77.28485292285967,
+              28.640792244666773
+            ],
+            [
+              77.29979184667165,
+              28.639518817149785
+            ],
+            [
+              77.3088634069716,
+              28.649763850466815
+            ],
+            [
+              77.302995005855,
+              28.66128525252999
+            ],
+            [
+              77.28805135580598,
+              28.66255969773386
+            ],
+            [
+              77.27898083431343,
+              28.65231172289035
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da114dffffff",
+        "rank": 10,
+        "reasoned": true,
+        "priority_score": 0.7989,
+        "aqi_latest": 300.6,
+        "aqi_pred_delta": -2.2,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.215,
+        "ndvi_trend_per_year": -0.0022,
+        "ndvi_pred_delta": 0.0107,
+        "plantable_space": 0.64,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [
+          "Siris",
+          "Neem",
+          "Shisham",
+          "Banyan"
+        ],
+        "justification": "Priority score 0.799: predicted AQI change -2.2, NDVI trend -0.0022/yr with canopy at 0.21 and plantable-space 0.64. Species chosen for pollution tolerance and fit to available space."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.28857837240001,
+              28.71763806360259
+            ],
+            [
+              77.29445444512444,
+              28.706109576131524
+            ],
+            [
+              77.30940755633885,
+              28.704833093458358
+            ],
+            [
+              77.31848932855631,
+              28.715084078771554
+            ],
+            [
+              77.31261695164226,
+              28.726614489444653
+            ],
+            [
+              77.29765910549432,
+              28.72789199190046
+            ],
+            [
+              77.28857837240001,
+              28.71763806360259
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1b9bffffff",
+        "rank": 11,
+        "reasoned": false,
+        "priority_score": 0.7979,
+        "aqi_latest": 300.6,
+        "aqi_pred_delta": 1.1,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.185,
+        "ndvi_trend_per_year": -0.0013,
+        "ndvi_pred_delta": 0.0429,
+        "plantable_space": 0.69,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.31261695164226,
+              28.726614489444653
+            ],
+            [
+              77.31848932855631,
+              28.715084078771554
+            ],
+            [
+              77.33344318815588,
+              28.71380471068302
+            ],
+            [
+              77.3425294043262,
+              28.72405473076761
+            ],
+            [
+              77.33666072702505,
+              28.735587062383964
+            ],
+            [
+              77.32170213273498,
+              28.736867453271245
+            ],
+            [
+              77.31261695164226,
+              28.726614489444653
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1aa6ffffff",
+        "rank": 12,
+        "reasoned": false,
+        "priority_score": 0.7969,
+        "aqi_latest": 300.6,
+        "aqi_pred_delta": -20.2,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.306,
+        "ndvi_trend_per_year": -0.0073,
+        "ndvi_pred_delta": 0.1023,
+        "plantable_space": 0.49,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.21014224999784,
+              28.647135700346396
+            ],
+            [
+              77.2160267140209,
+              28.63561900137882
+            ],
+            [
+              77.2309680858294,
+              28.63435318393849
+            ],
+            [
+              77.24002972223371,
+              28.644603056411455
+            ],
+            [
+              77.23414893703301,
+              28.656121685750882
+            ],
+            [
+              77.21920283540075,
+              28.65738851254058
+            ],
+            [
+              77.21014224999784,
+              28.647135700346396
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1145ffffff",
+        "rank": 13,
+        "reasoned": false,
+        "priority_score": 0.7809,
+        "aqi_latest": 300.6,
+        "aqi_pred_delta": 6.2,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.216,
+        "ndvi_trend_per_year": -0.0004,
+        "ndvi_pred_delta": 0.0563,
+        "plantable_space": 0.64,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.27578580033918,
+              28.630546259781593
+            ],
+            [
+              77.28165656172771,
+              28.61902978871471
+            ],
+            [
+              77.29659076219637,
+              28.61775737818627
+            ],
+            [
+              77.30565892341806,
+              28.628000422033306
+            ],
+            [
+              77.29979184667165,
+              28.639518817149785
+            ],
+            [
+              77.28485292285967,
+              28.640792244666773
+            ],
+            [
+              77.27578580033918,
+              28.630546259781593
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1148ffffff",
+        "rank": 14,
+        "reasoned": false,
+        "priority_score": 0.7697,
+        "aqi_latest": 300.6,
+        "aqi_pred_delta": -10.1,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.229,
+        "ndvi_trend_per_year": -0.0017,
+        "ndvi_pred_delta": -0.0013,
+        "plantable_space": 0.62,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.32380307989202,
+              28.648487546571918
+            ],
+            [
+              77.329666468207,
+              28.63696722965533
+            ],
+            [
+              77.34460216210218,
+              28.635689070661318
+            ],
+            [
+              77.35367918934082,
+              28.64593020587619
+            ],
+            [
+              77.34781949324493,
+              28.657452442340293
+            ],
+            [
+              77.33287907649027,
+              28.658731624340792
+            ],
+            [
+              77.32380307989202,
+              28.648487546571918
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1a94ffffff",
+        "rank": 15,
+        "reasoned": false,
+        "priority_score": 0.767,
+        "aqi_latest": 300.6,
+        "aqi_pred_delta": -22.0,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.293,
+        "ndvi_trend_per_year": -0.0051,
+        "ndvi_pred_delta": 0.0203,
+        "plantable_space": 0.51,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.30940755633885,
+              28.704833093458358
+            ],
+            [
+              77.31527860753928,
+              28.693305683612774
+            ],
+            [
+              77.33022773534877,
+              28.692027337622466
+            ],
+            [
+              77.33931054254332,
+              28.70227537967807
+            ],
+            [
+              77.33344318815588,
+              28.71380471068302
+            ],
+            [
+              77.31848932855631,
+              28.715084078771554
+            ],
+            [
+              77.30940755633885,
+              28.704833093458358
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1ab5ffffff",
+        "rank": 16,
+        "reasoned": false,
+        "priority_score": 0.7614,
+        "aqi_latest": 300.6,
+        "aqi_pred_delta": -2.0,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.216,
+        "ndvi_trend_per_year": 0.0001,
+        "ndvi_pred_delta": 0.1121,
+        "plantable_space": 0.64,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.302995005855,
+              28.66128525252999
+            ],
+            [
+              77.3088634069716,
+              28.649763850466815
+            ],
+            [
+              77.32380307989202,
+              28.648487546571918
+            ],
+            [
+              77.33287907649027,
+              28.658731624340792
+            ],
+            [
+              77.32701436659592,
+              28.670254947991744
+            ],
+            [
+              77.31206996767861,
+              28.671532272584205
+            ],
+            [
+              77.302995005855,
+              28.66128525252999
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1ab2ffffff",
+        "rank": 17,
+        "reasoned": false,
+        "priority_score": 0.7612,
+        "aqi_latest": 300.6,
+        "aqi_pred_delta": 5.4,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.262,
+        "ndvi_trend_per_year": -0.0011,
+        "ndvi_pred_delta": 0.0182,
+        "plantable_space": 0.56,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.19881974669364,
+              28.725261971896096
+            ],
+            [
+              77.20471324531692,
+              28.713735202140573
+            ],
+            [
+              77.21967278477878,
+              28.712468227642553
+            ],
+            [
+              77.2287435660766,
+              28.722727014091276
+            ],
+            [
+              77.22285375361258,
+              28.734255715639694
+            ],
+            [
+              77.20788947248192,
+              28.73552369924157
+            ],
+            [
+              77.19881974669364,
+              28.725261971896096
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1b90ffffff",
+        "rank": 18,
+        "reasoned": false,
+        "priority_score": 0.7534,
+        "aqi_latest": 300.6,
+        "aqi_pred_delta": -22.1,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.316,
+        "ndvi_trend_per_year": -0.0052,
+        "ndvi_pred_delta": -0.0085,
+        "plantable_space": 0.47,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.09959585329203,
+              28.667466161823732
+            ],
+            [
+              77.10550270664638,
+              28.65595014027553
+            ],
+            [
+              77.12045437751014,
+              28.654695682622986
+            ],
+            [
+              77.12950393340154,
+              28.66495625046323
+            ],
+            [
+              77.12360074815028,
+              28.676474212973783
+            ],
+            [
+              77.10864433769473,
+              28.677729666973327
+            ],
+            [
+              77.09959585329203,
+              28.667466161823732
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da18d8ffffff",
+        "rank": 19,
+        "reasoned": false,
+        "priority_score": 0.7465,
+        "aqi_latest": 300.6,
+        "aqi_pred_delta": -6.2,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.276,
+        "ndvi_trend_per_year": -0.0018,
+        "ndvi_pred_delta": 0.0512,
+        "plantable_space": 0.54,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.12045437751014,
+              28.654695682622986
+            ],
+            [
+              77.1263562142956,
+              28.64318072054742
+            ],
+            [
+              77.14130393903498,
+              28.641924387094555
+            ],
+            [
+              77.15035456226174,
+              28.652182017332706
+            ],
+            [
+              77.14445639462213,
+              28.663698918333576
+            ],
+            [
+              77.12950393340154,
+              28.66495625046323
+            ],
+            [
+              77.12045437751014,
+              28.654695682622986
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da18dbffffff",
+        "rank": 20,
+        "reasoned": false,
+        "priority_score": 0.7452,
+        "aqi_latest": 300.6,
+        "aqi_pred_delta": 7.3,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.252,
+        "ndvi_trend_per_year": 0.0004,
+        "ndvi_pred_delta": 0.045,
+        "plantable_space": 0.58,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.11731004675607,
+              28.632922156991793
+            ],
+            [
+              77.12321053554784,
+              28.621410197389025
+            ],
+            [
+              77.13815352671394,
+              28.620154861927016
+            ],
+            [
+              77.14720076145427,
+              28.630410488368952
+            ],
+            [
+              77.14130393903498,
+              28.641924387094555
+            ],
+            [
+              77.1263562142956,
+              28.64318072054742
+            ],
+            [
+              77.11731004675607,
+              28.632922156991793
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1174ffffff",
+        "rank": 21,
+        "reasoned": false,
+        "priority_score": 0.7362,
+        "aqi_latest": 300.6,
+        "aqi_pred_delta": -23.7,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.314,
+        "ndvi_trend_per_year": -0.0043,
+        "ndvi_pred_delta": 0.0437,
+        "plantable_space": 0.48,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.26135188094997,
+              28.686878324760205
+            ],
+            [
+              77.26723031437702,
+              28.67535476399955
+            ],
+            [
+              77.28217793965119,
+              28.674082181079765
+            ],
+            [
+              77.29125186256171,
+              28.684332143147678
+            ],
+            [
+              77.28537711834753,
+              28.69585762957743
+            ],
+            [
+              77.27042476080466,
+              28.697131228567102
+            ],
+            [
+              77.26135188094997,
+              28.686878324760205
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1169ffffff",
+        "rank": 22,
+        "reasoned": false,
+        "priority_score": 0.7356,
+        "aqi_latest": 300.6,
+        "aqi_pred_delta": 1.1,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.146,
+        "ndvi_trend_per_year": 0.0028,
+        "ndvi_pred_delta": 0.0335,
+        "plantable_space": 0.76,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.306200241744,
+              28.68305667955844
+            ],
+            [
+              77.31206996767861,
+              28.671532272584205
+            ],
+            [
+              77.32701436659592,
+              28.670254947991744
+            ],
+            [
+              77.33609376726729,
+              28.680501009274032
+            ],
+            [
+              77.33022773534877,
+              28.692027337622466
+            ],
+            [
+              77.31527860753928,
+              28.693305683612774
+            ],
+            [
+              77.306200241744,
+              28.68305667955844
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1ab0ffffff",
+        "rank": 23,
+        "reasoned": false,
+        "priority_score": 0.7201,
+        "aqi_latest": 300.6,
+        "aqi_pred_delta": -5.8,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.28,
+        "ndvi_trend_per_year": -0.0003,
+        "ndvi_pred_delta": 0.0238,
+        "plantable_space": 0.53,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.09645761045724,
+              28.64568863989834
+            ],
+            [
+              77.10236311257275,
+              28.63417561898159
+            ],
+            [
+              77.11731004675607,
+              28.632922156991793
+            ],
+            [
+              77.1263562142956,
+              28.64318072054742
+            ],
+            [
+              77.12045437751014,
+              28.654695682622986
+            ],
+            [
+              77.10550270664638,
+              28.65595014027553
+            ],
+            [
+              77.09645761045724,
+              28.64568863989834
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da18daffffff",
+        "rank": 24,
+        "reasoned": false,
+        "priority_score": 0.716,
+        "aqi_latest": 300.6,
+        "aqi_pred_delta": -3.0,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.279,
+        "ndvi_trend_per_year": 0.0002,
+        "ndvi_pred_delta": 0.0124,
+        "plantable_space": 0.54,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.07246610015693,
+              28.636677795912707
+            ],
+            [
+              77.0783752637851,
+              28.625166718385188
+            ],
+            [
+              77.09332140216041,
+              28.623916126098823
+            ],
+            [
+              77.10236311257275,
+              28.63417561898159
+            ],
+            [
+              77.09645761045724,
+              28.64568863989834
+            ],
+            [
+              77.08150673520771,
+              28.646940224833667
+            ],
+            [
+              77.07246610015693,
+              28.636677795912707
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da112dffffff",
+        "rank": 25,
+        "reasoned": false,
+        "priority_score": 0.7156,
+        "aqi_latest": 300.6,
+        "aqi_pred_delta": 4.8,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.277,
+        "ndvi_trend_per_year": 0.001,
+        "ndvi_pred_delta": 0.0183,
+        "plantable_space": 0.54,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.28537711834753,
+              28.69585762957743
+            ],
+            [
+              77.29125186256171,
+              28.684332143147678
+            ],
+            [
+              77.306200241744,
+              28.68305667955844
+            ],
+            [
+              77.31527860753928,
+              28.693305683612774
+            ],
+            [
+              77.30940755633885,
+              28.704833093458358
+            ],
+            [
+              77.29445444512444,
+              28.706109576131524
+            ],
+            [
+              77.28537711834753,
+              28.69585762957743
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1ab4ffffff",
+        "rank": 26,
+        "reasoned": false,
+        "priority_score": 0.7153,
+        "aqi_latest": 300.6,
+        "aqi_pred_delta": 11.2,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.235,
+        "ndvi_trend_per_year": 0.0033,
+        "ndvi_pred_delta": 0.0548,
+        "plantable_space": 0.61,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.16214453812395,
+              28.62915228270023
+            ],
+            [
+              77.1680363483823,
+              28.617639451197878
+            ],
+            [
+              77.18297617504363,
+              28.616379376896624
+            ],
+            [
+              77.19202892049782,
+              28.62663113106457
+            ],
+            [
+              77.186140781455,
+              28.638145897418735
+            ],
+            [
+              77.17119622453689,
+              28.639406975046608
+            ],
+            [
+              77.16214453812395,
+              28.62915228270023
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1171ffffff",
+        "rank": 27,
+        "reasoned": false,
+        "priority_score": 0.712,
+        "aqi_latest": 300.6,
+        "aqi_pred_delta": -36.0,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.436,
+        "ndvi_trend_per_year": -0.0088,
+        "ndvi_pred_delta": 0.104,
+        "plantable_space": 0.27,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.28217793965119,
+              28.674082181079765
+            ],
+            [
+              77.28805135580598,
+              28.66255969773386
+            ],
+            [
+              77.302995005855,
+              28.66128525252999
+            ],
+            [
+              77.31206996767861,
+              28.671532272584205
+            ],
+            [
+              77.306200241744,
+              28.68305667955844
+            ],
+            [
+              77.29125186256171,
+              28.684332143147678
+            ],
+            [
+              77.28217793965119,
+              28.674082181079765
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1ab6ffffff",
+        "rank": 28,
+        "reasoned": false,
+        "priority_score": 0.7071,
+        "aqi_latest": 300.6,
+        "aqi_pred_delta": 1.1,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.213,
+        "ndvi_trend_per_year": 0.0037,
+        "ndvi_pred_delta": 0.0096,
+        "plantable_space": 0.65,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.17479097440106,
+              28.71626439142216
+            ],
+            [
+              77.18068815536604,
+              28.70473955570719
+            ],
+            [
+              77.1956469204858,
+              28.703475463961933
+            ],
+            [
+              77.20471324531692,
+              28.713735202140573
+            ],
+            [
+              77.19881974669364,
+              28.725261971896096
+            ],
+            [
+              77.18385623968764,
+              28.726527069726696
+            ],
+            [
+              77.17479097440106,
+              28.71626439142216
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1b96ffffff",
+        "rank": 29,
+        "reasoned": false,
+        "priority_score": 0.7012,
+        "aqi_latest": 300.6,
+        "aqi_pred_delta": -31.7,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.377,
+        "ndvi_trend_per_year": -0.0054,
+        "ndvi_pred_delta": -0.0113,
+        "plantable_space": 0.37,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.2581608358308,
+              28.665103847903595
+            ],
+            [
+              77.26403793840817,
+              28.653583290437005
+            ],
+            [
+              77.27898083431343,
+              28.65231172289035
+            ],
+            [
+              77.28805135580598,
+              28.66255969773386
+            ],
+            [
+              77.28217793965119,
+              28.674082181079765
+            ],
+            [
+              77.26723031437702,
+              28.67535476399955
+            ],
+            [
+              77.2581608358308,
+              28.665103847903595
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da116bffffff",
+        "rank": 30,
+        "reasoned": false,
+        "priority_score": 0.6906,
+        "aqi_latest": 300.6,
+        "aqi_pred_delta": -3.9,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.188,
+        "ndvi_trend_per_year": 0.0047,
+        "ndvi_pred_delta": 0.0342,
+        "plantable_space": 0.69,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.06933801193401,
+              28.61490630016584
+            ],
+            [
+              77.07524582203172,
+              28.603398225499326
+            ],
+            [
+              77.09018722644254,
+              28.602148625179616
+            ],
+            [
+              77.0992255535122,
+              28.61240610785014
+            ],
+            [
+              77.09332140216041,
+              28.623916126098823
+            ],
+            [
+              77.0783752637851,
+              28.625166718385188
+            ],
+            [
+              77.06933801193401,
+              28.61490630016584
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1128ffffff",
+        "rank": 31,
+        "reasoned": false,
+        "priority_score": 0.6881,
+        "aqi_latest": 300.6,
+        "aqi_pred_delta": 7.3,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.256,
+        "ndvi_trend_per_year": 0.0037,
+        "ndvi_pred_delta": 0.0312,
+        "plantable_space": 0.57,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.16530307230093,
+              28.650922810660642
+            ],
+            [
+              77.17119622453689,
+              28.639406975046608
+            ],
+            [
+              77.186140781455,
+              28.638145897418735
+            ],
+            [
+              77.19519691809077,
+              28.64839965168242
+            ],
+            [
+              77.18930743984733,
+              28.65991742194732
+            ],
+            [
+              77.17435814976895,
+              28.66117950359134
+            ],
+            [
+              77.16530307230093,
+              28.650922810660642
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1162ffffff",
+        "rank": 32,
+        "reasoned": false,
+        "priority_score": 0.675,
+        "aqi_latest": 300.6,
+        "aqi_pred_delta": -3.0,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.31,
+        "ndvi_trend_per_year": 0.0014,
+        "ndvi_pred_delta": 0.0444,
+        "plantable_space": 0.48,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.12360074815028,
+              28.676474212973783
+            ],
+            [
+              77.12950393340154,
+              28.66495625046323
+            ],
+            [
+              77.14445639462213,
+              28.663698918333576
+            ],
+            [
+              77.15351040877367,
+              28.673958549643995
+            ],
+            [
+              77.14761089544466,
+              28.685478450880996
+            ],
+            [
+              77.1326536948324,
+              28.68673678237355
+            ],
+            [
+              77.12360074815028,
+              28.676474212973783
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da18d9ffffff",
+        "rank": 33,
+        "reasoned": false,
+        "priority_score": 0.6748,
+        "aqi_latest": 300.6,
+        "aqi_pred_delta": 1.1,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.276,
+        "ndvi_trend_per_year": 0.0032,
+        "ndvi_pred_delta": 0.0767,
+        "plantable_space": 0.54,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.31738674462275,
+              28.60496772744783
+            ],
+            [
+              77.32324749111322,
+              28.593453430094222
+            ],
+            [
+              77.33817374795463,
+              28.592177315007717
+            ],
+            [
+              77.34724397419018,
+              28.602414475970324
+            ],
+            [
+              77.34138691433967,
+              28.61393069329696
+            ],
+            [
+              77.32645594041472,
+              28.61520782998634
+            ],
+            [
+              77.31738674462275,
+              28.60496772744783
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1065ffffff",
+        "rank": 34,
+        "reasoned": false,
+        "priority_score": 0.6714,
+        "aqi_latest": 300.6,
+        "aqi_pred_delta": -31.8,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.314,
+        "ndvi_trend_per_year": -0.001,
+        "ndvi_pred_delta": 0.0546,
+        "plantable_space": 0.48,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.14445639462213,
+              28.663698918333576
+            ],
+            [
+              77.15035456226174,
+              28.652182017332706
+            ],
+            [
+              77.16530307230093,
+              28.650922810660642
+            ],
+            [
+              77.17435814976895,
+              28.66117950359134
+            ],
+            [
+              77.16846365508937,
+              28.672698341280775
+            ],
+            [
+              77.15351040877367,
+              28.673958549643995
+            ],
+            [
+              77.14445639462213,
+              28.663698918333576
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1166ffffff",
+        "rank": 35,
+        "reasoned": false,
+        "priority_score": 0.6681,
+        "aqi_latest": 300.6,
+        "aqi_pred_delta": -2.0,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.277,
+        "ndvi_trend_per_year": 0.0033,
+        "ndvi_pred_delta": 0.062,
+        "plantable_space": 0.54,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.29659076219637,
+              28.61775737818627
+            ],
+            [
+              77.3024565150204,
+              28.60624199204801
+            ],
+            [
+              77.31738674462275,
+              28.60496772744783
+            ],
+            [
+              77.32645594041472,
+              28.61520782998634
+            ],
+            [
+              77.32059387323437,
+              28.626725138135793
+            ],
+            [
+              77.30565892341806,
+              28.628000422033306
+            ],
+            [
+              77.29659076219637,
+              28.61775737818627
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da114bffffff",
+        "rank": 36,
+        "reasoned": false,
+        "priority_score": 0.6632,
+        "aqi_latest": 300.6,
+        "aqi_pred_delta": -20.2,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.302,
+        "ndvi_trend_per_year": 0.001,
+        "ndvi_pred_delta": 0.0594,
+        "plantable_space": 0.5,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.24051682942991,
+              28.699673676104975
+            ],
+            [
+              77.24640028236078,
+              28.688149041801726
+            ],
+            [
+              77.26135188094997,
+              28.686878324760205
+            ],
+            [
+              77.27042476080466,
+              28.697131228567102
+            ],
+            [
+              77.26454499607406,
+              28.708657790580514
+            ],
+            [
+              77.24958866208178,
+              28.709929521373176
+            ],
+            [
+              77.24051682942991,
+              28.699673676104975
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da116dffffff",
+        "rank": 37,
+        "reasoned": false,
+        "priority_score": 0.6625,
+        "aqi_latest": 300.6,
+        "aqi_pred_delta": -3.0,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.289,
+        "ndvi_trend_per_year": 0.003,
+        "ndvi_pred_delta": -0.0034,
+        "plantable_space": 0.52,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.29979184667165,
+              28.639518817149785
+            ],
+            [
+              77.30565892341806,
+              28.628000422033306
+            ],
+            [
+              77.32059387323437,
+              28.626725138135793
+            ],
+            [
+              77.329666468207,
+              28.63696722965533
+            ],
+            [
+              77.32380307989202,
+              28.648487546571918
+            ],
+            [
+              77.3088634069716,
+              28.649763850466815
+            ],
+            [
+              77.29979184667165,
+              28.639518817149785
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1149ffffff",
+        "rank": 38,
+        "reasoned": false,
+        "priority_score": 0.648,
+        "aqi_latest": 300.6,
+        "aqi_pred_delta": -3.0,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.288,
+        "ndvi_trend_per_year": 0.0039,
+        "ndvi_pred_delta": 0.0219,
+        "plantable_space": 0.52,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.16846365508937,
+              28.672698341280775
+            ],
+            [
+              77.17435814976895,
+              28.66117950359134
+            ],
+            [
+              77.18930743984733,
+              28.65991742194732
+            ],
+            [
+              77.19836697010476,
+              28.67017317358086
+            ],
+            [
+              77.19247615219774,
+              28.681693945718983
+            ],
+            [
+              77.177522126053,
+              28.68295703206875
+            ],
+            [
+              77.16846365508937,
+              28.672698341280775
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1160ffffff",
+        "rank": 39,
+        "reasoned": false,
+        "priority_score": 0.6404,
+        "aqi_latest": 300.6,
+        "aqi_pred_delta": -20.2,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.317,
+        "ndvi_trend_per_year": 0.0017,
+        "ndvi_pred_delta": 0.0165,
+        "plantable_space": 0.47,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.15898805058649,
+              28.607386762158644
+            ],
+            [
+              77.16487851933319,
+              28.595876936800163
+            ],
+            [
+              77.17981361863866,
+              28.59461786513614
+            ],
+            [
+              77.18886297534881,
+              28.604867616486654
+            ],
+            [
+              77.18297617504363,
+              28.616379376896624
+            ],
+            [
+              77.1680363483823,
+              28.617639451197878
+            ],
+            [
+              77.15898805058649,
+              28.607386762158644
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1173ffffff",
+        "rank": 40,
+        "reasoned": false,
+        "priority_score": 0.6242,
+        "aqi_latest": 300.6,
+        "aqi_pred_delta": -38.0,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.492,
+        "ndvi_trend_per_year": -0.0059,
+        "ndvi_pred_delta": 0.0967,
+        "plantable_space": 0.18,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.18297617504363,
+              28.616379376896624
+            ],
+            [
+              77.18886297534881,
+              28.604867616486654
+            ],
+            [
+              77.20379885006987,
+              28.603605677135153
+            ],
+            [
+              77.21285265042461,
+              28.613854492841043
+            ],
+            [
+              77.2069695223619,
+              28.625368186066403
+            ],
+            [
+              77.19202892049782,
+              28.62663113106457
+            ],
+            [
+              77.18297617504363,
+              28.616379376896624
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1146ffffff",
+        "rank": 41,
+        "reasoned": false,
+        "priority_score": 0.6237,
+        "aqi_latest": 300.6,
+        "aqi_pred_delta": -34.8,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.457,
+        "ndvi_trend_per_year": -0.0042,
+        "ndvi_pred_delta": -0.0039,
+        "plantable_space": 0.24,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.14761089544466,
+              28.685478450880996
+            ],
+            [
+              77.15351040877367,
+              28.673958549643995
+            ],
+            [
+              77.16846365508937,
+              28.672698341280775
+            ],
+            [
+              77.177522126053,
+              28.68295703206875
+            ],
+            [
+              77.17162628846376,
+              28.69447886979321
+            ],
+            [
+              77.15666830296198,
+              28.69574008053549
+            ],
+            [
+              77.14761089544466,
+              28.685478450880996
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1164ffffff",
+        "rank": 42,
+        "reasoned": false,
+        "priority_score": 0.6225,
+        "aqi_latest": 300.6,
+        "aqi_pred_delta": -20.2,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.321,
+        "ndvi_trend_per_year": 0.0026,
+        "ndvi_pred_delta": 0.047,
+        "plantable_space": 0.46,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.186140781455,
+              28.638145897418735
+            ],
+            [
+              77.19202892049782,
+              28.62663113106457
+            ],
+            [
+              77.2069695223619,
+              28.625368186066403
+            ],
+            [
+              77.2160267140209,
+              28.63561900137882
+            ],
+            [
+              77.21014224999784,
+              28.647135700346396
+            ],
+            [
+              77.19519691809077,
+              28.64839965168242
+            ],
+            [
+              77.186140781455,
+              28.638145897418735
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1144ffffff",
+        "rank": 43,
+        "reasoned": false,
+        "priority_score": 0.6177,
+        "aqi_latest": 300.6,
+        "aqi_pred_delta": -35.5,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.421,
+        "ndvi_trend_per_year": -0.0024,
+        "ndvi_pred_delta": 0.0381,
+        "plantable_space": 0.3,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.19247615219774,
+              28.681693945718983
+            ],
+            [
+              77.19836697010476,
+              28.67017317358086
+            ],
+            [
+              77.2133170349574,
+              28.668908215215648
+            ],
+            [
+              77.22238101654638,
+              28.679163021562612
+            ],
+            [
+              77.21649387922281,
+              28.6906857259064
+            ],
+            [
+              77.20153907851942,
+              28.691951691992227
+            ],
+            [
+              77.19247615219774,
+              28.681693945718983
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1161ffffff",
+        "rank": 44,
+        "reasoned": false,
+        "priority_score": 0.6127,
+        "aqi_latest": 300.6,
+        "aqi_pred_delta": -31.7,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.39,
+        "ndvi_trend_per_year": -0.0005,
+        "ndvi_pred_delta": 0.0237,
+        "plantable_space": 0.35,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.31418169205952,
+              28.583215319264202
+            ],
+            [
+              77.32004111830487,
+              28.571704034731
+            ],
+            [
+              77.33496266094684,
+              28.570428940545746
+            ],
+            [
+              77.34402949034502,
+              28.58066411029063
+            ],
+            [
+              77.33817374795463,
+              28.592177315007717
+            ],
+            [
+              77.32324749111322,
+              28.593453430094222
+            ],
+            [
+              77.31418169205952,
+              28.583215319264202
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1060ffffff",
+        "rank": 45,
+        "reasoned": false,
+        "priority_score": 0.6098,
+        "aqi_latest": 622.1,
+        "aqi_pred_delta": -181.6,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.201,
+        "ndvi_trend_per_year": -0.0062,
+        "ndvi_pred_delta": -0.0025,
+        "plantable_space": 0.66,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.17162628846376,
+              28.69447886979321
+            ],
+            [
+              77.177522126053,
+              28.68295703206875
+            ],
+            [
+              77.19247615219774,
+              28.681693945718983
+            ],
+            [
+              77.20153907851942,
+              28.691951691992227
+            ],
+            [
+              77.1956469204858,
+              28.703475463961933
+            ],
+            [
+              77.18068815536604,
+              28.70473955570719
+            ],
+            [
+              77.17162628846376,
+              28.69447886979321
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1165ffffff",
+        "rank": 46,
+        "reasoned": false,
+        "priority_score": 0.6075,
+        "aqi_latest": 300.6,
+        "aqi_pred_delta": 14.7,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.36,
+        "ndvi_trend_per_year": 0.005,
+        "ndvi_pred_delta": -0.0139,
+        "plantable_space": 0.4,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.1956469204858,
+              28.703475463961933
+            ],
+            [
+              77.20153907851942,
+              28.691951691992227
+            ],
+            [
+              77.21649387922281,
+              28.6906857259064
+            ],
+            [
+              77.22556125944257,
+              28.70094252367294
+            ],
+            [
+              77.21967278477878,
+              28.712468227642553
+            ],
+            [
+              77.20471324531692,
+              28.713735202140573
+            ],
+            [
+              77.1956469204858,
+              28.703475463961933
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1b92ffffff",
+        "rank": 47,
+        "reasoned": false,
+        "priority_score": 0.5932,
+        "aqi_latest": 300.6,
+        "aqi_pred_delta": -35.5,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.422,
+        "ndvi_trend_per_year": -0.001,
+        "ndvi_pred_delta": -0.0099,
+        "plantable_space": 0.3,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.2309680858294,
+              28.63435318393849
+            ],
+            [
+              77.2368475378504,
+              28.622837560136958
+            ],
+            [
+              77.25178494763978,
+              28.62156988017889
+            ],
+            [
+              77.26084763090563,
+              28.631816812651813
+            ],
+            [
+              77.25497185872403,
+              28.643334364787112
+            ],
+            [
+              77.24002972223371,
+              28.644603056411455
+            ],
+            [
+              77.2309680858294,
+              28.63435318393849
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1141ffffff",
+        "rank": 48,
+        "reasoned": false,
+        "priority_score": 0.5874,
+        "aqi_latest": 300.6,
+        "aqi_pred_delta": -33.6,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.39,
+        "ndvi_trend_per_year": 0.0008,
+        "ndvi_pred_delta": 0.0353,
+        "plantable_space": 0.35,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.15076744347448,
+              28.707262979965392
+            ],
+            [
+              77.15666830296198,
+              28.69574008053549
+            ],
+            [
+              77.17162628846376,
+              28.69447886979321
+            ],
+            [
+              77.18068815536604,
+              28.70473955570719
+            ],
+            [
+              77.17479097440106,
+              28.71626439142216
+            ],
+            [
+              77.15982824680104,
+              28.717526605231523
+            ],
+            [
+              77.15076744347448,
+              28.707262979965392
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da18cbffffff",
+        "rank": 49,
+        "reasoned": false,
+        "priority_score": 0.5841,
+        "aqi_latest": 300.6,
+        "aqi_pred_delta": -44.4,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.312,
+        "ndvi_trend_per_year": 0.0032,
+        "ndvi_pred_delta": 0.0339,
+        "plantable_space": 0.48,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.21967278477878,
+              28.712468227642553
+            ],
+            [
+              77.22556125944257,
+              28.70094252367294
+            ],
+            [
+              77.24051682942991,
+              28.699673676104975
+            ],
+            [
+              77.24958866208178,
+              28.709929521373176
+            ],
+            [
+              77.24370387460039,
+              28.721457155094175
+            ],
+            [
+              77.2287435660766,
+              28.722727014091276
+            ],
+            [
+              77.21967278477878,
+              28.712468227642553
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1b93ffffff",
+        "rank": 50,
+        "reasoned": false,
+        "priority_score": 0.583,
+        "aqi_latest": 300.6,
+        "aqi_pred_delta": -35.5,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.42,
+        "ndvi_trend_per_year": -0.0003,
+        "ndvi_pred_delta": -0.0843,
+        "plantable_space": 0.3,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.12674916064324,
+              28.69825774327707
+            ],
+            [
+              77.1326536948324,
+              28.68673678237355
+            ],
+            [
+              77.14761089544466,
+              28.685478450880996
+            ],
+            [
+              77.15666830296198,
+              28.69574008053549
+            ],
+            [
+              77.15076744347448,
+              28.707262979965392
+            ],
+            [
+              77.13580550055747,
+              28.708522311507046
+            ],
+            [
+              77.12674916064324,
+              28.69825774327707
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da18caffffff",
+        "rank": 51,
+        "reasoned": false,
+        "priority_score": 0.5757,
+        "aqi_latest": 300.6,
+        "aqi_pred_delta": -20.2,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.328,
+        "ndvi_trend_per_year": 0.0052,
+        "ndvi_pred_delta": 0.0122,
+        "plantable_space": 0.45,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.20379885006987,
+              28.603605677135153
+            ],
+            [
+              77.20968064263216,
+              28.592094991682572
+            ],
+            [
+              77.2246125634878,
+              28.590831190861984
+            ],
+            [
+              77.23366741460657,
+              28.60107706782526
+            ],
+            [
+              77.22778929530844,
+              28.61258968405704
+            ],
+            [
+              77.21285265042461,
+              28.613854492841043
+            ],
+            [
+              77.20379885006987,
+              28.603605677135153
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1142ffffff",
+        "rank": 52,
+        "reasoned": false,
+        "priority_score": 0.5735,
+        "aqi_latest": 300.6,
+        "aqi_pred_delta": -38.0,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.47,
+        "ndvi_trend_per_year": -0.0019,
+        "ndvi_pred_delta": -0.0164,
+        "plantable_space": 0.22,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.176653110268,
+              28.57286136688409
+            ],
+            [
+              77.18253723448662,
+              28.561355624446406
+            ],
+            [
+              77.19746366361143,
+              28.560095694315045
+            ],
+            [
+              77.20651068866633,
+              28.570340502650467
+            ],
+            [
+              77.20063023114461,
+              28.58184817830376
+            ],
+            [
+              77.18569908066908,
+              28.583109112699706
+            ],
+            [
+              77.176653110268,
+              28.57286136688409
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1150ffffff",
+        "rank": 53,
+        "reasoned": false,
+        "priority_score": 0.5714,
+        "aqi_latest": 622.1,
+        "aqi_pred_delta": -186.4,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.359,
+        "ndvi_trend_per_year": -0.0172,
+        "ndvi_pred_delta": 0.0156,
+        "plantable_space": 0.4,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.2390579238176,
+              28.534562021899802
+            ],
+            [
+              77.2449270508278,
+              28.523059526835436
+            ],
+            [
+              77.2598416312713,
+              28.52179403690166
+            ],
+            [
+              77.26889179553083,
+              28.532030031132887
+            ],
+            [
+              77.26302633826508,
+              28.54353445331135
+            ],
+            [
+              77.24810704579752,
+              28.544800954440017
+            ],
+            [
+              77.2390579238176,
+              28.534562021899802
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1029ffffff",
+        "rank": 54,
+        "reasoned": false,
+        "priority_score": 0.5674,
+        "aqi_latest": 622.1,
+        "aqi_pred_delta": -199.6,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.336,
+        "ndvi_trend_per_year": -0.0113,
+        "ndvi_pred_delta": -0.0167,
+        "plantable_space": 0.44,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.15392604068593,
+              28.729052500807015
+            ],
+            [
+              77.15982824680104,
+              28.717526605231523
+            ],
+            [
+              77.17479097440106,
+              28.71626439142216
+            ],
+            [
+              77.18385623968764,
+              28.726527069726696
+            ],
+            [
+              77.1779577148808,
+              28.738054901383613
+            ],
+            [
+              77.16299024226781,
+              28.739318118948205
+            ],
+            [
+              77.15392604068593,
+              28.729052500807015
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da18c9ffffff",
+        "rank": 55,
+        "reasoned": false,
+        "priority_score": 0.5618,
+        "aqi_latest": 300.6,
+        "aqi_pred_delta": 6.7,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.271,
+        "ndvi_trend_per_year": 0.0107,
+        "ndvi_pred_delta": 0.0345,
+        "plantable_space": 0.55,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.2133170349574,
+              28.668908215215648
+            ],
+            [
+              77.21920283540075,
+              28.65738851254058
+            ],
+            [
+              77.23414893703301,
+              28.656121685750882
+            ],
+            [
+              77.24321396974139,
+              28.666373551889034
+            ],
+            [
+              77.23733185090407,
+              28.677895184730403
+            ],
+            [
+              77.22238101654638,
+              28.679163021562612
+            ],
+            [
+              77.2133170349574,
+              28.668908215215648
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da116effffff",
+        "rank": 56,
+        "reasoned": false,
+        "priority_score": 0.5604,
+        "aqi_latest": 300.6,
+        "aqi_pred_delta": 6.4,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.352,
+        "ndvi_trend_per_year": 0.0075,
+        "ndvi_pred_delta": 0.0264,
+        "plantable_space": 0.41,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.2069695223619,
+              28.625368186066403
+            ],
+            [
+              77.21285265042461,
+              28.613854492841043
+            ],
+            [
+              77.22778929530844,
+              28.61258968405704
+            ],
+            [
+              77.2368475378504,
+              28.622837560136958
+            ],
+            [
+              77.2309680858294,
+              28.63435318393849
+            ],
+            [
+              77.2160267140209,
+              28.63561900137882
+            ],
+            [
+              77.2069695223619,
+              28.625368186066403
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1140ffffff",
+        "rank": 57,
+        "reasoned": false,
+        "priority_score": 0.5586,
+        "aqi_latest": 300.6,
+        "aqi_pred_delta": -31.7,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.403,
+        "ndvi_trend_per_year": 0.0022,
+        "ndvi_pred_delta": 0.032,
+        "plantable_space": 0.33,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.28699993708067,
+              28.552503087355763
+            ],
+            [
+              77.29286172082412,
+              28.540996740300272
+            ],
+            [
+              77.30777780710027,
+              28.539725529392964
+            ],
+            [
+              77.31683681999453,
+              28.549959648640435
+            ],
+            [
+              77.31097871354957,
+              28.56146791833274
+            ],
+            [
+              77.29605791571471,
+              28.562740146437925
+            ],
+            [
+              77.28699993708067,
+              28.552503087355763
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1075ffffff",
+        "rank": 58,
+        "reasoned": false,
+        "priority_score": 0.5531,
+        "aqi_latest": 622.1,
+        "aqi_pred_delta": -199.6,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.358,
+        "ndvi_trend_per_year": -0.0149,
+        "ndvi_pred_delta": -0.0944,
+        "plantable_space": 0.4,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.12989961695824,
+              28.72004626875746
+            ],
+            [
+              77.13580550055747,
+              28.708522311507046
+            ],
+            [
+              77.15076744347448,
+              28.707262979965392
+            ],
+            [
+              77.15982824680104,
+              28.717526605231523
+            ],
+            [
+              77.15392604068593,
+              28.729052500807015
+            ],
+            [
+              77.1389593525485,
+              28.7303128330841
+            ],
+            [
+              77.12989961695824,
+              28.72004626875746
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da18c8ffffff",
+        "rank": 59,
+        "reasoned": false,
+        "priority_score": 0.5408,
+        "aqi_latest": 300.6,
+        "aqi_pred_delta": -20.0,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.37,
+        "ndvi_trend_per_year": 0.0056,
+        "ndvi_pred_delta": 0.0532,
+        "plantable_space": 0.38,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.2119261836509,
+              28.5038473797641
+            ],
+            [
+              77.2177976461873,
+              28.49234983171523
+            ],
+            [
+              77.23270675648872,
+              28.491088207169504
+            ],
+            [
+              77.24174911242253,
+              28.50132312346755
+            ],
+            [
+              77.23588131308523,
+              28.512822601063508
+            ],
+            [
+              77.22096749341796,
+              28.51408523310886
+            ],
+            [
+              77.2119261836509,
+              28.5038473797641
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da102affffff",
+        "rank": 60,
+        "reasoned": false,
+        "priority_score": 0.5145,
+        "aqi_latest": 622.1,
+        "aqi_pred_delta": -197.0,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.287,
+        "ndvi_trend_per_year": -0.0051,
+        "ndvi_pred_delta": 0.0575,
+        "plantable_space": 0.52,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.25497185872403,
+              28.643334364787112
+            ],
+            [
+              77.26084763090563,
+              28.631816812651813
+            ],
+            [
+              77.27578580033918,
+              28.630546259781593
+            ],
+            [
+              77.28485292285967,
+              28.640792244666773
+            ],
+            [
+              77.27898083431343,
+              28.65231172289035
+            ],
+            [
+              77.26403793840817,
+              28.653583290437005
+            ],
+            [
+              77.25497185872403,
+              28.643334364787112
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da114cffffff",
+        "rank": 61,
+        "reasoned": false,
+        "priority_score": 0.5126,
+        "aqi_latest": 300.6,
+        "aqi_pred_delta": 11.9,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.357,
+        "ndvi_trend_per_year": 0.0109,
+        "ndvi_pred_delta": 0.0034,
+        "plantable_space": 0.4,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.29339175043407,
+              28.59600094039959
+            ],
+            [
+              77.29925617978346,
+              28.584488565266977
+            ],
+            [
+              77.31418169205952,
+              28.583215319264202
+            ],
+            [
+              77.32324749111322,
+              28.593453430094222
+            ],
+            [
+              77.31738674462275,
+              28.60496772744783
+            ],
+            [
+              77.3024565150204,
+              28.60624199204801
+            ],
+            [
+              77.29339175043407,
+              28.59600094039959
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1064ffffff",
+        "rank": 62,
+        "reasoned": false,
+        "priority_score": 0.5082,
+        "aqi_latest": 622.1,
+        "aqi_pred_delta": -199.6,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.293,
+        "ndvi_trend_per_year": -0.0052,
+        "ndvi_pred_delta": 0.0028,
+        "plantable_space": 0.51,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.23733185090407,
+              28.677895184730403
+            ],
+            [
+              77.24321396974139,
+              28.666373551889034
+            ],
+            [
+              77.2581608358308,
+              28.665103847903595
+            ],
+            [
+              77.26723031437702,
+              28.67535476399955
+            ],
+            [
+              77.26135188094997,
+              28.686878324760205
+            ],
+            [
+              77.24640028236078,
+              28.688149041801726
+            ],
+            [
+              77.23733185090407,
+              28.677895184730403
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1168ffffff",
+        "rank": 63,
+        "reasoned": false,
+        "priority_score": 0.5064,
+        "aqi_latest": 300.6,
+        "aqi_pred_delta": -1.8,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.336,
+        "ndvi_trend_per_year": 0.0123,
+        "ndvi_pred_delta": 0.0238,
+        "plantable_space": 0.44,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.09018722644254,
+              28.602148625179616
+            ],
+            [
+              77.0960900275056,
+              28.590641611631526
+            ],
+            [
+              77.11102749705188,
+              28.589390138914894
+            ],
+            [
+              77.12006689519397,
+              28.599644685742785
+            ],
+            [
+              77.1141677539239,
+              28.61115364083894
+            ],
+            [
+              77.0992255535122,
+              28.61240610785014
+            ],
+            [
+              77.09018722644254,
+              28.602148625179616
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da112bffffff",
+        "rank": 64,
+        "reasoned": false,
+        "priority_score": 0.5036,
+        "aqi_latest": 300.6,
+        "aqi_pred_delta": -6.0,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.331,
+        "ndvi_trend_per_year": 0.0108,
+        "ndvi_pred_delta": 0.1271,
+        "plantable_space": 0.45,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.23414893703301,
+              28.656121685750882
+            ],
+            [
+              77.24002972223371,
+              28.644603056411455
+            ],
+            [
+              77.25497185872403,
+              28.643334364787112
+            ],
+            [
+              77.26403793840817,
+              28.653583290437005
+            ],
+            [
+              77.2581608358308,
+              28.665103847903595
+            ],
+            [
+              77.24321396974139,
+              28.666373551889034
+            ],
+            [
+              77.23414893703301,
+              28.656121685750882
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da116affffff",
+        "rank": 65,
+        "reasoned": false,
+        "priority_score": 0.5009,
+        "aqi_latest": 300.6,
+        "aqi_pred_delta": -17.3,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.381,
+        "ndvi_trend_per_year": 0.0079,
+        "ndvi_pred_delta": 0.0728,
+        "plantable_space": 0.37,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.29019480939216,
+              28.574249508541595
+            ],
+            [
+              77.29605791571471,
+              28.562740146437925
+            ],
+            [
+              77.31097871354957,
+              28.56146791833274
+            ],
+            [
+              77.32004111830487,
+              28.571704034731
+            ],
+            [
+              77.31418169205952,
+              28.583215319264202
+            ],
+            [
+              77.29925617978346,
+              28.584488565266977
+            ],
+            [
+              77.29019480939216,
+              28.574249508541595
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1066ffffff",
+        "rank": 66,
+        "reasoned": false,
+        "priority_score": 0.4944,
+        "aqi_latest": 622.1,
+        "aqi_pred_delta": -206.7,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.43,
+        "ndvi_trend_per_year": -0.0147,
+        "ndvi_pred_delta": -0.0979,
+        "plantable_space": 0.28,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.14638252747996,
+              28.52037484907165
+            ],
+            [
+              77.15226763483899,
+              28.50887706852839
+            ],
+            [
+              77.16718385367886,
+              28.507622000521753
+            ],
+            [
+              77.17621967973736,
+              28.517863713470017
+            ],
+            [
+              77.17033822975392,
+              28.529363429850896
+            ],
+            [
+              77.1554172951362,
+              28.530619497738364
+            ],
+            [
+              77.14638252747996,
+              28.52037484907165
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1020ffffff",
+        "rank": 67,
+        "reasoned": false,
+        "priority_score": 0.4925,
+        "aqi_latest": 622.1,
+        "aqi_pred_delta": -206.7,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.433,
+        "ndvi_trend_per_year": -0.0107,
+        "ndvi_pred_delta": 0.013,
+        "plantable_space": 0.28,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.21826526803099,
+              28.54732924351139
+            ],
+            [
+              77.22413939190172,
+              28.53582566213892
+            ],
+            [
+              77.2390579238176,
+              28.534562021899802
+            ],
+            [
+              77.24810704579752,
+              28.544800954440017
+            ],
+            [
+              77.24223659066064,
+              28.55630646496017
+            ],
+            [
+              77.22731334361079,
+              28.557571114087352
+            ],
+            [
+              77.21826526803099,
+              28.54732924351139
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da102dffffff",
+        "rank": 68,
+        "reasoned": false,
+        "priority_score": 0.492,
+        "aqi_latest": 622.1,
+        "aqi_pred_delta": -181.8,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.428,
+        "ndvi_trend_per_year": -0.008,
+        "ndvi_pred_delta": -0.0026,
+        "plantable_space": 0.29,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.13815352671394,
+              28.620154861927016
+            ],
+            [
+              77.1440490043819,
+              28.608643967511707
+            ],
+            [
+              77.15898805058649,
+              28.607386762158644
+            ],
+            [
+              77.1680363483823,
+              28.617639451197878
+            ],
+            [
+              77.16214453812395,
+              28.62915228270023
+            ],
+            [
+              77.14720076145427,
+              28.630410488368952
+            ],
+            [
+              77.13815352671394,
+              28.620154861927016
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1170ffffff",
+        "rank": 69,
+        "reasoned": false,
+        "priority_score": 0.4901,
+        "aqi_latest": 300.6,
+        "aqi_pred_delta": -35.4,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.43,
+        "ndvi_trend_per_year": 0.0049,
+        "ndvi_pred_delta": 0.1511,
+        "plantable_space": 0.28,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.06621195094824,
+              28.593139820696347
+            ],
+            [
+              77.07211840799353,
+              28.581634750922127
+            ],
+            [
+              77.08705508134695,
+              28.58038614188683
+            ],
+            [
+              77.0960900275056,
+              28.590641611631526
+            ],
+            [
+              77.09018722644254,
+              28.602148625179616
+            ],
+            [
+              77.07524582203172,
+              28.603398225499326
+            ],
+            [
+              77.06621195094824,
+              28.593139820696347
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da112affffff",
+        "rank": 70,
+        "reasoned": false,
+        "priority_score": 0.4843,
+        "aqi_latest": 622.1,
+        "aqi_pred_delta": -190.9,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.254,
+        "ndvi_trend_per_year": -0.0014,
+        "ndvi_pred_delta": 0.0171,
+        "plantable_space": 0.58,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.09332140216041,
+              28.623916126098823
+            ],
+            [
+              77.0992255535122,
+              28.61240610785014
+            ],
+            [
+              77.1141677539239,
+              28.61115364083894
+            ],
+            [
+              77.12321053554784,
+              28.621410197389025
+            ],
+            [
+              77.11731004675607,
+              28.632922156991793
+            ],
+            [
+              77.10236311257275,
+              28.63417561898159
+            ],
+            [
+              77.09332140216041,
+              28.623916126098823
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1129ffffff",
+        "rank": 71,
+        "reasoned": false,
+        "priority_score": 0.4826,
+        "aqi_latest": 300.6,
+        "aqi_pred_delta": -21.5,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.343,
+        "ndvi_trend_per_year": 0.0101,
+        "ndvi_pred_delta": 0.0637,
+        "plantable_space": 0.43,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.23588131308523,
+              28.512822601063508
+            ],
+            [
+              77.24174911242253,
+              28.50132312346755
+            ],
+            [
+              77.2566589837238,
+              28.500058644032684
+            ],
+            [
+              77.26570576363326,
+              28.51029263199021
+            ],
+            [
+              77.2598416312713,
+              28.52179403690166
+            ],
+            [
+              77.2449270508278,
+              28.523059526835436
+            ],
+            [
+              77.23588131308523,
+              28.512822601063508
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da102bffffff",
+        "rank": 72,
+        "reasoned": false,
+        "priority_score": 0.4641,
+        "aqi_latest": 622.1,
+        "aqi_pred_delta": -194.4,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.328,
+        "ndvi_trend_per_year": -0.0034,
+        "ndvi_pred_delta": 0.0993,
+        "plantable_space": 0.45,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.2598416312713,
+              28.52179403690166
+            ],
+            [
+              77.26570576363326,
+              28.51029263199021
+            ],
+            [
+              77.2806163907013,
+              28.509025295933114
+            ],
+            [
+              77.28966759312414,
+              28.519258351585126
+            ],
+            [
+              77.28380713151205,
+              28.530761681577307
+            ],
+            [
+              77.26889179553083,
+              28.532030031132887
+            ],
+            [
+              77.2598416312713,
+              28.52179403690166
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1076ffffff",
+        "rank": 73,
+        "reasoned": false,
+        "priority_score": 0.4499,
+        "aqi_latest": 622.1,
+        "aqi_pred_delta": -199.6,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.322,
+        "ndvi_trend_per_year": -0.0028,
+        "ndvi_pred_delta": 0.0541,
+        "plantable_space": 0.46,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.15583360771906,
+              28.58562625378669
+            ],
+            [
+              77.16172273542004,
+              28.574119436600142
+            ],
+            [
+              77.176653110268,
+              28.57286136688409
+            ],
+            [
+              77.18569908066908,
+              28.583109112699706
+            ],
+            [
+              77.17981361863866,
+              28.59461786513614
+            ],
+            [
+              77.16487851933319,
+              28.595876936800163
+            ],
+            [
+              77.15583360771906,
+              28.58562625378669
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1154ffffff",
+        "rank": 74,
+        "reasoned": false,
+        "priority_score": 0.4291,
+        "aqi_latest": 622.1,
+        "aqi_pred_delta": -213.9,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.445,
+        "ndvi_trend_per_year": -0.0077,
+        "ndvi_pred_delta": 0.0503,
+        "plantable_space": 0.26,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.10475308335394,
+              28.54587819671335
+            ],
+            [
+              77.11064818489076,
+              28.534378267298607
+            ],
+            [
+              77.12557227079105,
+              28.533126916942475
+            ],
+            [
+              77.13460597591904,
+              28.543374501044223
+            ],
+            [
+              77.12871452969128,
+              28.554876370359494
+            ],
+            [
+              77.11378572182348,
+              28.55612871596371
+            ],
+            [
+              77.10475308335394,
+              28.54587819671335
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da110affffff",
+        "rank": 75,
+        "reasoned": false,
+        "priority_score": 0.4289,
+        "aqi_latest": 622.1,
+        "aqi_pred_delta": -205.5,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.267,
+        "ndvi_trend_per_year": 0.0001,
+        "ndvi_pred_delta": 0.0866,
+        "plantable_space": 0.56,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.22778929530844,
+              28.61258968405704
+            ],
+            [
+              77.23366741460657,
+              28.60107706782526
+            ],
+            [
+              77.24860010059064,
+              28.599810398838724
+            ],
+            [
+              77.25765938987946,
+              28.610055335407964
+            ],
+            [
+              77.25178494763978,
+              28.62156988017889
+            ],
+            [
+              77.2368475378504,
+              28.622837560136958
+            ],
+            [
+              77.22778929530844,
+              28.61258968405704
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1143ffffff",
+        "rank": 76,
+        "reasoned": false,
+        "priority_score": 0.4288,
+        "aqi_latest": 300.6,
+        "aqi_pred_delta": -35.5,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.444,
+        "ndvi_trend_per_year": 0.0081,
+        "ndvi_pred_delta": 0.035,
+        "plantable_space": 0.26,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.14953084812902,
+              28.5421202925132
+            ],
+            [
+              77.1554172951362,
+              28.530619497738364
+            ],
+            [
+              77.17033822975392,
+              28.529363429850896
+            ],
+            [
+              77.17937743483172,
+              28.539607156461155
+            ],
+            [
+              77.17349464796213,
+              28.551109886878958
+            ],
+            [
+              77.15856899467587,
+              28.5523669553362
+            ],
+            [
+              77.14953084812902,
+              28.5421202925132
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1025ffffff",
+        "rank": 77,
+        "reasoned": false,
+        "priority_score": 0.4208,
+        "aqi_latest": 622.1,
+        "aqi_pred_delta": -212.5,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.516,
+        "ndvi_trend_per_year": -0.0098,
+        "ndvi_pred_delta": 0.0389,
+        "plantable_space": 0.14,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.19113667483512,
+              28.516605789795335
+            ],
+            [
+              77.19701312999412,
+              28.505107155657825
+            ],
+            [
+              77.2119261836509,
+              28.5038473797641
+            ],
+            [
+              77.22096749341796,
+              28.51408523310886
+            ],
+            [
+              77.21509470044279,
+              28.525585798825194
+            ],
+            [
+              77.20017693431826,
+              28.526846579911847
+            ],
+            [
+              77.19113667483512,
+              28.516605789795335
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da102effffff",
+        "rank": 78,
+        "reasoned": false,
+        "priority_score": 0.4174,
+        "aqi_latest": 622.1,
+        "aqi_pred_delta": -207.3,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.414,
+        "ndvi_trend_per_year": -0.0052,
+        "ndvi_pred_delta": 0.0356,
+        "plantable_space": 0.31,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.08079687520876,
+              28.536876247123345
+            ],
+            [
+              77.08669562825547,
+              28.525378259831133
+            ],
+            [
+              77.101618922617,
+              28.52412976589513
+            ],
+            [
+              77.11064818489076,
+              28.534378267298607
+            ],
+            [
+              77.10475308335394,
+              28.54587819671335
+            ],
+            [
+              77.08982506683016,
+              28.547127682892498
+            ],
+            [
+              77.08079687520876,
+              28.536876247123345
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da111dffffff",
+        "rank": 79,
+        "reasoned": false,
+        "priority_score": 0.4132,
+        "aqi_latest": 622.1,
+        "aqi_pred_delta": -199.6,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.344,
+        "ndvi_trend_per_year": -0.0015,
+        "ndvi_pred_delta": 0.0724,
+        "plantable_space": 0.43,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.13185882400518,
+              28.576630848817178
+            ],
+            [
+              77.13775161357744,
+              28.565125969111147
+            ],
+            [
+              77.15268120755474,
+              28.56387076232683
+            ],
+            [
+              77.16172273542004,
+              28.574119436600142
+            ],
+            [
+              77.15583360771906,
+              28.58562625378669
+            ],
+            [
+              77.14089928907775,
+              28.586882459511656
+            ],
+            [
+              77.13185882400518,
+              28.576630848817178
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1109ffffff",
+        "rank": 80,
+        "reasoned": false,
+        "priority_score": 0.412,
+        "aqi_latest": 622.1,
+        "aqi_pred_delta": -185.6,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.436,
+        "ndvi_trend_per_year": -0.0038,
+        "ndvi_pred_delta": 0.071,
+        "plantable_space": 0.27,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.21649387922281,
+              28.6906857259064
+            ],
+            [
+              77.22238101654638,
+              28.679163021562612
+            ],
+            [
+              77.23733185090407,
+              28.677895184730403
+            ],
+            [
+              77.24640028236078,
+              28.688149041801726
+            ],
+            [
+              77.24051682942991,
+              28.699673676104975
+            ],
+            [
+              77.22556125944257,
+              28.70094252367294
+            ],
+            [
+              77.21649387922281,
+              28.6906857259064
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da116cffffff",
+        "rank": 81,
+        "reasoned": false,
+        "priority_score": 0.4104,
+        "aqi_latest": 300.6,
+        "aqi_pred_delta": -42.4,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.523,
+        "ndvi_trend_per_year": 0.0058,
+        "ndvi_pred_delta": -0.0665,
+        "plantable_space": 0.13,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.24223659066064,
+              28.55630646496017
+            ],
+            [
+              77.24810704579752,
+              28.544800954440017
+            ],
+            [
+              77.26302633826508,
+              28.54353445331135
+            ],
+            [
+              77.27207988930537,
+              28.553772451107594
+            ],
+            [
+              77.2662131066851,
+              28.565279888539195
+            ],
+            [
+              77.25128909930903,
+              28.56654740155884
+            ],
+            [
+              77.24223659066064,
+              28.55630646496017
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da115affffff",
+        "rank": 82,
+        "reasoned": false,
+        "priority_score": 0.4094,
+        "aqi_latest": 622.1,
+        "aqi_pred_delta": -199.6,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.368,
+        "ndvi_trend_per_year": -0.0022,
+        "ndvi_pred_delta": 0.0297,
+        "plantable_space": 0.39,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.27259283573594,
+              28.60878579651766
+            ],
+            [
+              77.27846227041759,
+              28.59727233463775
+            ],
+            [
+              77.29339175043407,
+              28.59600094039959
+            ],
+            [
+              77.3024565150204,
+              28.60624199204801
+            ],
+            [
+              77.29659076219637,
+              28.61775737818627
+            ],
+            [
+              77.28165656172771,
+              28.61902978871471
+            ],
+            [
+              77.27259283573594,
+              28.60878579651766
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da114affffff",
+        "rank": 83,
+        "reasoned": false,
+        "priority_score": 0.3995,
+        "aqi_latest": 300.6,
+        "aqi_pred_delta": -48.4,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.395,
+        "ndvi_trend_per_year": 0.0137,
+        "ndvi_pred_delta": -0.0097,
+        "plantable_space": 0.34,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.21509470044279,
+              28.525585798825194
+            ],
+            [
+              77.22096749341796,
+              28.51408523310886
+            ],
+            [
+              77.23588131308523,
+              28.512822601063508
+            ],
+            [
+              77.2449270508278,
+              28.523059526835436
+            ],
+            [
+              77.2390579238176,
+              28.534562021899802
+            ],
+            [
+              77.22413939190172,
+              28.53582566213892
+            ],
+            [
+              77.21509470044279,
+              28.525585798825194
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1028ffffff",
+        "rank": 84,
+        "reasoned": false,
+        "priority_score": 0.3974,
+        "aqi_latest": 622.1,
+        "aqi_pred_delta": -206.7,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.405,
+        "ndvi_trend_per_year": -0.0036,
+        "ndvi_pred_delta": 0.0516,
+        "plantable_space": 0.33,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.1141677539239,
+              28.61115364083894
+            ],
+            [
+              77.12006689519397,
+              28.599644685742785
+            ],
+            [
+              77.13500515569211,
+              28.59839034758573
+            ],
+            [
+              77.1440490043819,
+              28.608643967511707
+            ],
+            [
+              77.13815352671394,
+              28.620154861927016
+            ],
+            [
+              77.12321053554784,
+              28.621410197389025
+            ],
+            [
+              77.1141677539239,
+              28.61115364083894
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1176ffffff",
+        "rank": 85,
+        "reasoned": false,
+        "priority_score": 0.3877,
+        "aqi_latest": 300.6,
+        "aqi_pred_delta": -38.5,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.456,
+        "ndvi_trend_per_year": 0.0098,
+        "ndvi_pred_delta": 0.1027,
+        "plantable_space": 0.24,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.15268120755474,
+              28.56387076232683
+            ],
+            [
+              77.15856899467587,
+              28.5523669553362
+            ],
+            [
+              77.17349464796213,
+              28.551109886878958
+            ],
+            [
+              77.18253723448662,
+              28.561355624446406
+            ],
+            [
+              77.176653110268,
+              28.57286136688409
+            ],
+            [
+              77.16172273542004,
+              28.574119436600142
+            ],
+            [
+              77.15268120755474,
+              28.56387076232683
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1156ffffff",
+        "rank": 86,
+        "reasoned": false,
+        "priority_score": 0.3836,
+        "aqi_latest": 622.1,
+        "aqi_pred_delta": -217.2,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.444,
+        "ndvi_trend_per_year": -0.0053,
+        "ndvi_pred_delta": -0.0061,
+        "plantable_space": 0.26,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.16718385367886,
+              28.507622000521753
+            ],
+            [
+              77.1730639672389,
+              28.496125300190723
+            ],
+            [
+              77.18797624965521,
+              28.494868378708386
+            ],
+            [
+              77.19701312999412,
+              28.505107155657825
+            ],
+            [
+              77.19113667483512,
+              28.516605789795335
+            ],
+            [
+              77.17621967973736,
+              28.517863713470017
+            ],
+            [
+              77.16718385367886,
+              28.507622000521753
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1023ffffff",
+        "rank": 87,
+        "reasoned": false,
+        "priority_score": 0.3752,
+        "aqi_latest": 622.1,
+        "aqi_pred_delta": -206.7,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.426,
+        "ndvi_trend_per_year": -0.0031,
+        "ndvi_pred_delta": 0.0796,
+        "plantable_space": 0.29,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.22143788838774,
+              28.569077709100505
+            ],
+            [
+              77.22731334361079,
+              28.557571114087352
+            ],
+            [
+              77.24223659066064,
+              28.55630646496017
+            ],
+            [
+              77.25128909930903,
+              28.56654740155884
+            ],
+            [
+              77.2454173155917,
+              28.5780559255181
+            ],
+            [
+              77.23048935051997,
+              28.5793215842277
+            ],
+            [
+              77.22143788838774,
+              28.569077709100505
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da115effffff",
+        "rank": 88,
+        "reasoned": false,
+        "priority_score": 0.3677,
+        "aqi_latest": 622.1,
+        "aqi_pred_delta": -195.3,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.307,
+        "ndvi_trend_per_year": 0.0031,
+        "ndvi_pred_delta": 0.0571,
+        "plantable_space": 0.49,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.19746366361143,
+              28.560095694315045
+            ],
+            [
+              77.20334278655243,
+              28.548591030483422
+            ],
+            [
+              77.21826526803099,
+              28.54732924351139
+            ],
+            [
+              77.22731334361079,
+              28.557571114087352
+            ],
+            [
+              77.22143788838774,
+              28.569077709100505
+            ],
+            [
+              77.20651068866633,
+              28.570340502650467
+            ],
+            [
+              77.19746366361143,
+              28.560095694315045
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1153ffffff",
+        "rank": 89,
+        "reasoned": false,
+        "priority_score": 0.3604,
+        "aqi_latest": 622.1,
+        "aqi_pred_delta": -199.6,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.372,
+        "ndvi_trend_per_year": 0.0006,
+        "ndvi_pred_delta": 0.0267,
+        "plantable_space": 0.38,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.08392496491956,
+              28.558628680958254
+            ],
+            [
+              77.08982506683016,
+              28.547127682892498
+            ],
+            [
+              77.10475308335394,
+              28.54587819671335
+            ],
+            [
+              77.11378572182348,
+              28.55612871596371
+            ],
+            [
+              77.10788927418082,
+              28.567631655961765
+            ],
+            [
+              77.09295653259629,
+              28.56888213506776
+            ],
+            [
+              77.08392496491956,
+              28.558628680958254
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da110effffff",
+        "rank": 90,
+        "reasoned": false,
+        "priority_score": 0.3602,
+        "aqi_latest": 622.1,
+        "aqi_pred_delta": -146.2,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.259,
+        "ndvi_trend_per_year": 0.0098,
+        "ndvi_pred_delta": 0.0669,
+        "plantable_space": 0.57,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.07767081026537,
+              28.51512884510324
+            ],
+            [
+              77.08356821492308,
+              28.50363387060066
+            ],
+            [
+              77.09848679001826,
+              28.502386368224247
+            ],
+            [
+              77.10751267851985,
+              28.512632849081054
+            ],
+            [
+              77.101618922617,
+              28.52412976589513
+            ],
+            [
+              77.08669562825547,
+              28.525378259831133
+            ],
+            [
+              77.07767081026537,
+              28.51512884510324
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1118ffffff",
+        "rank": 91,
+        "reasoned": false,
+        "priority_score": 0.3566,
+        "aqi_latest": 622.1,
+        "aqi_pred_delta": -206.7,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.413,
+        "ndvi_trend_per_year": -0.0014,
+        "ndvi_pred_delta": 0.0803,
+        "plantable_space": 0.31,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.25178494763978,
+              28.62156988017889
+            ],
+            [
+              77.25765938987946,
+              28.610055335407964
+            ],
+            [
+              77.27259283573594,
+              28.60878579651766
+            ],
+            [
+              77.28165656172771,
+              28.61902978871471
+            ],
+            [
+              77.27578580033918,
+              28.630546259781593
+            ],
+            [
+              77.26084763090563,
+              28.631816812651813
+            ],
+            [
+              77.25178494763978,
+              28.62156988017889
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da114effffff",
+        "rank": 92,
+        "reasoned": false,
+        "priority_score": 0.3555,
+        "aqi_latest": 300.6,
+        "aqi_pred_delta": -37.7,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.486,
+        "ndvi_trend_per_year": 0.0106,
+        "ndvi_pred_delta": 0.0184,
+        "plantable_space": 0.19,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.20063023114461,
+              28.58184817830376
+            ],
+            [
+              77.20651068866633,
+              28.570340502650467
+            ],
+            [
+              77.22143788838774,
+              28.569077709100505
+            ],
+            [
+              77.23048935051997,
+              28.5793215842277
+            ],
+            [
+              77.2246125634878,
+              28.590831190861984
+            ],
+            [
+              77.20968064263216,
+              28.592094991682572
+            ],
+            [
+              77.20063023114461,
+              28.58184817830376
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1151ffffff",
+        "rank": 93,
+        "reasoned": false,
+        "priority_score": 0.3549,
+        "aqi_latest": 622.1,
+        "aqi_pred_delta": -198.0,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.375,
+        "ndvi_trend_per_year": 0.001,
+        "ndvi_pred_delta": 0.0156,
+        "plantable_space": 0.37,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.13500515569211,
+              28.59839034758573
+            ],
+            [
+              77.14089928907775,
+              28.586882459511656
+            ],
+            [
+              77.15583360771906,
+              28.58562625378669
+            ],
+            [
+              77.16487851933319,
+              28.595876936800163
+            ],
+            [
+              77.15898805058649,
+              28.607386762158644
+            ],
+            [
+              77.1440490043819,
+              28.608643967511707
+            ],
+            [
+              77.13500515569211,
+              28.59839034758573
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1172ffffff",
+        "rank": 94,
+        "reasoned": false,
+        "priority_score": 0.35,
+        "aqi_latest": 622.1,
+        "aqi_pred_delta": -206.7,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.521,
+        "ndvi_trend_per_year": -0.005,
+        "ndvi_pred_delta": 0.1156,
+        "plantable_space": 0.13,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.12557227079105,
+              28.533126916942475
+            ],
+            [
+              77.13146237414321,
+              28.521628060036594
+            ],
+            [
+              77.14638252747996,
+              28.52037484907165
+            ],
+            [
+              77.1554172951362,
+              28.530619497738364
+            ],
+            [
+              77.14953084812902,
+              28.5421202925132
+            ],
+            [
+              77.13460597591904,
+              28.543374501044223
+            ],
+            [
+              77.12557227079105,
+              28.533126916942475
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1024ffffff",
+        "rank": 95,
+        "reasoned": false,
+        "priority_score": 0.3476,
+        "aqi_latest": 622.1,
+        "aqi_pred_delta": -206.7,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.46,
+        "ndvi_trend_per_year": -0.0028,
+        "ndvi_pred_delta": 0.0304,
+        "plantable_space": 0.23,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.17349464796213,
+              28.551109886878958
+            ],
+            [
+              77.17937743483172,
+              28.539607156461155
+            ],
+            [
+              77.19429914549815,
+              28.538348229903505
+            ],
+            [
+              77.20334278655243,
+              28.548591030483422
+            ],
+            [
+              77.19746366361143,
+              28.560095694315045
+            ],
+            [
+              77.18253723448662,
+              28.561355624446406
+            ],
+            [
+              77.17349464796213,
+              28.551109886878958
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1152ffffff",
+        "rank": 96,
+        "reasoned": false,
+        "priority_score": 0.331,
+        "aqi_latest": 622.1,
+        "aqi_pred_delta": -206.7,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.533,
+        "ndvi_trend_per_year": -0.004,
+        "ndvi_pred_delta": -0.0172,
+        "plantable_space": 0.11,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.28380713151205,
+              28.530761681577307
+            ],
+            [
+              77.28966759312414,
+              28.519258351585126
+            ],
+            [
+              77.30457897072161,
+              28.517988157176106
+            ],
+            [
+              77.31363459418961,
+              28.528220276557935
+            ],
+            [
+              77.30777780710027,
+              28.539725529392964
+            ],
+            [
+              77.29286172082412,
+              28.540996740300272
+            ],
+            [
+              77.28380713151205,
+              28.530761681577307
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1070ffffff",
+        "rank": 97,
+        "reasoned": false,
+        "priority_score": 0.3042,
+        "aqi_latest": 622.1,
+        "aqi_pred_delta": -198.0,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.373,
+        "ndvi_trend_per_year": 0.0041,
+        "ndvi_pred_delta": -0.0199,
+        "plantable_space": 0.38,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.19429914549815,
+              28.538348229903505
+            ],
+            [
+              77.20017693431826,
+              28.526846579911847
+            ],
+            [
+              77.21509470044279,
+              28.525585798825194
+            ],
+            [
+              77.22413939190172,
+              28.53582566213892
+            ],
+            [
+              77.21826526803099,
+              28.54732924351139
+            ],
+            [
+              77.20334278655243,
+              28.548591030483422
+            ],
+            [
+              77.19429914549815,
+              28.538348229903505
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da102cffffff",
+        "rank": 98,
+        "reasoned": false,
+        "priority_score": 0.3001,
+        "aqi_latest": 622.1,
+        "aqi_pred_delta": -180.7,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.415,
+        "ndvi_trend_per_year": 0.0042,
+        "ndvi_pred_delta": 0.0397,
+        "plantable_space": 0.31,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.17981361863866,
+              28.59461786513614
+            ],
+            [
+              77.18569908066908,
+              28.583109112699706
+            ],
+            [
+              77.20063023114461,
+              28.58184817830376
+            ],
+            [
+              77.20968064263216,
+              28.592094991682572
+            ],
+            [
+              77.20379885006987,
+              28.603605677135153
+            ],
+            [
+              77.18886297534881,
+              28.604867616486654
+            ],
+            [
+              77.17981361863866,
+              28.59461786513614
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1155ffffff",
+        "rank": 99,
+        "reasoned": false,
+        "priority_score": 0.2884,
+        "aqi_latest": 622.1,
+        "aqi_pred_delta": -192.3,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.472,
+        "ndvi_trend_per_year": 0.0016,
+        "ndvi_pred_delta": 0.0473,
+        "plantable_space": 0.21,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.2662131066851,
+              28.565279888539195
+            ],
+            [
+              77.27207988930537,
+              28.553772451107594
+            ],
+            [
+              77.28699993708067,
+              28.552503087355763
+            ],
+            [
+              77.29605791571471,
+              28.562740146437925
+            ],
+            [
+              77.29019480939216,
+              28.574249508541595
+            ],
+            [
+              77.27527004693931,
+              28.57551988718757
+            ],
+            [
+              77.2662131066851,
+              28.565279888539195
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da115bffffff",
+        "rank": 100,
+        "reasoned": false,
+        "priority_score": 0.2775,
+        "aqi_latest": 622.1,
+        "aqi_pred_delta": -184.7,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.373,
+        "ndvi_trend_per_year": 0.0069,
+        "ndvi_pred_delta": -0.0157,
+        "plantable_space": 0.38,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.2246125634878,
+              28.590831190861984
+            ],
+            [
+              77.23048935051997,
+              28.5793215842277
+            ],
+            [
+              77.2454173155917,
+              28.5780559255181
+            ],
+            [
+              77.25447321334224,
+              28.58829886346119
+            ],
+            [
+              77.24860010059064,
+              28.599810398838724
+            ],
+            [
+              77.23366741460657,
+              28.60107706782526
+            ],
+            [
+              77.2246125634878,
+              28.590831190861984
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da115cffffff",
+        "rank": 101,
+        "reasoned": false,
+        "priority_score": 0.2768,
+        "aqi_latest": 622.1,
+        "aqi_pred_delta": -194.9,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.422,
+        "ndvi_trend_per_year": 0.0041,
+        "ndvi_pred_delta": 0.0177,
+        "plantable_space": 0.3,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.26302633826508,
+              28.54353445331135
+            ],
+            [
+              77.26889179553083,
+              28.532030031132887
+            ],
+            [
+              77.28380713151205,
+              28.530761681577307
+            ],
+            [
+              77.29286172082412,
+              28.540996740300272
+            ],
+            [
+              77.28699993708067,
+              28.552503087355763
+            ],
+            [
+              77.27207988930537,
+              28.553772451107594
+            ],
+            [
+              77.26302633826508,
+              28.54353445331135
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1074ffffff",
+        "rank": 102,
+        "reasoned": false,
+        "priority_score": 0.2714,
+        "aqi_latest": 622.1,
+        "aqi_pred_delta": -199.6,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.371,
+        "ndvi_trend_per_year": 0.006,
+        "ndvi_pred_delta": 0.0102,
+        "plantable_space": 0.38,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.10788927418082,
+              28.567631655961765
+            ],
+            [
+              77.11378572182348,
+              28.55612871596371
+            ],
+            [
+              77.12871452969128,
+              28.554876370359494
+            ],
+            [
+              77.13775161357744,
+              28.565125969111147
+            ],
+            [
+              77.13185882400518,
+              28.576630848817178
+            ],
+            [
+              77.11692529127228,
+              28.577884190354997
+            ],
+            [
+              77.10788927418082,
+              28.567631655961765
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1108ffffff",
+        "rank": 103,
+        "reasoned": false,
+        "priority_score": 0.2711,
+        "aqi_latest": 622.1,
+        "aqi_pred_delta": -199.6,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.307,
+        "ndvi_trend_per_year": 0.0086,
+        "ndvi_pred_delta": 0.1078,
+        "plantable_space": 0.49,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.12243204534767,
+              28.511382493287616
+            ],
+            [
+              77.12832080629299,
+              28.49988665080563
+            ],
+            [
+              77.14323624364808,
+              28.49863443671969
+            ],
+            [
+              77.15226763483899,
+              28.50887706852839
+            ],
+            [
+              77.14638252747996,
+              28.52037484907165
+            ],
+            [
+              77.13146237414321,
+              28.521628060036594
+            ],
+            [
+              77.12243204534767,
+              28.511382493287616
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1026ffffff",
+        "rank": 104,
+        "reasoned": false,
+        "priority_score": 0.2559,
+        "aqi_latest": 622.1,
+        "aqi_pred_delta": -206.7,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.507,
+        "ndvi_trend_per_year": 0.0009,
+        "ndvi_pred_delta": 0.1013,
+        "plantable_space": 0.16,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.08705508134695,
+              28.58038614188683
+            ],
+            [
+              77.09295653259629,
+              28.56888213506776
+            ],
+            [
+              77.10788927418082,
+              28.567631655961765
+            ],
+            [
+              77.11692529127228,
+              28.577884190354997
+            ],
+            [
+              77.11102749705188,
+              28.589390138914894
+            ],
+            [
+              77.0960900275056,
+              28.590641611631526
+            ],
+            [
+              77.08705508134695,
+              28.58038614188683
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da110cffffff",
+        "rank": 105,
+        "reasoned": false,
+        "priority_score": 0.2503,
+        "aqi_latest": 622.1,
+        "aqi_pred_delta": -206.7,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.396,
+        "ndvi_trend_per_year": 0.0057,
+        "ndvi_pred_delta": 0.0681,
+        "plantable_space": 0.34,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.101618922617,
+              28.52412976589513
+            ],
+            [
+              77.10751267851985,
+              28.512632849081054
+            ],
+            [
+              77.12243204534767,
+              28.511382493287616
+            ],
+            [
+              77.13146237414321,
+              28.521628060036594
+            ],
+            [
+              77.12557227079105,
+              28.533126916942475
+            ],
+            [
+              77.11064818489076,
+              28.534378267298607
+            ],
+            [
+              77.101618922617,
+              28.52412976589513
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1119ffffff",
+        "rank": 106,
+        "reasoned": false,
+        "priority_score": 0.2483,
+        "aqi_latest": 622.1,
+        "aqi_pred_delta": -206.7,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.496,
+        "ndvi_trend_per_year": 0.0018,
+        "ndvi_pred_delta": 0.0779,
+        "plantable_space": 0.17,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.2454173155917,
+              28.5780559255181
+            ],
+            [
+              77.25128909930903,
+              28.56654740155884
+            ],
+            [
+              77.2662131066851,
+              28.565279888539195
+            ],
+            [
+              77.27527004693931,
+              28.57551988718757
+            ],
+            [
+              77.26940193851372,
+              28.58703033785437
+            ],
+            [
+              77.25447321334224,
+              28.58829886346119
+            ],
+            [
+              77.2454173155917,
+              28.5780559255181
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1158ffffff",
+        "rank": 107,
+        "reasoned": false,
+        "priority_score": 0.2238,
+        "aqi_latest": 622.1,
+        "aqi_pred_delta": -207.1,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.387,
+        "ndvi_trend_per_year": 0.0076,
+        "ndvi_pred_delta": 0.0225,
+        "plantable_space": 0.35,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.24860010059064,
+              28.599810398838724
+            ],
+            [
+              77.25447321334224,
+              28.58829886346119
+            ],
+            [
+              77.26940193851372,
+              28.58703033785437
+            ],
+            [
+              77.27846227041759,
+              28.59727233463775
+            ],
+            [
+              77.27259283573594,
+              28.60878579651766
+            ],
+            [
+              77.25765938987946,
+              28.610055335407964
+            ],
+            [
+              77.24860010059064,
+              28.599810398838724
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da115dffffff",
+        "rank": 108,
+        "reasoned": false,
+        "priority_score": 0.2129,
+        "aqi_latest": 622.1,
+        "aqi_pred_delta": -143.4,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.467,
+        "ndvi_trend_per_year": 0.0153,
+        "ndvi_pred_delta": -0.0142,
+        "plantable_space": 0.22,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.12871452969128,
+              28.554876370359494
+            ],
+            [
+              77.13460597591904,
+              28.543374501044223
+            ],
+            [
+              77.14953084812902,
+              28.5421202925132
+            ],
+            [
+              77.15856899467587,
+              28.5523669553362
+            ],
+            [
+              77.15268120755474,
+              28.56387076232683
+            ],
+            [
+              77.13775161357744,
+              28.565125969111147
+            ],
+            [
+              77.12871452969128,
+              28.554876370359494
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da110bffffff",
+        "rank": 109,
+        "reasoned": false,
+        "priority_score": 0.2087,
+        "aqi_latest": 622.1,
+        "aqi_pred_delta": -206.7,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.447,
+        "ndvi_trend_per_year": 0.0061,
+        "ndvi_pred_delta": 0.1516,
+        "plantable_space": 0.25,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.17033822975392,
+              28.529363429850896
+            ],
+            [
+              77.17621967973736,
+              28.517863713470017
+            ],
+            [
+              77.19113667483512,
+              28.516605789795335
+            ],
+            [
+              77.20017693431826,
+              28.526846579911847
+            ],
+            [
+              77.19429914549815,
+              28.538348229903505
+            ],
+            [
+              77.17937743483172,
+              28.539607156461155
+            ],
+            [
+              77.17033822975392,
+              28.529363429850896
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1021ffffff",
+        "rank": 110,
+        "reasoned": false,
+        "priority_score": 0.2063,
+        "aqi_latest": 622.1,
+        "aqi_pred_delta": -206.7,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.541,
+        "ndvi_trend_per_year": 0.0034,
+        "ndvi_pred_delta": 0.0383,
+        "plantable_space": 0.1,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.09848679001826,
+              28.502386368224247
+            ],
+            [
+              77.10437920075891,
+              28.490892466024107
+            ],
+            [
+              77.11929385140668,
+              28.48964310410809
+            ],
+            [
+              77.12832080629299,
+              28.49988665080563
+            ],
+            [
+              77.12243204534767,
+              28.511382493287616
+            ],
+            [
+              77.10751267851985,
+              28.512632849081054
+            ],
+            [
+              77.09848679001826,
+              28.502386368224247
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da111bffffff",
+        "rank": 111,
+        "reasoned": false,
+        "priority_score": 0.2062,
+        "aqi_latest": 622.1,
+        "aqi_pred_delta": -206.7,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.423,
+        "ndvi_trend_per_year": 0.0072,
+        "ndvi_pred_delta": 0.1594,
+        "plantable_space": 0.3,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.11102749705188,
+              28.589390138914894
+            ],
+            [
+              77.11692529127228,
+              28.577884190354997
+            ],
+            [
+              77.13185882400518,
+              28.576630848817178
+            ],
+            [
+              77.14089928907775,
+              28.586882459511656
+            ],
+            [
+              77.13500515569211,
+              28.59839034758573
+            ],
+            [
+              77.12006689519397,
+              28.599644685742785
+            ],
+            [
+              77.11102749705188,
+              28.589390138914894
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da110dffffff",
+        "rank": 112,
+        "reasoned": false,
+        "priority_score": 0.1819,
+        "aqi_latest": 622.1,
+        "aqi_pred_delta": -206.7,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.483,
+        "ndvi_trend_per_year": 0.0063,
+        "ndvi_pred_delta": 0.0909,
+        "plantable_space": 0.19,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.26940193851372,
+              28.58703033785437
+            ],
+            [
+              77.27527004693931,
+              28.57551988718757
+            ],
+            [
+              77.29019480939216,
+              28.574249508541595
+            ],
+            [
+              77.29925617978346,
+              28.584488565266977
+            ],
+            [
+              77.29339175043407,
+              28.59600094039959
+            ],
+            [
+              77.27846227041759,
+              28.59727233463775
+            ],
+            [
+              77.26940193851372,
+              28.58703033785437
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1159ffffff",
+        "rank": 113,
+        "reasoned": false,
+        "priority_score": 0.09,
+        "aqi_latest": 622.1,
+        "aqi_pred_delta": -206.7,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": 0.518,
+        "ndvi_trend_per_year": 0.0157,
+        "ndvi_pred_delta": -0.0573,
+        "plantable_space": 0.14,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.33175365131866,
+              28.548685574654915
+            ],
+            [
+              77.337606760114,
+              28.537178401218046
+            ],
+            [
+              77.3525196230414,
+              28.53590248492991
+            ],
+            [
+              77.36158408417155,
+              28.546132719878624
+            ],
+            [
+              77.35573465743973,
+              28.557641811673204
+            ],
+            [
+              77.34081708631886,
+              28.55891875045995
+            ],
+            [
+              77.33175365131866,
+              28.548685574654915
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1044ffffff",
+        "rank": 114,
+        "reasoned": false,
+        "priority_score": null,
+        "aqi_latest": 622.1,
+        "aqi_pred_delta": -259.0,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": null,
+        "ndvi_trend_per_year": null,
+        "ndvi_pred_delta": null,
+        "plantable_space": null,
+        "plantable_source": null,
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.32854671707493,
+              28.52694722207075
+            ],
+            [
+              77.33439850973531,
+              28.51544306729635
+            ],
+            [
+              77.34930666734478,
+              28.514168172803743
+            ],
+            [
+              77.35836773641749,
+              28.5243964115884
+            ],
+            [
+              77.3525196230414,
+              28.53590248492991
+            ],
+            [
+              77.337606760114,
+              28.537178401218046
+            ],
+            [
+              77.32854671707493,
+              28.52694722207075
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1046ffffff",
+        "rank": 115,
+        "reasoned": false,
+        "priority_score": null,
+        "aqi_latest": 622.1,
+        "aqi_pred_delta": -259.0,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": null,
+        "ndvi_trend_per_year": null,
+        "ndvi_pred_delta": null,
+        "plantable_space": null,
+        "plantable_source": null,
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.32534185622303,
+              28.505213887520494
+            ],
+            [
+              77.33119233319013,
+              28.493712753418
+            ],
+            [
+              77.3460957883547,
+              28.492438880017943
+            ],
+            [
+              77.35515346780382,
+              28.502665119925997
+            ],
+            [
+              77.34930666734478,
+              28.514168172803743
+            ],
+            [
+              77.33439850973531,
+              28.51544306729635
+            ],
+            [
+              77.32534185622303,
+              28.505213887520494
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1055ffffff",
+        "rank": 116,
+        "reasoned": false,
+        "priority_score": null,
+        "aqi_latest": 622.1,
+        "aqi_pred_delta": -259.0,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": null,
+        "ndvi_trend_per_year": null,
+        "ndvi_pred_delta": null,
+        "plantable_space": null,
+        "plantable_source": null,
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.31097871354957,
+              28.56146791833274
+            ],
+            [
+              77.31683681999453,
+              28.549959648640435
+            ],
+            [
+              77.33175365131866,
+              28.548685574654915
+            ],
+            [
+              77.34081708631886,
+              28.55891875045995
+            ],
+            [
+              77.33496266094684,
+              28.570428940545746
+            ],
+            [
+              77.32004111830487,
+              28.571704034731
+            ],
+            [
+              77.31097871354957,
+              28.56146791833274
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1062ffffff",
+        "rank": 117,
+        "reasoned": false,
+        "priority_score": null,
+        "aqi_latest": 622.1,
+        "aqi_pred_delta": -259.0,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": null,
+        "ndvi_trend_per_year": null,
+        "ndvi_pred_delta": null,
+        "plantable_space": null,
+        "plantable_source": null,
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.33496266094684,
+              28.570428940545746
+            ],
+            [
+              77.34081708631886,
+              28.55891875045995
+            ],
+            [
+              77.35573465743973,
+              28.557641811673204
+            ],
+            [
+              77.3648025130637,
+              28.567874040069203
+            ],
+            [
+              77.35895177253744,
+              28.579386148302053
+            ],
+            [
+              77.34402949034502,
+              28.58066411029063
+            ],
+            [
+              77.33496266094684,
+              28.570428940545746
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1063ffffff",
+        "rank": 118,
+        "reasoned": false,
+        "priority_score": null,
+        "aqi_latest": 622.1,
+        "aqi_pred_delta": -259.0,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": null,
+        "ndvi_trend_per_year": null,
+        "ndvi_pred_delta": null,
+        "plantable_space": null,
+        "plantable_source": null,
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.30777780710027,
+              28.539725529392964
+            ],
+            [
+              77.31363459418961,
+              28.528220276557935
+            ],
+            [
+              77.32854671707493,
+              28.52694722207075
+            ],
+            [
+              77.337606760114,
+              28.537178401218046
+            ],
+            [
+              77.33175365131866,
+              28.548685574654915
+            ],
+            [
+              77.31683681999453,
+              28.549959648640435
+            ],
+            [
+              77.30777780710027,
+              28.539725529392964
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1071ffffff",
+        "rank": 119,
+        "reasoned": false,
+        "priority_score": null,
+        "aqi_latest": 622.1,
+        "aqi_pred_delta": -259.0,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": null,
+        "ndvi_trend_per_year": null,
+        "ndvi_pred_delta": null,
+        "plantable_space": null,
+        "plantable_source": null,
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.2806163907013,
+              28.509025295933114
+            ],
+            [
+              77.28647553062977,
+              28.49752498501525
+            ],
+            [
+              77.301382202426,
+              28.496255806405024
+            ],
+            [
+              77.31043443889999,
+              28.506485923210633
+            ],
+            [
+              77.30457897072161,
+              28.517988157176106
+            ],
+            [
+              77.28966759312414,
+              28.519258351585126
+            ],
+            [
+              77.2806163907013,
+              28.509025295933114
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1072ffffff",
+        "rank": 120,
+        "reasoned": false,
+        "priority_score": null,
+        "aqi_latest": 622.1,
+        "aqi_pred_delta": -259.0,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": null,
+        "ndvi_trend_per_year": null,
+        "ndvi_pred_delta": null,
+        "plantable_space": null,
+        "plantable_source": null,
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.30457897072161,
+              28.517988157176106
+            ],
+            [
+              77.31043443889999,
+              28.506485923210633
+            ],
+            [
+              77.32534185622303,
+              28.505213887520494
+            ],
+            [
+              77.33439850973531,
+              28.51544306729635
+            ],
+            [
+              77.32854671707493,
+              28.52694722207075
+            ],
+            [
+              77.31363459418961,
+              28.528220276557935
+            ],
+            [
+              77.30457897072161,
+              28.517988157176106
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da1073ffffff",
+        "rank": 121,
+        "reasoned": false,
+        "priority_score": null,
+        "aqi_latest": 622.1,
+        "aqi_pred_delta": -259.0,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": null,
+        "ndvi_trend_per_year": null,
+        "ndvi_pred_delta": null,
+        "plantable_space": null,
+        "plantable_source": null,
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.08499876453672,
+              28.723813846547028
+            ],
+            [
+              77.09091334706824,
+              28.712290777970185
+            ],
+            [
+              77.1058784504244,
+              28.711036210992834
+            ],
+            [
+              77.11493371857455,
+              28.721303717504295
+            ],
+            [
+              77.10902280865264,
+              28.732828728686094
+            ],
+            [
+              77.0940529567576,
+              28.734084291042855
+            ],
+            [
+              77.08499876453672,
+              28.723813846547028
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da18c1ffffff",
+        "rank": 122,
+        "reasoned": false,
+        "priority_score": null,
+        "aqi_latest": 300.6,
+        "aqi_pred_delta": 15.3,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": null,
+        "ndvi_trend_per_year": null,
+        "ndvi_pred_delta": null,
+        "plantable_space": null,
+        "plantable_source": null,
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.0818625478007,
+              28.702022333274886
+            ],
+            [
+              77.08777577488904,
+              28.690502259392964
+            ],
+            [
+              77.10273613262639,
+              28.68924868711226
+            ],
+            [
+              77.11178800768191,
+              28.69951419430802
+            ],
+            [
+              77.1058784504244,
+              28.711036210992834
+            ],
+            [
+              77.09091334706824,
+              28.712290777970185
+            ],
+            [
+              77.0818625478007,
+              28.702022333274886
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da18c3ffffff",
+        "rank": 123,
+        "reasoned": false,
+        "priority_score": null,
+        "aqi_latest": 300.6,
+        "aqi_pred_delta": 15.3,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": null,
+        "ndvi_trend_per_year": null,
+        "ndvi_pred_delta": null,
+        "plantable_space": null,
+        "plantable_source": null,
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.1058784504244,
+              28.711036210992834
+            ],
+            [
+              77.11178800768191,
+              28.69951419430802
+            ],
+            [
+              77.12674916064324,
+              28.69825774327707
+            ],
+            [
+              77.13580550055747,
+              28.708522311507046
+            ],
+            [
+              77.12989961695824,
+              28.72004626875746
+            ],
+            [
+              77.11493371857455,
+              28.721303717504295
+            ],
+            [
+              77.1058784504244,
+              28.711036210992834
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da18ceffffff",
+        "rank": 124,
+        "reasoned": false,
+        "priority_score": null,
+        "aqi_latest": 300.6,
+        "aqi_pred_delta": 15.3,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": null,
+        "ndvi_trend_per_year": null,
+        "ndvi_pred_delta": null,
+        "plantable_space": null,
+        "plantable_source": null,
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.0787283661326,
+              28.680235817229804
+            ],
+            [
+              77.08464023825603,
+              28.668718740090476
+            ],
+            [
+              77.09959585329203,
+              28.667466161823732
+            ],
+            [
+              77.10864433769473,
+              28.677729666973327
+            ],
+            [
+              77.10273613262639,
+              28.68924868711226
+            ],
+            [
+              77.08777577488904,
+              28.690502259392964
+            ],
+            [
+              77.0787283661326,
+              28.680235817229804
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da18dcffffff",
+        "rank": 125,
+        "reasoned": false,
+        "priority_score": null,
+        "aqi_latest": 300.6,
+        "aqi_pred_delta": 15.3,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": null,
+        "ndvi_trend_per_year": null,
+        "ndvi_pred_delta": null,
+        "plantable_space": null,
+        "plantable_source": null,
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.10273613262639,
+              28.68924868711226
+            ],
+            [
+              77.10864433769473,
+              28.677729666973327
+            ],
+            [
+              77.12360074815028,
+              28.676474212973783
+            ],
+            [
+              77.1326536948324,
+              28.68673678237355
+            ],
+            [
+              77.12674916064324,
+              28.69825774327707
+            ],
+            [
+              77.11178800768191,
+              28.69951419430802
+            ],
+            [
+              77.10273613262639,
+              28.68924868711226
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da18ddffffff",
+        "rank": 126,
+        "reasoned": false,
+        "priority_score": null,
+        "aqi_latest": 300.6,
+        "aqi_pred_delta": 15.3,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": null,
+        "ndvi_trend_per_year": null,
+        "ndvi_pred_delta": null,
+        "plantable_space": null,
+        "plantable_source": null,
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.07559621757099,
+              28.658454303186833
+            ],
+            [
+              77.08150673520771,
+              28.646940224833667
+            ],
+            [
+              77.09645761045724,
+              28.64568863989834
+            ],
+            [
+              77.10550270664638,
+              28.65595014027553
+            ],
+            [
+              77.09959585329203,
+              28.667466161823732
+            ],
+            [
+              77.08464023825603,
+              28.668718740090476
+            ],
+            [
+              77.07559621757099,
+              28.658454303186833
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "873da18deffffff",
+        "rank": 127,
+        "reasoned": false,
+        "priority_score": null,
+        "aqi_latest": 300.6,
+        "aqi_pred_delta": 15.3,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": null,
+        "ndvi_trend_per_year": null,
+        "ndvi_pred_delta": null,
+        "plantable_space": null,
+        "plantable_source": null,
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    }
+  ]
+}

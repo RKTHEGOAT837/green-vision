@@ -423,9 +423,19 @@ def _write_outputs(
         # as a genuine reading of "flat NDVI trend". Same for plantable_source,
         # which named a proxy that was never computed for these cells.
         has_ndvi = math.isfinite(float(r.ndvi_latest))
+        # The US AQI scale STOPS at 500 - the EPA's own term for anything
+        # above it is "Beyond the AQI", and no category is defined up there.
+        # CAMS reports raw values well past it during Delhi's pre-monsoon dust
+        # season (55 of 127 cells, one monthly mean at 1050), and printing
+        # "AQI 622" states a reading on a scale that does not go that high.
+        # The VALUE is kept, because the ranking needs the ordering and worse
+        # air genuinely should rank higher; only the claim to be a valid index
+        # number is dropped, via this flag the interface reads.
+        beyond_aqi = float(r.aqi_latest) > 500.0 if math.isfinite(float(r.aqi_latest)) else False
         props = {
             "zone": r.zone,
             "rank": int(r.rank),
+            "aqi_beyond_index": beyond_aqi,
             # True only for the top_n cells the model actually reasoned about.
             "reasoned": r.zone in rec_by_zone,
             "priority_score": round(float(r.score), 4),

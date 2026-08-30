@@ -23,6 +23,8 @@ from __future__ import annotations
 
 import argparse
 import sys
+import concurrent.futures as cf
+import threading
 import time
 import urllib.parse
 import urllib.request
@@ -94,6 +96,8 @@ def main() -> None:
     ap.add_argument("--start", required=True, help="first month, YYYY-MM")
     ap.add_argument("--end", required=True, help="last month, YYYY-MM")
     ap.add_argument("--out", required=True, help="output CSV path")
+    ap.add_argument("--workers", type=int, default=8,
+                    help="concurrent requests (1 = the old sequential behaviour)")
     args = ap.parse_args()
 
     cfg = load_config(args.config)
@@ -108,16 +112,40 @@ def main() -> None:
     cells = sorted(grid.items())
     print(f"  {len(cells)} H3 res-{res} cells")
 
+    # One request per cell, run CONCURRENTLY.
+    #
+    # Each call is ~3.6 s of almost pure network wait, and there are ~130 of
+    # them, so doing this in sequence spent seven and a half minutes per city
+    # doing nothing but waiting. The work is embarrassingly parallel: the
+    # cells are independent and the API is stateless.
+    #
+    # `--workers` is capped deliberately. Open-Meteo publishes a free-tier
+    # allowance in the thousands of calls per day and this uses ~130 per city;
+    # the limit that matters is politeness, not quota. Eight concurrent
+    # requests is brisk without being a burst a small service would notice,
+    # and results are re-sorted afterwards so the output file is identical
+    # byte-for-byte to the sequential version.
     rows: list[tuple[str, float, float, int, float]] = []
-    for n, (zone, (lat, lon)) in enumerate(cells, 1):
+    done = 0
+    lock = threading.Lock()
+
+    def one(item):
+        zone, (lat, lon) = item
         monthly = fetch_zone_monthly(lat, lon, args.start, args.end)
-        hit = 0
-        for ym, aqi in monthly.items():
-            if ym in idx:
-                rows.append((zone, lat, lon, idx[ym], round(aqi, 1)))
-                hit += 1
-        print(f"  [{n:>3}/{len(cells)}] {zone} ({lat:.3f},{lon:.3f}) -> {hit} months")
-        time.sleep(0.3)  # be polite to the free API
+        got = [(zone, lat, lon, idx[ym], round(aqi, 1))
+               for ym, aqi in monthly.items() if ym in idx]
+        return zone, lat, lon, got
+
+    workers = max(1, min(args.workers, 12))
+    with cf.ThreadPoolExecutor(max_workers=workers) as pool:
+        for zone, lat, lon, got in pool.map(one, cells):
+            with lock:
+                rows.extend(got)
+                done += 1
+                print(f"  [{done:>3}/{len(cells)}] {zone} ({lat:.3f},{lon:.3f}) -> {len(got)} months")
+
+    # Deterministic order regardless of which thread finished first.
+    rows.sort(key=lambda r: (r[0], r[3]))
 
     if not rows:
         sys.exit("No AQI data returned — is --start inside the archive window?")

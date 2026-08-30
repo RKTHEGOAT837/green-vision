@@ -118,9 +118,26 @@ def zone_features(
         # clothes. NaN instead, which propagates to a null in the outputs. These
         # cells already score NaN (c_low_green_cover = 1 - normalize(NaN)), so
         # nothing that was ranked before stops being ranked.
+        # Water reads as NEGATIVE NDVI, and the 1-NDVI proxy turns that into
+        # "almost entirely plantable" - which for a coastal city is the sea.
+        # Mumbai's top-ranked cell sits over Colaba, roughly half of it open
+        # water, and came out at 0.96 plantable. Nobody is planting there.
+        #
+        # A negative index is the standard water signal, so those cells get
+        # NaN rather than a confident number. That propagates to null in the
+        # outputs and the cell simply carries no plantable estimate, which is
+        # the truth: this proxy cannot measure it. Inland cities are
+        # unaffected - Ahmedabad has no negative-NDVI cells at all.
+        looks_like_water = (
+            ndvi_latest is not None
+            and not math.isnan(ndvi_latest)
+            and ndvi_latest < 0.0
+        )
         row["plantable_space"] = (
             float(np.clip((0.6 - ndvi_latest) / 0.6, 0.0, 1.0))
-            if ndvi_latest is not None and not math.isnan(ndvi_latest)
+            if ndvi_latest is not None
+            and not math.isnan(ndvi_latest)
+            and not looks_like_water
             else float("nan")
         )
         rows.append(row)

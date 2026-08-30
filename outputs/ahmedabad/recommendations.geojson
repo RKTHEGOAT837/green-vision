@@ -41,6 +41,7 @@
       "properties": {
         "zone": "8742cc692ffffff",
         "rank": 1,
+        "aqi_beyond_index": false,
         "reasoned": true,
         "priority_score": 0.8293,
         "aqi_latest": 80.9,
@@ -102,6 +103,7 @@
       "properties": {
         "zone": "8742cea6affffff",
         "rank": 2,
+        "aqi_beyond_index": false,
         "reasoned": true,
         "priority_score": 0.7743,
         "aqi_latest": 80.9,
@@ -171,6 +173,7 @@
       "properties": {
         "zone": "8742cc698ffffff",
         "rank": 3,
+        "aqi_beyond_index": false,
         "reasoned": true,
         "priority_score": 0.7687,
         "aqi_latest": 80.9,
@@ -240,6 +243,7 @@
       "properties": {
         "zone": "8742cc693ffffff",
         "rank": 4,
+        "aqi_beyond_index": false,
         "reasoned": true,
         "priority_score": 0.768,
         "aqi_latest": 80.9,
@@ -301,6 +305,7 @@
       "properties": {
         "zone": "8742cea6cffffff",
         "rank": 5,
+        "aqi_beyond_index": false,
         "reasoned": true,
         "priority_score": 0.766,
         "aqi_latest": 80.9,
@@ -362,6 +367,7 @@
       "properties": {
         "zone": "8742cc6b5ffffff",
         "rank": 6,
+        "aqi_beyond_index": false,
         "reasoned": true,
         "priority_score": 0.756,
         "aqi_latest": 76.8,
@@ -431,6 +437,7 @@
       "properties": {
         "zone": "8742cc6b6ffffff",
         "rank": 7,
+        "aqi_beyond_index": false,
         "reasoned": true,
         "priority_score": 0.7559,
         "aqi_latest": 76.8,
@@ -500,6 +507,7 @@
       "properties": {
         "zone": "8742ceb4dffffff",
         "rank": 8,
+        "aqi_beyond_index": false,
         "reasoned": true,
         "priority_score": 0.7515,
         "aqi_latest": 76.8,
@@ -561,6 +569,7 @@
       "properties": {
         "zone": "8742cea6dffffff",
         "rank": 9,
+        "aqi_beyond_index": false,
         "reasoned": true,
         "priority_score": 0.7455,
         "aqi_latest": 80.9,
@@ -630,6 +639,7 @@
       "properties": {
         "zone": "8742cea61ffffff",
         "rank": 10,
+        "aqi_beyond_index": false,
         "reasoned": true,
         "priority_score": 0.7436,
         "aqi_latest": 80.9,
@@ -691,6 +701,7 @@
       "properties": {
         "zone": "8742cea6effffff",
         "rank": 11,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.7419,
         "aqi_latest": 80.9,
@@ -747,6 +758,7 @@
       "properties": {
         "zone": "8742cc69effffff",
         "rank": 12,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.7402,
         "aqi_latest": 80.9,
@@ -811,6 +823,7 @@
       "properties": {
         "zone": "8742cea45ffffff",
         "rank": 13,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.7397,
         "aqi_latest": 78.3,
@@ -867,6 +880,7 @@
       "properties": {
         "zone": "8742ceb49ffffff",
         "rank": 14,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.7385,
         "aqi_latest": 76.8,
@@ -931,6 +945,7 @@
       "properties": {
         "zone": "8742cea63ffffff",
         "rank": 15,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.7332,
         "aqi_latest": 80.9,
@@ -987,6 +1002,7 @@
       "properties": {
         "zone": "8742cc683ffffff",
         "rank": 16,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.7328,
         "aqi_latest": 80.9,
@@ -1051,6 +1067,7 @@
       "properties": {
         "zone": "8742cea55ffffff",
         "rank": 17,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.7327,
         "aqi_latest": 78.3,
@@ -1115,6 +1132,7 @@
       "properties": {
         "zone": "8742cea69ffffff",
         "rank": 18,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.7321,
         "aqi_latest": 80.9,
@@ -1179,6 +1197,7 @@
       "properties": {
         "zone": "8742cea68ffffff",
         "rank": 19,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.7279,
         "aqi_latest": 80.9,
@@ -1243,6 +1262,7 @@
       "properties": {
         "zone": "8742cea41ffffff",
         "rank": 20,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.7245,
         "aqi_latest": 78.3,
@@ -1307,6 +1327,7 @@
       "properties": {
         "zone": "8742cea44ffffff",
         "rank": 21,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.7178,
         "aqi_latest": 78.3,
@@ -1363,6 +1384,7 @@
       "properties": {
         "zone": "8742cc695ffffff",
         "rank": 22,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.7164,
         "aqi_latest": 80.9,
@@ -1427,6 +1449,7 @@
       "properties": {
         "zone": "8742cc691ffffff",
         "rank": 23,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.7145,
         "aqi_latest": 80.9,
@@ -1491,6 +1514,7 @@
       "properties": {
         "zone": "8742ceb48ffffff",
         "rank": 24,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.7121,
         "aqi_latest": 76.8,
@@ -1547,6 +1571,7 @@
       "properties": {
         "zone": "8742cea62ffffff",
         "rank": 25,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.7095,
         "aqi_latest": 74.7,
@@ -1603,6 +1628,7 @@
       "properties": {
         "zone": "8742ceb4cffffff",
         "rank": 26,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.7063,
         "aqi_latest": 76.8,
@@ -1667,6 +1693,7 @@
       "properties": {
         "zone": "8742cea71ffffff",
         "rank": 27,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.6955,
         "aqi_latest": 74.7,
@@ -1723,6 +1750,7 @@
       "properties": {
         "zone": "8742cc6b4ffffff",
         "rank": 28,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.6792,
         "aqi_latest": 76.8,
@@ -1787,6 +1815,7 @@
       "properties": {
         "zone": "8742cc690ffffff",
         "rank": 29,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.6766,
         "aqi_latest": 80.9,
@@ -1851,6 +1880,7 @@
       "properties": {
         "zone": "8742ceb5effffff",
         "rank": 30,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.6755,
         "aqi_latest": 76.8,
@@ -1907,6 +1937,7 @@
       "properties": {
         "zone": "8742ceb4effffff",
         "rank": 31,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.6713,
         "aqi_latest": 76.8,
@@ -1963,6 +1994,7 @@
       "properties": {
         "zone": "8742cea65ffffff",
         "rank": 32,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.6711,
         "aqi_latest": 76.8,
@@ -2019,6 +2051,7 @@
       "properties": {
         "zone": "8742cea2dffffff",
         "rank": 33,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.67,
         "aqi_latest": 74.7,
@@ -2083,6 +2116,7 @@
       "properties": {
         "zone": "8742ceb5affffff",
         "rank": 34,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.6681,
         "aqi_latest": 74.7,
@@ -2147,6 +2181,7 @@
       "properties": {
         "zone": "8742ceb63ffffff",
         "rank": 35,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.6609,
         "aqi_latest": 76.8,
@@ -2211,6 +2246,7 @@
       "properties": {
         "zone": "8742cc79bffffff",
         "rank": 36,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.6577,
         "aqi_latest": 76.8,
@@ -2275,6 +2311,7 @@
       "properties": {
         "zone": "8742cc6b3ffffff",
         "rank": 37,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.6554,
         "aqi_latest": 80.9,
@@ -2339,6 +2376,7 @@
       "properties": {
         "zone": "8742cea5cffffff",
         "rank": 38,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.6506,
         "aqi_latest": 78.3,
@@ -2403,6 +2441,7 @@
       "properties": {
         "zone": "8742cc69cffffff",
         "rank": 39,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.6479,
         "aqi_latest": 80.9,
@@ -2459,6 +2498,7 @@
       "properties": {
         "zone": "8742cc6b2ffffff",
         "rank": 40,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.6367,
         "aqi_latest": 76.8,
@@ -2515,6 +2555,7 @@
       "properties": {
         "zone": "8742cea6bffffff",
         "rank": 41,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.6351,
         "aqi_latest": 80.9,
@@ -2579,6 +2620,7 @@
       "properties": {
         "zone": "8742cc69affffff",
         "rank": 42,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.631,
         "aqi_latest": 80.9,
@@ -2643,6 +2685,7 @@
       "properties": {
         "zone": "8742cea42ffffff",
         "rank": 43,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.6307,
         "aqi_latest": 78.3,
@@ -2707,6 +2750,7 @@
       "properties": {
         "zone": "8742cea60ffffff",
         "rank": 44,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.6259,
         "aqi_latest": 76.8,
@@ -2763,6 +2807,7 @@
       "properties": {
         "zone": "8742ceb55ffffff",
         "rank": 45,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.6208,
         "aqi_latest": 76.8,
@@ -2827,6 +2872,7 @@
       "properties": {
         "zone": "8742cea64ffffff",
         "rank": 46,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.6163,
         "aqi_latest": 76.8,
@@ -2883,6 +2929,7 @@
       "properties": {
         "zone": "8742cea40ffffff",
         "rank": 47,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.6157,
         "aqi_latest": 78.3,
@@ -2947,6 +2994,7 @@
       "properties": {
         "zone": "8742ceb58ffffff",
         "rank": 48,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.6154,
         "aqi_latest": 76.8,
@@ -3003,6 +3051,7 @@
       "properties": {
         "zone": "8742cea5effffff",
         "rank": 49,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.614,
         "aqi_latest": 78.3,
@@ -3067,6 +3116,7 @@
       "properties": {
         "zone": "8742ceb5bffffff",
         "rank": 50,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.6012,
         "aqi_latest": 74.7,
@@ -3131,6 +3181,7 @@
       "properties": {
         "zone": "8742cc6b0ffffff",
         "rank": 51,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.5956,
         "aqi_latest": 76.8,
@@ -3195,6 +3246,7 @@
       "properties": {
         "zone": "8742cea66ffffff",
         "rank": 52,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.5915,
         "aqi_latest": 76.8,
@@ -3251,6 +3303,7 @@
       "properties": {
         "zone": "8742cc6aaffffff",
         "rank": 53,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.5909,
         "aqi_latest": 80.9,
@@ -3315,6 +3368,7 @@
       "properties": {
         "zone": "8742cea75ffffff",
         "rank": 54,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.5865,
         "aqi_latest": 74.7,
@@ -3379,6 +3433,7 @@
       "properties": {
         "zone": "8742cea73ffffff",
         "rank": 55,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.5865,
         "aqi_latest": 74.7,
@@ -3443,6 +3498,7 @@
       "properties": {
         "zone": "8742ceb59ffffff",
         "rank": 56,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.5856,
         "aqi_latest": 76.8,
@@ -3499,6 +3555,7 @@
       "properties": {
         "zone": "8742cea70ffffff",
         "rank": 57,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.5848,
         "aqi_latest": 74.7,
@@ -3563,6 +3620,7 @@
       "properties": {
         "zone": "8742ceb5dffffff",
         "rank": 58,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.5833,
         "aqi_latest": 76.8,
@@ -3619,6 +3677,7 @@
       "properties": {
         "zone": "8742ceb41ffffff",
         "rank": 59,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.5738,
         "aqi_latest": 76.8,
@@ -3683,6 +3742,7 @@
       "properties": {
         "zone": "8742ceb69ffffff",
         "rank": 60,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.5708,
         "aqi_latest": 76.8,
@@ -3747,6 +3807,7 @@
       "properties": {
         "zone": "8742ceb53ffffff",
         "rank": 61,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.5643,
         "aqi_latest": 74.7,
@@ -3811,6 +3872,7 @@
       "properties": {
         "zone": "8742cea51ffffff",
         "rank": 62,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.5638,
         "aqi_latest": 78.3,
@@ -3875,6 +3937,7 @@
       "properties": {
         "zone": "8742cea4cffffff",
         "rank": 63,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.5636,
         "aqi_latest": 78.3,
@@ -3939,6 +4002,7 @@
       "properties": {
         "zone": "8742cc69dffffff",
         "rank": 64,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.5618,
         "aqi_latest": 80.9,
@@ -4003,6 +4067,7 @@
       "properties": {
         "zone": "8742cc682ffffff",
         "rank": 65,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.5564,
         "aqi_latest": 80.9,
@@ -4067,6 +4132,7 @@
       "properties": {
         "zone": "8742ceb5cffffff",
         "rank": 66,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.5506,
         "aqi_latest": 76.8,
@@ -4131,6 +4197,7 @@
       "properties": {
         "zone": "8742ceb4affffff",
         "rank": 67,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.5464,
         "aqi_latest": 76.8,
@@ -4195,6 +4262,7 @@
       "properties": {
         "zone": "8742ceb73ffffff",
         "rank": 68,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.5439,
         "aqi_latest": 76.8,
@@ -4259,6 +4327,7 @@
       "properties": {
         "zone": "8742ceb6bffffff",
         "rank": 69,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.5432,
         "aqi_latest": 76.8,
@@ -4323,6 +4392,7 @@
       "properties": {
         "zone": "8742ceb54ffffff",
         "rank": 70,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.5414,
         "aqi_latest": 76.8,
@@ -4387,6 +4457,7 @@
       "properties": {
         "zone": "8742cc6a2ffffff",
         "rank": 71,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.538,
         "aqi_latest": 80.9,
@@ -4451,6 +4522,7 @@
       "properties": {
         "zone": "8742cc680ffffff",
         "rank": 72,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.5347,
         "aqi_latest": 80.9,
@@ -4515,6 +4587,7 @@
       "properties": {
         "zone": "8742ceb4bffffff",
         "rank": 73,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.5323,
         "aqi_latest": 76.8,
@@ -4571,6 +4644,7 @@
       "properties": {
         "zone": "8742cea46ffffff",
         "rank": 74,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.5292,
         "aqi_latest": 78.3,
@@ -4627,6 +4701,7 @@
       "properties": {
         "zone": "8742cea29ffffff",
         "rank": 75,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.5232,
         "aqi_latest": 74.7,
@@ -4691,6 +4766,7 @@
       "properties": {
         "zone": "8742ceb6dffffff",
         "rank": 76,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.5215,
         "aqi_latest": 76.8,
@@ -4755,6 +4831,7 @@
       "properties": {
         "zone": "8742cc684ffffff",
         "rank": 77,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.5184,
         "aqi_latest": 80.9,
@@ -4819,6 +4896,7 @@
       "properties": {
         "zone": "8742cc681ffffff",
         "rank": 78,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.5172,
         "aqi_latest": 80.9,
@@ -4883,6 +4961,7 @@
       "properties": {
         "zone": "8742cc79effffff",
         "rank": 79,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.5148,
         "aqi_latest": 76.8,
@@ -4947,6 +5026,7 @@
       "properties": {
         "zone": "8742cc685ffffff",
         "rank": 80,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.5065,
         "aqi_latest": 80.9,
@@ -5011,6 +5091,7 @@
       "properties": {
         "zone": "8742cea74ffffff",
         "rank": 81,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.5043,
         "aqi_latest": 74.7,
@@ -5075,6 +5156,7 @@
       "properties": {
         "zone": "8742cc68effffff",
         "rank": 82,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.5022,
         "aqi_latest": 80.9,
@@ -5139,6 +5221,7 @@
       "properties": {
         "zone": "8742cea43ffffff",
         "rank": 83,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.5002,
         "aqi_latest": 78.3,
@@ -5203,6 +5286,7 @@
       "properties": {
         "zone": "8742ceb43ffffff",
         "rank": 84,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.4968,
         "aqi_latest": 76.8,
@@ -5259,6 +5343,7 @@
       "properties": {
         "zone": "8742ceb68ffffff",
         "rank": 85,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.4903,
         "aqi_latest": 76.8,
@@ -5323,6 +5408,7 @@
       "properties": {
         "zone": "8742cc6b1ffffff",
         "rank": 86,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.4791,
         "aqi_latest": 80.9,
@@ -5387,6 +5473,7 @@
       "properties": {
         "zone": "8742cea76ffffff",
         "rank": 87,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.4694,
         "aqi_latest": 74.7,
@@ -5451,6 +5538,7 @@
       "properties": {
         "zone": "8742cc6a3ffffff",
         "rank": 88,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.4677,
         "aqi_latest": 80.9,
@@ -5515,6 +5603,7 @@
       "properties": {
         "zone": "8742cc79affffff",
         "rank": 89,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.4598,
         "aqi_latest": 76.8,
@@ -5579,6 +5668,7 @@
       "properties": {
         "zone": "8742ceb6cffffff",
         "rank": 90,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.454,
         "aqi_latest": 76.8,
@@ -5643,6 +5733,7 @@
       "properties": {
         "zone": "8742cea04ffffff",
         "rank": 91,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.4532,
         "aqi_latest": 74.7,
@@ -5707,6 +5798,7 @@
       "properties": {
         "zone": "8742cc694ffffff",
         "rank": 92,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.4504,
         "aqi_latest": 80.9,
@@ -5771,6 +5863,7 @@
       "properties": {
         "zone": "8742cc68cffffff",
         "rank": 93,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.4501,
         "aqi_latest": 80.9,
@@ -5835,6 +5928,7 @@
       "properties": {
         "zone": "8742ceb45ffffff",
         "rank": 94,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.4402,
         "aqi_latest": 76.8,
@@ -5899,6 +5993,7 @@
       "properties": {
         "zone": "8742ceb6affffff",
         "rank": 95,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.4278,
         "aqi_latest": 76.8,
@@ -5963,6 +6058,7 @@
       "properties": {
         "zone": "8742cc696ffffff",
         "rank": 96,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.4271,
         "aqi_latest": 80.9,
@@ -6027,6 +6123,7 @@
       "properties": {
         "zone": "8742cea4effffff",
         "rank": 97,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.4256,
         "aqi_latest": 78.3,
@@ -6091,6 +6188,7 @@
       "properties": {
         "zone": "8742cc793ffffff",
         "rank": 98,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.4217,
         "aqi_latest": 76.8,
@@ -6155,6 +6253,7 @@
       "properties": {
         "zone": "8742cea2bffffff",
         "rank": 99,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.4205,
         "aqi_latest": 74.7,
@@ -6219,6 +6318,7 @@
       "properties": {
         "zone": "8742ceb51ffffff",
         "rank": 100,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.4181,
         "aqi_latest": 76.8,
@@ -6283,6 +6383,7 @@
       "properties": {
         "zone": "8742cea06ffffff",
         "rank": 101,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.4153,
         "aqi_latest": 74.7,
@@ -6347,6 +6448,7 @@
       "properties": {
         "zone": "8742ceb40ffffff",
         "rank": 102,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.4111,
         "aqi_latest": 76.8,
@@ -6411,6 +6513,7 @@
       "properties": {
         "zone": "8742cea05ffffff",
         "rank": 103,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.4077,
         "aqi_latest": 74.7,
@@ -6475,6 +6578,7 @@
       "properties": {
         "zone": "8742cea2effffff",
         "rank": 104,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.3968,
         "aqi_latest": 74.7,
@@ -6539,6 +6643,7 @@
       "properties": {
         "zone": "8742ceb52ffffff",
         "rank": 105,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.3942,
         "aqi_latest": 74.7,
@@ -6603,6 +6708,7 @@
       "properties": {
         "zone": "8742cea2cffffff",
         "rank": 106,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.3841,
         "aqi_latest": 74.7,
@@ -6667,6 +6773,7 @@
       "properties": {
         "zone": "8742ceb46ffffff",
         "rank": 107,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.3832,
         "aqi_latest": 76.8,
@@ -6731,6 +6838,7 @@
       "properties": {
         "zone": "8742ceb6effffff",
         "rank": 108,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.3739,
         "aqi_latest": 76.8,
@@ -6795,6 +6903,7 @@
       "properties": {
         "zone": "8742cea54ffffff",
         "rank": 109,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.3632,
         "aqi_latest": 74.7,
@@ -6859,6 +6968,7 @@
       "properties": {
         "zone": "8742cea00ffffff",
         "rank": 110,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.3551,
         "aqi_latest": 74.7,
@@ -6923,6 +7033,7 @@
       "properties": {
         "zone": "8742ceb71ffffff",
         "rank": 111,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.3511,
         "aqi_latest": 76.8,
@@ -6987,6 +7098,7 @@
       "properties": {
         "zone": "8742ceb50ffffff",
         "rank": 112,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.3507,
         "aqi_latest": 76.8,
@@ -7051,6 +7163,7 @@
       "properties": {
         "zone": "8742cea09ffffff",
         "rank": 113,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.3476,
         "aqi_latest": 74.7,
@@ -7115,6 +7228,7 @@
       "properties": {
         "zone": "8742cea21ffffff",
         "rank": 114,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.3445,
         "aqi_latest": 74.7,
@@ -7179,6 +7293,7 @@
       "properties": {
         "zone": "8742cea28ffffff",
         "rank": 115,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.3403,
         "aqi_latest": 74.7,
@@ -7243,6 +7358,7 @@
       "properties": {
         "zone": "8742cea72ffffff",
         "rank": 116,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.3291,
         "aqi_latest": 74.7,
@@ -7307,6 +7423,7 @@
       "properties": {
         "zone": "8742ceb42ffffff",
         "rank": 117,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.3226,
         "aqi_latest": 76.8,
@@ -7371,6 +7488,7 @@
       "properties": {
         "zone": "8742cc686ffffff",
         "rank": 118,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.3215,
         "aqi_latest": 80.9,
@@ -7435,6 +7553,7 @@
       "properties": {
         "zone": "8742cea0cffffff",
         "rank": 119,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.3169,
         "aqi_latest": 74.7,
@@ -7499,6 +7618,7 @@
       "properties": {
         "zone": "8742cea2affffff",
         "rank": 120,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.3156,
         "aqi_latest": 74.7,
@@ -7563,6 +7683,7 @@
       "properties": {
         "zone": "8742cea53ffffff",
         "rank": 121,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.3084,
         "aqi_latest": 78.3,
@@ -7627,6 +7748,7 @@
       "properties": {
         "zone": "8742cea56ffffff",
         "rank": 122,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.2834,
         "aqi_latest": 74.7,
@@ -7691,6 +7813,7 @@
       "properties": {
         "zone": "8742cea08ffffff",
         "rank": 123,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.2827,
         "aqi_latest": 74.7,
@@ -7755,6 +7878,7 @@
       "properties": {
         "zone": "8742cea23ffffff",
         "rank": 124,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.2816,
         "aqi_latest": 74.7,
@@ -7819,6 +7943,7 @@
       "properties": {
         "zone": "8742ceb44ffffff",
         "rank": 125,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.2732,
         "aqi_latest": 76.8,
@@ -7883,6 +8008,7 @@
       "properties": {
         "zone": "8742cea01ffffff",
         "rank": 126,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.2666,
         "aqi_latest": 74.7,
@@ -7947,6 +8073,7 @@
       "properties": {
         "zone": "8742ceb61ffffff",
         "rank": 127,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.2402,
         "aqi_latest": 76.8,
@@ -8011,6 +8138,7 @@
       "properties": {
         "zone": "8742cea0dffffff",
         "rank": 128,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.235,
         "aqi_latest": 74.7,
@@ -8075,6 +8203,7 @@
       "properties": {
         "zone": "8742cea0effffff",
         "rank": 129,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.2139,
         "aqi_latest": 74.7,
@@ -8139,6 +8268,7 @@
       "properties": {
         "zone": "8742cea52ffffff",
         "rank": 130,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.2098,
         "aqi_latest": 78.3,
@@ -8203,6 +8333,7 @@
       "properties": {
         "zone": "8742cea50ffffff",
         "rank": 131,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.2057,
         "aqi_latest": 78.3,
@@ -8267,6 +8398,7 @@
       "properties": {
         "zone": "8742cea0bffffff",
         "rank": 132,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.201,
         "aqi_latest": 74.7,
@@ -8331,6 +8463,7 @@
       "properties": {
         "zone": "8742cc790ffffff",
         "rank": 133,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": null,
         "aqi_latest": 76.8,
@@ -8395,6 +8528,7 @@
       "properties": {
         "zone": "8742cc792ffffff",
         "rank": 134,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": null,
         "aqi_latest": 76.8,
@@ -8459,6 +8593,7 @@
       "properties": {
         "zone": "8742cc796ffffff",
         "rank": 135,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": null,
         "aqi_latest": 76.8,
@@ -8523,6 +8658,7 @@
       "properties": {
         "zone": "8742cea48ffffff",
         "rank": 136,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": null,
         "aqi_latest": 78.3,
@@ -8587,6 +8723,7 @@
       "properties": {
         "zone": "8742cea4affffff",
         "rank": 137,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": null,
         "aqi_latest": 78.3,
@@ -8651,6 +8788,7 @@
       "properties": {
         "zone": "8742cea58ffffff",
         "rank": 138,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": null,
         "aqi_latest": 78.3,
@@ -8715,6 +8853,7 @@
       "properties": {
         "zone": "8742cea59ffffff",
         "rank": 139,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": null,
         "aqi_latest": 78.3,
@@ -8779,6 +8918,7 @@
       "properties": {
         "zone": "8742cea5affffff",
         "rank": 140,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": null,
         "aqi_latest": 78.3,
@@ -8843,6 +8983,7 @@
       "properties": {
         "zone": "8742cea5bffffff",
         "rank": 141,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": null,
         "aqi_latest": 78.3,
@@ -8907,6 +9048,7 @@
       "properties": {
         "zone": "8742cea5dffffff",
         "rank": 142,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": null,
         "aqi_latest": 78.3,
@@ -8971,6 +9113,7 @@
       "properties": {
         "zone": "8742ceaedffffff",
         "rank": 143,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": null,
         "aqi_latest": 78.3,
@@ -9035,6 +9178,7 @@
       "properties": {
         "zone": "8742ceb60ffffff",
         "rank": 144,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": null,
         "aqi_latest": 76.8,
@@ -9099,6 +9243,7 @@
       "properties": {
         "zone": "8742ceb62ffffff",
         "rank": 145,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": null,
         "aqi_latest": 76.8,
@@ -9163,6 +9308,7 @@
       "properties": {
         "zone": "8742ceb65ffffff",
         "rank": 146,
+        "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": null,
         "aqi_latest": 76.8,

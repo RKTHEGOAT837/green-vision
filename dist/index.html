@@ -8015,7 +8015,13 @@ function priReport(props){
     '</div></div>' +
 
     '<div class="section"><h3>What the history says</h3><div class="mgrid">' +
-      metric("Air quality now", props.aqi_latest!=null?Math.round(props.aqi_latest):"—",
+      // "500+" rather than a number the scale cannot express. Anything past
+      // 500 is off the top of the US AQI; reporting 622 implies a precision
+      // the index does not define.
+      metric("Air quality now",
+             props.aqi_latest==null ? "\u2014"
+               : props.aqi_beyond_index ? "500+"
+               : Math.round(props.aqi_latest),
              "US AQI, latest month",
              props.aqi_latest!=null?clamp(props.aqi_latest/3,0,100):null,
              props.aqi_latest>150?"#ef4444":props.aqi_latest>100?"#f5a623":"#12b981") +

@@ -1,0 +1,76 @@
+GREENGRID PLANTING BRIEF — Delhi
+Generated: 2026-08-30 09:49 UTC
+Grid: H3 resolution 7 | Horizon: 12 months | Zones ranked: 127 | Top listed: 10
+
+Training: 60 backtest iterations at horizon 12. MAE — traffic 0.0, AQI 106.6, NDVI 0.041.
+With its memory the model beat a memory-free naive baseline on the same tasks (skill first half +0.043 -> second half +0.076; raw error 0.339 -> 0.308).
+
+TOP PRIORITY ZONES
+============================================================
+#1  873da1ab3ffffff  (lat 28.6690, lon 77.3420)  score 0.912
+    AQI 301 (-0 predicted yr-on-yr), traffic 50 (+0 predicted yr-on-yr), NDVI 0.22 (-0.009/yr)
+    Plant: Siris, Neem, Shisham, Banyan
+    Why: Priority score 0.912: predicted AQI change -0.4, NDVI trend -0.0091/yr with canopy at 0.22 and plantable-space 0.63. Species chosen for pollution tolerance and fit to available space.
+
+#2  873da1163ffffff  (lat 28.6587, lon 77.2043)  score 0.908
+    AQI 301 (+3 predicted yr-on-yr), traffic 50 (+0 predicted yr-on-yr), NDVI 0.27 (-0.013/yr)
+    Plant: Siris, Neem, Shisham, Banyan
+    Why: Priority score 0.908: predicted AQI change +2.7, NDVI trend -0.0132/yr with canopy at 0.27 and plantable-space 0.55. Species chosen for pollution tolerance and fit to available space.
+
+#3  873da1b98ffffff  (lat 28.7292, lon 77.2827)  score 0.870
+    AQI 301 (+1 predicted yr-on-yr), traffic 50 (+0 predicted yr-on-yr), NDVI 0.14 (-0.005/yr)
+    Plant: Siris, Neem, Shisham, Banyan
+    Why: Priority score 0.870: predicted AQI change +1.1, NDVI trend -0.0053/yr with canopy at 0.14 and plantable-space 0.77. Species chosen for pollution tolerance and fit to available space.
+
+#4  873da1175ffffff  (lat 28.6407, lon 77.1563)  score 0.838
+    AQI 301 (-20 predicted yr-on-yr), traffic 50 (+0 predicted yr-on-yr), NDVI 0.32 (-0.013/yr)
+    Plant: Palash, Pongamia (Karanj), Siris, Neem
+    Why: Priority score 0.838: predicted AQI change -20.2, NDVI trend -0.0125/yr with canopy at 0.32 and plantable-space 0.46. Species chosen for pollution tolerance and fit to available space.
+
+#5  873da1b9affffff  (lat 28.7074, lon 77.2795)  score 0.831
+    AQI 301 (+1 predicted yr-on-yr), traffic 50 (+0 predicted yr-on-yr), NDVI 0.17 (-0.003/yr)
+    Plant: Siris, Neem, Shisham, Banyan
+    Why: Priority score 0.831: predicted AQI change +1.1, NDVI trend -0.0032/yr with canopy at 0.17 and plantable-space 0.71. Species chosen for pollution tolerance and fit to available space.
+
+#6  873da1b9effffff  (lat 28.7202, lon 77.2587)  score 0.827
+    AQI 301 (+6 predicted yr-on-yr), traffic 50 (+0 predicted yr-on-yr), NDVI 0.22 (-0.003/yr)
+    Plant: Siris, Neem, Shisham, Banyan
+    Why: Priority score 0.827: predicted AQI change +6.2, NDVI trend -0.0031/yr with canopy at 0.22 and plantable-space 0.64. Species chosen for pollution tolerance and fit to available space.
+
+#7  873da1ab1ffffff  (lat 28.6907, lon 77.3452)  score 0.813
+    AQI 301 (+6 predicted yr-on-yr), traffic 50 (+0 predicted yr-on-yr), NDVI 0.22 (-0.002/yr)
+    Plant: Siris, Neem, Shisham, Banyan
+    Why: Priority score 0.813: predicted AQI change +6.2, NDVI trend -0.0024/yr with canopy at 0.22 and plantable-space 0.64. Species chosen for pollution tolerance and fit to available space.
+
+#8  873da1aa2ffffff  (lat 28.7125, lon 77.3484)  score 0.810
+    AQI 301 (+15 predicted yr-on-yr), traffic 50 (+0 predicted yr-on-yr), NDVI 0.36 (-0.007/yr)
+    Plant: Palash, Pongamia (Karanj), Bakul (Maulsari), Putranjiva
+    Why: Priority score 0.810: predicted AQI change +14.7, NDVI trend -0.0071/yr with canopy at 0.36 and plantable-space 0.40. Species chosen for pollution tolerance and fit to available space.
+
+#9  873da1a96ffffff  (lat 28.6254, lon 77.3355)  score 0.809
+    AQI 301 (+7 predicted yr-on-yr), traffic 50 (+0 predicted yr-on-yr), NDVI 0.22 (-0.002/yr)
+    Plant: Siris, Neem, Shisham, Banyan
+    Why: Priority score 0.809: predicted AQI change +6.8, NDVI trend -0.0020/yr with canopy at 0.22 and plantable-space 0.64. Species chosen for pollution tolerance and fit to available space.
+
+#10  873da114dffffff  (lat 28.6510, lon 77.2939)  score 0.799
+    AQI 301 (-2 predicted yr-on-yr), traffic 50 (+0 predicted yr-on-yr), NDVI 0.21 (-0.002/yr)
+    Plant: Siris, Neem, Shisham, Banyan
+    Why: Priority score 0.799: predicted AQI change -2.2, NDVI trend -0.0022/yr with canopy at 0.21 and plantable-space 0.64. Species chosen for pollution tolerance and fit to available space.
+
+LESSONS THE SYSTEM LEARNED WHILE BACKTESTING
+  - Overestimated aqi in zone 873da115dffffff for calendar month 1; weight the seasonal cycle more against the raw trend.
+  - Overestimated aqi in zone 873da115effffff for calendar month 2; weight the seasonal cycle more against the raw trend.
+  - Underestimated aqi in zone 873da102cffffff for calendar month 4; weight the seasonal cycle more against the raw trend.
+  - Underestimated ndvi in zone 873da1a94ffffff for calendar month 1; weight the seasonal cycle more against the raw trend.
+  - Underestimated aqi in zone 873da116bffffff for calendar month 12; weight the seasonal cycle more against the raw trend.
+  - Underestimated ndvi in zone 873da114bffffff for calendar month 3; weight the seasonal cycle more against the raw trend.
+  - Underestimated ndvi in zone 873da110affffff for calendar month 8; weight the seasonal cycle more against the raw trend.
+  - Underestimated ndvi in zone 873da1025ffffff for calendar month 8; weight the seasonal cycle more against the raw trend.
+
+CAVEATS
+  - 'Plantable space' is a placeholder proxy (1 - NDVI); supply a
+    bare-ground sites CSV (sites.candidates_csv) for real open-space data.
+  - Soil pH/texture are SoilGrids MODELLED estimates (250 m); moisture is
+    from SMAP. Good for screening, not a substitute for a soil lab test.
+  - Species traits (incl. soil tolerances) come from a draft table; verify
+    against a horticulture source (see greenplan/reasoning/species.py).
