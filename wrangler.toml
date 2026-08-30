@@ -1,0 +1,12 @@
+# Cloudflare Pages — static deploy of Green Vision.
+#
+# `dist/` is produced by scripts/build_static.py, which bakes the trained
+# engine (ranking, forecast, soil, species KB) down to JSON. There is no
+# Worker and no server-side code: Pages just serves the directory.
+#
+# Deploy:
+#   npx wrangler login                 # opens a browser, one time
+#   npx wrangler pages deploy dist --project-name green-vision
+name = "green-vision"
+pages_build_output_dir = "dist"
+compatibility_date = "2026-08-27"

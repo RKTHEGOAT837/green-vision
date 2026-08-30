@@ -1,0 +1,28 @@
+# Core — everything in this file is needed for the engine, the server and
+# the studio to run. Nothing here calls a paid service or needs a key.
+numpy>=1.26
+pandas>=2.1
+h3>=3.7
+PyYAML>=6.0
+requests>=2.31
+
+# --- OPTIONAL: local LLM inference (model.provider: openvino) -------------
+# Runs a weight-compressed INT4 instruct model on the CPU, so reasoning is
+# generated prose rather than the deterministic writer. No API key, no
+# network, no per-token cost.
+#
+# These are deliberately NOT in the core list. The server degrades to the
+# offline engine when they are absent — it logs a warning and keeps serving,
+# so a judge or a reviewer never has to install a gigabyte of runtime to see
+# the product work. Install them only if you want generated reasoning:
+#
+#     pip install -r requirements-openvino.txt
+#     python scripts/fetch_openvino_model.py
+
+# --- OPTIONAL: numeric forecaster bake-off (greenplan.forecast) -----------
+# Trains and re-scores the challenger models against the deployed statistical
+# forecaster, exports them to ONNX and verifies each graph through the
+# OpenVINO runtime. Also NOT in the core list: the shipped verdict is that the
+# challengers LOSE, so nothing the product serves depends on them.
+#
+#     pip install -r requirements-forecast.txt

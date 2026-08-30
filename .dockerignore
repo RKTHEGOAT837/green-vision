@@ -1,0 +1,7 @@
+.venv/
+__pycache__/
+*.pyc
+models/*.jsonl
+models/*.json
+outputs/
+.git/

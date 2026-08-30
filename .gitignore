@@ -1,0 +1,26 @@
+.venv/
+__pycache__/
+*.pyc
+# Trained memory, metrics and engine outputs ARE committed: they are the
+# evidence behind the numbers in the README, and a reader should be able to
+# inspect a result without first running a 7-minute pipeline. They regenerate
+# deterministically (seed 42) if you do run it.
+# The OpenVINO weights are not — they are fetched by scripts/fetch_openvino_model.py.
+models/openvino/
+# Downloaded source exports may be large or contain municipal-restricted data.
+data/raw/
+data/*.tif
+# Windows shortcut junk
+*.lnk
+# local agent/dev config — may contain secrets and machine-specific paths
+.claude/
+
+# Internal submission-prep documents — strategy notes, not project code.
+submission/
+# Superseded build artefacts and stale duplicates.
+*.zip
+temp_script.js
+
+# Local OSM index: rebuild with scripts/osm_index.py, do not commit (99 MB + 220 MB)
+data/osm/*.pbf
+data/osm/*.jsonl.gz

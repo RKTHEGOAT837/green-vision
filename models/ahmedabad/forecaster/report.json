@@ -1,0 +1,53 @@
+{
+  "model": "mlp",
+  "model_params": {
+    "hidden": [
+      64,
+      32
+    ]
+  },
+  "sklearnex": {
+    "requested": false,
+    "active": false
+  },
+  "n_train": 1056,
+  "n_test": 396,
+  "horizon_months": 12,
+  "per_metric": {
+    "traffic": {
+      "test_mae": 0.0,
+      "baseline_mae": 0.0,
+      "skill_vs_baseline": 0.0,
+      "train_seconds": 0.183,
+      "inert_placeholder": true
+    },
+    "aqi": {
+      "test_mae": 41.3471,
+      "baseline_mae": 7.7641,
+      "skill_vs_baseline": -1.5032,
+      "train_seconds": 1.105,
+      "inert_placeholder": false
+    },
+    "ndvi": {
+      "test_mae": 0.1733,
+      "baseline_mae": 0.0259,
+      "skill_vs_baseline": -1.3129,
+      "train_seconds": 2.218,
+      "inert_placeholder": false
+    }
+  },
+  "skill_combined": -1.408,
+  "train_seconds_total": 3.505,
+  "openvino_parity": {
+    "measured": true,
+    "device": "CPU",
+    "max_abs_diff": {
+      "traffic": 1.3e-07,
+      "aqi": 3.6e-07,
+      "ndvi": 1.43e-06
+    },
+    "worst_abs_diff": 1.43e-06,
+    "tolerance": 0.001,
+    "ok": true
+  }
+}

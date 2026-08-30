@@ -1,0 +1,53 @@
+MIT License
+
+Copyright (c) 2026 Green Vision
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+---
+
+DATA ATTRIBUTION
+
+This project uses open data that carries its own terms. The MIT licence above
+covers the SOFTWARE only; the data remains under the licences below.
+
+  OpenStreetMap
+    © OpenStreetMap contributors, Open Database Licence (ODbL) 1.0.
+    https://www.openstreetmap.org/copyright
+    Extracts are redistributed by Geofabrik GmbH. Any database derived from
+    OSM and shared publicly must itself be offered under the ODbL.
+
+  NASA MOD13Q1 vegetation indices
+    NASA LP DAAC / ORNL DAAC. Public domain, attribution requested.
+
+  Open-Meteo (air quality, weather, ERA5 reanalysis)
+    CC BY 4.0. https://open-meteo.com/en/license
+
+  ISRIC SoilGrids v2.0
+    CC BY 4.0. https://soilgrids.org
+
+  Esri World Imagery / Google Street View
+    Displayed under their respective terms of service. Used for visual
+    verification only; no derived data is computed from their pixels and
+    none is redistributed here.
+
+  Central Pollution Control Board, National Air Quality Index
+    Breakpoints transcribed from CUPS/82/2014-15, Table 3.11, published by
+    the Ministry of Environment, Forest and Climate Change, Government of
+    India.

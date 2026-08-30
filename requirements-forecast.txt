@@ -1,0 +1,33 @@
+# Optional extras for the NUMERIC FORECASTER BAKE-OFF (greenplan.forecast).
+#
+# These are only needed to TRAIN and RE-SCORE the challenger model:
+#
+#     pip install -r requirements-forecast.txt
+#     python -m greenplan.forecast.train --config config/city.yaml
+#     python -m greenplan.forecast.train --config config/city.yaml --model rf --intel
+#
+# Nothing in the engine, the server or the studio imports them. The shipped
+# verdict is NEGATIVE — the trained challengers lose to the statistical
+# forecaster on held-out data — so the deployed system needs none of this.
+# It is here so the bake-off can be re-run and disagreed with, which is the
+# only reason a negative result is worth anything.
+
+scikit-learn>=1.4      # the challenger models (MLPRegressor, RandomForest)
+onnx>=1.16             # graph construction for the forest lowering
+skl2onnx>=1.16         # sklearn -> ONNX for the MLP
+openvino>=2024.4       # runtime used to VERIFY every exported graph
+
+# --- OPTIONAL WITHIN THE OPTIONAL: Intel oneDAL acceleration --------------
+# `--intel` patches sklearn so accelerated estimators dispatch to oneDAL, and
+# the report records whether the patch was active next to the measured train
+# time. Running with and without the flag IS the measurement.
+#
+# Measured here on RandomForest: 1.5s -> 0.7s (~2.1x), combined skill
+# unchanged (-0.500 -> -0.505). MLPRegressor is not on sklearnex's accelerated
+# list (no neural nets are), so `--intel` is a documented no-op for the
+# default model.
+#
+# Wheels are published for Windows/Linux x86_64 only. On Apple Silicon pip
+# finds no distribution, the flag logs that, and training proceeds on stock
+# sklearn rather than failing.
+scikit-learn-intelex>=2024.0 ; platform_machine in "x86_64 AMD64"
