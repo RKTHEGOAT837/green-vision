@@ -13,7 +13,7 @@
 [![Local inference](https://img.shields.io/badge/inference-Intel%20OpenVINO-0068b5)](#the-reasoning-model)
 [![Licence](https://img.shields.io/badge/licence-MIT-555)](LICENSE)
 
-Built for the **India AI Impact Festival 2026**. Ahmedabad is the shipped city;
+Built for the **India AI Impact Festival 2026**. Ahmedabad is the perfectly shipped city;
 any other is one config file and four data exports away.
 
 </div>
