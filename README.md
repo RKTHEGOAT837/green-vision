@@ -13,8 +13,17 @@
 [![Local inference](https://img.shields.io/badge/inference-Intel%20OpenVINO-0068b5)](#the-reasoning-model)
 [![Licence](https://img.shields.io/badge/licence-MIT-555)](LICENSE)
 
-Built for the **India AI Impact Festival 2026**. **Five Indian cities ship with
-real data**; any other is one config file and four data exports away.
+[![Ahmedabad](https://img.shields.io/badge/Ahmedabad-146%20cells-1f6f4a)](#the-cities)
+[![Delhi](https://img.shields.io/badge/Delhi-127%20cells-1f6f4a)](#the-cities)
+[![Mumbai](https://img.shields.io/badge/Mumbai-142%20cells-1f6f4a)](#the-cities)
+[![Bengaluru](https://img.shields.io/badge/Bengaluru-133%20cells-1f6f4a)](#the-cities)
+[![Chennai](https://img.shields.io/badge/Chennai-84%20cells-1f6f4a)](#the-cities)
+
+Built for the **India AI Impact Festival 2026**.
+
+**Ahmedabad · Delhi · Mumbai · Bengaluru · Chennai** ship with real data —
+632 hexagonal cells, 42 months of satellite and air-quality history each.
+Any other city is one config file and four data exports away.
 
 </div>
 
