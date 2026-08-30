@@ -1,0 +1,18 @@
+{
+  "_note": "Language registry for Green Vision. `dir` drives the document direction; `native` is what the picker shows, because a language selector that lists languages in a language you cannot read is not a language selector.",
+  "languages": [
+    { "code": "en", "name": "English",   "native": "English",   "dir": "ltr" },
+    { "code": "hi", "name": "Hindi",     "native": "हिन्दी",      "dir": "ltr" },
+    { "code": "gu", "name": "Gujarati",  "native": "ગુજરાતી",     "dir": "ltr" },
+    { "code": "mr", "name": "Marathi",   "native": "मराठी",      "dir": "ltr" },
+    { "code": "bn", "name": "Bengali",   "native": "বাংলা",      "dir": "ltr" },
+    { "code": "ta", "name": "Tamil",     "native": "தமிழ்",      "dir": "ltr" },
+    { "code": "te", "name": "Telugu",    "native": "తెలుగు",      "dir": "ltr" },
+    { "code": "kn", "name": "Kannada",   "native": "ಕನ್ನಡ",       "dir": "ltr" },
+    { "code": "ml", "name": "Malayalam", "native": "മലയാളം",     "dir": "ltr" },
+    { "code": "pa", "name": "Punjabi",   "native": "ਪੰਜਾਬੀ",      "dir": "ltr" },
+    { "code": "or", "name": "Odia",      "native": "ଓଡ଼ିଆ",       "dir": "ltr" },
+    { "code": "as", "name": "Assamese",  "native": "অসমীয়া",     "dir": "ltr" },
+    { "code": "ur", "name": "Urdu",      "native": "اردو",       "dir": "rtl" }
+  ]
+}

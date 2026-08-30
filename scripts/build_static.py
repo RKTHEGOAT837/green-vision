@@ -243,6 +243,19 @@ def build(config: str, out_dir: Path) -> None:
         "/*  /index.html  200\n", encoding="utf-8", newline="\n"
     )
 
+    # Mirror the build into docs/ so GitHub Pages can serve it straight from
+    # the default branch. Pages needs .nojekyll or it silently drops any path
+    # beginning with an underscore - which would take out _headers and could
+    # take out future assets. The two folders stay byte-identical so a deploy
+    # to Pages, Netlify or Cloudflare all come from the same artefact.
+    import shutil as _sh
+    docs = ROOT / "docs"
+    if docs.exists():
+        _sh.rmtree(docs)
+    _sh.copytree(out_dir, docs)
+    (docs / ".nojekyll").write_text("", encoding="utf-8")
+    log.info("  mirrored to docs/ for GitHub Pages")
+
     total = sum(sizes.values())
     log.info("wrote %s", out_dir)
     for k, v in sorted(sizes.items(), key=lambda kv: -kv[1]):
