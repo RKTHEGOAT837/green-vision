@@ -1365,7 +1365,11 @@ async function engineNarrative(lat,lon,aqi,vegPct){
         '</div>').join("")+
       '</div>':"")+
     '<div style="margin-top:10px;font-size:10.5px;color:var(--ink-soft);line-height:1.5">'+
-    'From the trained panel for H3 cell <code>'+esc(j.zone||"")+'</code>. '+
+    (j.trained_cell === false
+      ? 'This point is <b>outside ' + esc(j.city || 'the modelled city') + '</b>, the only city the engine has a 42-month history for. '+
+        'The species above are matched to the live readings and soil for H3 cell <code>'+esc(j.zone||"")+'</code>; '+
+        'there is no trained ranking, no forecast and no priority score here \u2014 those need the city\u0027s own data exports. '
+      : 'From the trained panel for H3 cell <code>'+esc(j.zone||"")+'</code>. ')+
     'Species are filtered against this cell\'s SoilGrids pH and texture where '+
     'coverage exists.</div>';
 }

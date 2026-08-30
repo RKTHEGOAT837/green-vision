@@ -322,13 +322,21 @@ class Engine:
         # it was hardcoded None while the README said species respected pH.
         prof = self.soil.get(zone)
         hist = self._panel_row(zone)
+        # Is this click inside the city the engine was actually trained on?
+        # Everything downstream depends on the answer, and getting it wrong is
+        # not a cosmetic matter: `hist.get("aqi_pred_delta") or 0.0` turned an
+        # ABSENT history into "predicted AQI change +0.0", which reads as a
+        # measured forecast of no change. A user clicking Delhi was told the
+        # air there is forecast to hold steady, by a model that has never seen
+        # Delhi. Absent and zero are different claims.
+        trained = bool(hist)
         row = {
             "zone": zone, "score": round(score, 3),
             "aqi_latest": round(aqi, 1),
-            "aqi_pred_delta": hist.get("aqi_pred_delta") or 0.0,
-            "traffic_latest": 0.0, "traffic_pred_delta": 0.0,
+            "aqi_pred_delta": hist.get("aqi_pred_delta") if trained else None,
+            "traffic_latest": None, "traffic_pred_delta": None,
             "ndvi_latest": round(ndvi, 3),
-            "ndvi_slope": hist.get("ndvi_slope") or 0.0,
+            "ndvi_slope": hist.get("ndvi_slope") if trained else None,
             "plantable_space": round(plantable, 2),
             "soil": prof.as_dict() if prof is not None else None,
         }
@@ -344,6 +352,10 @@ class Engine:
         return {
             "source": used,
             "zone": zone,
+            # So the interface can say which of the two it is looking at
+            # instead of implying a trained history everywhere.
+            "trained_cell": trained,
+            "city": self.cfg.city.name,
             "justification": recs[0]["justification"] if recs else "",
             "species": species,
             "score": row["score"],

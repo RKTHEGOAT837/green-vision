@@ -54,10 +54,10 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [
+          "Siris",
           "Neem",
-          "Peepal",
-          "Banyan",
-          "Shisham"
+          "Shisham",
+          "Banyan"
         ],
         "justification": "Priority score 0.829: predicted AQI change +15.6, NDVI trend -0.0078/yr with canopy at 0.19 and plantable-space 0.68. Species chosen for pollution tolerance and fit to available space."
       }
@@ -115,10 +115,10 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [
+          "Siris",
           "Neem",
-          "Peepal",
           "Banyan",
-          "Siris"
+          "Peepal"
         ],
         "justification": "Priority score 0.774: predicted AQI change +15.6, NDVI trend -0.0031/yr with canopy at 0.19 and plantable-space 0.69. Species chosen for pollution tolerance and fit to available space. Soil pH 7.2 (neutral), clay loam \u2014 species filtered for soil fit.",
         "soil": {
@@ -184,10 +184,10 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [
+          "Siris",
           "Neem",
-          "Peepal",
           "Banyan",
-          "Siris"
+          "Peepal"
         ],
         "justification": "Priority score 0.769: predicted AQI change +12.1, NDVI trend -0.0151/yr with canopy at 0.26 and plantable-space 0.57. Species chosen for pollution tolerance and fit to available space. Soil pH 7.5 (neutral), clay loam \u2014 species filtered for soil fit.",
         "soil": {
@@ -253,10 +253,10 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [
+          "Siris",
           "Neem",
-          "Peepal",
-          "Banyan",
-          "Shisham"
+          "Shisham",
+          "Banyan"
         ],
         "justification": "Priority score 0.768: predicted AQI change +15.6, NDVI trend -0.0018/yr with canopy at 0.18 and plantable-space 0.70. Species chosen for pollution tolerance and fit to available space."
       }
@@ -314,10 +314,10 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [
+          "Siris",
           "Neem",
-          "Peepal",
-          "Banyan",
-          "Shisham"
+          "Shisham",
+          "Banyan"
         ],
         "justification": "Priority score 0.766: predicted AQI change +15.1, NDVI trend -0.0019/yr with canopy at 0.15 and plantable-space 0.75. Species chosen for pollution tolerance and fit to available space."
       }
@@ -375,10 +375,10 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [
+          "Siris",
           "Neem",
-          "Peepal",
           "Banyan",
-          "Siris"
+          "Peepal"
         ],
         "justification": "Priority score 0.756: predicted AQI change +11.6, NDVI trend -0.0146/yr with canopy at 0.25 and plantable-space 0.58. Species chosen for pollution tolerance and fit to available space. Soil pH 7.4 (neutral), clay loam \u2014 species filtered for soil fit.",
         "soil": {
@@ -444,10 +444,10 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [
+          "Siris",
           "Neem",
-          "Peepal",
           "Banyan",
-          "Siris"
+          "Peepal"
         ],
         "justification": "Priority score 0.756: predicted AQI change +15.1, NDVI trend -0.0054/yr with canopy at 0.23 and plantable-space 0.62. Species chosen for pollution tolerance and fit to available space. Soil pH 7.4 (neutral), clay loam \u2014 species filtered for soil fit.",
         "soil": {
@@ -513,10 +513,10 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [
+          "Siris",
           "Neem",
-          "Peepal",
-          "Banyan",
-          "Shisham"
+          "Shisham",
+          "Banyan"
         ],
         "justification": "Priority score 0.752: predicted AQI change +15.1, NDVI trend -0.0016/yr with canopy at 0.18 and plantable-space 0.70. Species chosen for pollution tolerance and fit to available space."
       }
@@ -574,10 +574,10 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [
+          "Siris",
           "Neem",
-          "Peepal",
           "Banyan",
-          "Arjun"
+          "Peepal"
         ],
         "justification": "Priority score 0.745: predicted AQI change +15.6, NDVI trend +0.0000/yr with canopy at 0.18 and plantable-space 0.71. Species chosen for pollution tolerance and fit to available space. Soil pH 7.3 (neutral), clay loam \u2014 species filtered for soil fit.",
         "soil": {
@@ -643,10 +643,10 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [
+          "Siris",
           "Neem",
-          "Peepal",
-          "Banyan",
-          "Shisham"
+          "Shisham",
+          "Banyan"
         ],
         "justification": "Priority score 0.744: predicted AQI change +15.6, NDVI trend -0.0025/yr with canopy at 0.21 and plantable-space 0.65. Species chosen for pollution tolerance and fit to available space."
       }

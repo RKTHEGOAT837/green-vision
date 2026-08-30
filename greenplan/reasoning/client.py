@@ -526,30 +526,99 @@ class MockModel:
     ) -> list[dict[str, Any]]:
         out = []
         for row in ranked_rows:
-            need_tolerance = row.get("aqi_latest", 0) >= 120 or row.get("aqi_pred_delta", 0) > 0
-            tight_space = row.get("plantable_space", 0.5) < 0.35
-            dry = row.get("ndvi_slope", 0) < 0
             soil = row.get("soil")
 
+            # CONTINUOUS site pressures, not booleans.
+            #
+            # This used to be three yes/no flags — need_tolerance, tight_space,
+            # dry — which gave at most eight possible orderings for the whole
+            # country. Worse, the resulting scores tied in large blocks, and
+            # Python's sort is stable, so ties fell back to the order species
+            # happen to sit in SPECIES_KB. Neem, Peepal and Banyan are the
+            # first three native/large/high-tolerance/low-water rows in that
+            # table, so they came out on top in Ahmedabad, in Delhi, in a
+            # monsoon riverfront and on a dry industrial buffer alike. The
+            # picker looked confident and was barely reading the site.
+            #
+            # Each pressure below is a 0..1 ramp over a range that means
+            # something in Indian conditions, so two different places produce
+            # two different orderings rather than the same four names.
+            def ramp(v, lo, hi):
+                if v is None:
+                    return None
+                try:
+                    v = float(v)
+                except (TypeError, ValueError):
+                    return None
+                if hi == lo:
+                    return 0.0
+                return max(0.0, min(1.0, (v - lo) / (hi - lo)))
+
+            # Pollution: nothing below 60, saturating at 200 where only the
+            # toughest species belong. `or` is not usable here — a pred_delta
+            # of None means "no trained history", which is not zero.
+            aqi = row.get("aqi_latest")
+            pressure = ramp(aqi, 60.0, 200.0)
+            delta = row.get("aqi_pred_delta")
+            if pressure is not None and delta is not None and delta > 0:
+                pressure = min(1.0, pressure + 0.15)   # worsening tips it further
+            if pressure is None:
+                pressure = 0.35                        # unknown air: mild default
+
+            # Space: 1.0 when there is nowhere to put a wide crown.
+            # NOT `ramp(...) or 0.5`. A fully crowded site ramps to exactly
+            # 0.0, which is falsy, so `or` replaced the most crowded reading
+            # in the dataset with the neutral default — the densest cells were
+            # scored as average ones and kept being offered banyans. Same
+            # falsy-zero trap as `float(col.std()) or 1.0` in trends.py.
+            _sp = ramp(row.get("plantable_space"), 0.15, 0.75)
+            crowding = 1.0 - (0.5 if _sp is None else _sp)
+
+            # Water stress: a falling NDVI slope is the only signal available
+            # here, scaled over a year's worth of decline.
+            slope = row.get("ndvi_slope")
+            _dry = ramp(-slope, 0.0, 0.01) if slope is not None else None
+            dryness = 0.0 if _dry is None else _dry
+
+            TOL = {"high": 1.0, "medium": 0.55, "low": 0.15}
+            CANOPY = {"large": 1.0, "medium": 0.6, "small": 0.3}
+            WATER = {"low": 1.0, "medium": 0.55, "high": 0.15}
+
             def score(sp: dict[str, str]) -> float:
+                tol = TOL[sp["pollution_tolerance"]]
+                crown = CANOPY.get(sp["canopy"], 0.6)
+                thirst = WATER.get(sp["water_need"], 0.55)
                 s = 0.0
-                tol = {"high": 2.0, "medium": 1.0, "low": 0.0}[sp["pollution_tolerance"]]
-                s += tol * (2.0 if need_tolerance else 1.0)
-                if tight_space and sp["canopy"] in ("small", "medium"):
-                    s += 1.5
-                if not tight_space and sp["canopy"] == "large":
-                    s += 1.0
-                if dry and sp["water_need"] == "low":
-                    s += 1.0
+                # Each term contributes IN PROPORTION to the pressure that
+                # justifies it, and contributes nothing when that pressure is
+                # absent. The earlier version used `tol * (1 + 2*pressure)`,
+                # which still rewarded pollution-hardiness on clean air and
+                # drought-hardiness beside a river — so the same four hardy
+                # natives won everywhere and only the crowding term ever
+                # changed the answer. A tolerance that costs nothing to have
+                # is not a reason to prefer a species where it is not needed.
+                s += tol * 3.2 * pressure
+                s += thirst * 2.6 * dryness
+                # Crowding always matters: it is about the plot, not the
+                # climate. Wide crowns where there is room, compact where not.
+                s += (1.0 - crown) * crowding * 1.8
+                s += crown * (1.0 - crowding) * 1.6
+                # Where no pressure dominates, prefer what a city forester
+                # would default to: a native with a useful crown.
+                calm = 1.0 - max(pressure, dryness)
+                s += crown * 0.9 * calm
                 if sp["native_status"] == "native":
-                    s += 0.5
+                    s += 0.6
                 return s
 
             # drop species whose soil pH/texture clashes with the zone; only
             # fall back to the full KB if the soil filter leaves too few
             compatible = [sp for sp in SPECIES_KB if species_soil_ok(sp, soil)]
             pool = compatible if len(compatible) >= 5 else SPECIES_KB
-            ranked_sp = sorted(pool, key=score, reverse=True)
+            # Tie-break on the botanical name, not on table position. Ties are
+            # far rarer now, but when they happen the order should come from
+            # the species rather than from where someone typed it into the KB.
+            ranked_sp = sorted(pool, key=lambda sp: (-score(sp), sp["botanical"]))
             species = [sp["common"] for sp in ranked_sp[:4]]
             soil_note = ""
             if isinstance(soil, dict) and soil.get("ph") is not None:
@@ -565,12 +634,24 @@ class MockModel:
                     # never moves the ranking — so quoting "traffic change
                     # +0.0" alongside real figures implied it was a measured
                     # input that happened to be flat. It is neither.
+                    # The forecast half of this sentence exists only where the
+                    # engine has a trained history. Off-city those fields are
+                    # None, and formatting None as "+0.0" would state a
+                    # forecast of no change from a model that has never seen
+                    # the place — so the clause is omitted instead.
                     "justification": (
-                        f"Priority score {row['score']:.3f}: predicted AQI change "
-                        f"{row['aqi_pred_delta']:+.1f}, "
-                        f"NDVI trend {row['ndvi_slope'] * 12:+.4f}/yr with canopy at "
-                        f"{row['ndvi_latest']:.2f} and plantable-space {row['plantable_space']:.2f}. "
-                        "Species chosen for pollution tolerance and fit to available space."
+                        (f"Priority score {row['score']:.3f}: predicted AQI change "
+                         f"{row['aqi_pred_delta']:+.1f}, "
+                         f"NDVI trend {row['ndvi_slope'] * 12:+.4f}/yr with canopy at "
+                         f"{row['ndvi_latest']:.2f} and plantable-space "
+                         f"{row['plantable_space']:.2f}. "
+                         if row.get("aqi_pred_delta") is not None
+                         and row.get("ndvi_slope") is not None
+                         else f"Live readings only — no trained history for this cell: "
+                              f"air {row['aqi_latest']:.0f}, canopy "
+                              f"{row['ndvi_latest']:.2f}, plantable-space "
+                              f"{row['plantable_space']:.2f}. ")
+                        + "Species chosen for pollution tolerance and fit to available space."
                         + soil_note
                     ),
                     "species": validate_selection(species),
