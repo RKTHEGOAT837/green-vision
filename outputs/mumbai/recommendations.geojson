@@ -181,10 +181,18 @@
         "species": [
           "Siris",
           "Neem",
-          "Shisham",
-          "Banyan"
+          "Banyan",
+          "Peepal"
         ],
-        "justification": "Priority score 0.890: predicted AQI change +27.5, NDVI trend -0.0346/yr with canopy at 0.12 and plantable-space 0.80. Species chosen for pollution tolerance and fit to available space."
+        "justification": "Priority score 0.890: predicted AQI change +27.5, NDVI trend -0.0346/yr with canopy at 0.12 and plantable-space 0.80. Species chosen for pollution tolerance and fit to available space. Soil pH 6.5 (acidic), clay loam \u2014 species filtered for soil fit.",
+        "soil": {
+          "ph": 6.45,
+          "ph_class": "acidic",
+          "texture": "clay loam",
+          "texture_simple": "clay",
+          "moisture": null,
+          "soc": 593.5
+        }
       }
     },
     {
@@ -442,68 +450,6 @@
         "coordinates": [
           [
             [
-              72.86319695201449,
-              18.94322943041566
-            ],
-            [
-              72.85916308727451,
-              18.95487499024026
-            ],
-            [
-              72.84702889317447,
-              18.956568976435392
-            ],
-            [
-              72.83893014801546,
-              18.946619122473177
-            ],
-            [
-              72.84296356492884,
-              18.934974944798306
-            ],
-            [
-              72.85509617505274,
-              18.933279238917986
-            ],
-            [
-              72.86319695201449,
-              18.94322943041566
-            ]
-          ]
-        ]
-      },
-      "properties": {
-        "zone": "87608b18dffffff",
-        "rank": 8,
-        "aqi_beyond_index": false,
-        "reasoned": true,
-        "priority_score": 0.8451,
-        "aqi_latest": 62.1,
-        "aqi_pred_delta": 28.4,
-        "traffic_latest": 50.0,
-        "traffic_pred_delta": 0.0,
-        "ndvi_latest": -0.0,
-        "ndvi_trend_per_year": -0.0174,
-        "ndvi_pred_delta": 0.0101,
-        "plantable_space": 1.0,
-        "plantable_source": "proxy_1_minus_ndvi",
-        "n_sites": 0,
-        "species": [
-          "Siris",
-          "Neem",
-          "Shisham",
-          "Banyan"
-        ],
-        "justification": "Priority score 0.845: predicted AQI change +28.4, NDVI trend -0.0174/yr with canopy at -0.00 and plantable-space 1.00. Species chosen for pollution tolerance and fit to available space."
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [
-          [
-            [
               72.83501910584127,
               19.091152295335686
             ],
@@ -536,7 +482,7 @@
       },
       "properties": {
         "zone": "87608b095ffffff",
-        "rank": 9,
+        "rank": 8,
         "aqi_beyond_index": false,
         "reasoned": true,
         "priority_score": 0.839,
@@ -598,7 +544,7 @@
       },
       "properties": {
         "zone": "87608b55cffffff",
-        "rank": 10,
+        "rank": 9,
         "aqi_beyond_index": false,
         "reasoned": true,
         "priority_score": 0.7919,
@@ -615,10 +561,18 @@
         "species": [
           "Siris",
           "Neem",
-          "Shisham",
-          "Banyan"
+          "Banyan",
+          "Peepal"
         ],
-        "justification": "Priority score 0.792: predicted AQI change +30.0, NDVI trend -0.0223/yr with canopy at 0.29 and plantable-space 0.51. Species chosen for pollution tolerance and fit to available space."
+        "justification": "Priority score 0.792: predicted AQI change +30.0, NDVI trend -0.0223/yr with canopy at 0.29 and plantable-space 0.51. Species chosen for pollution tolerance and fit to available space. Soil pH 6.2 (acidic), clay loam \u2014 species filtered for soil fit.",
+        "soil": {
+          "ph": 6.25,
+          "ph_class": "acidic",
+          "texture": "clay loam",
+          "texture_simple": "clay",
+          "moisture": null,
+          "soc": 255.5
+        }
       }
     },
     {
@@ -660,9 +614,9 @@
       },
       "properties": {
         "zone": "87608b012ffffff",
-        "rank": 11,
+        "rank": 10,
         "aqi_beyond_index": false,
-        "reasoned": false,
+        "reasoned": true,
         "priority_score": 0.7895,
         "aqi_latest": 62.1,
         "aqi_pred_delta": 27.0,
@@ -674,8 +628,13 @@
         "plantable_space": 0.83,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
-        "species": [],
-        "justification": ""
+        "species": [
+          "Siris",
+          "Neem",
+          "Shisham",
+          "Banyan"
+        ],
+        "justification": "Priority score 0.789: predicted AQI change +27.0, NDVI trend -0.0200/yr with canopy at 0.10 and plantable-space 0.83. Species chosen for pollution tolerance and fit to available space."
       }
     },
     {
@@ -717,7 +676,7 @@
       },
       "properties": {
         "zone": "87608b196ffffff",
-        "rank": 12,
+        "rank": 11,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.7775,
@@ -774,7 +733,7 @@
       },
       "properties": {
         "zone": "87608b093ffffff",
-        "rank": 13,
+        "rank": 12,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.776,
@@ -831,7 +790,7 @@
       },
       "properties": {
         "zone": "87608b54bffffff",
-        "rank": 14,
+        "rank": 13,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.7631,
@@ -888,7 +847,7 @@
       },
       "properties": {
         "zone": "87608b466ffffff",
-        "rank": 15,
+        "rank": 14,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.7626,
@@ -903,7 +862,15 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "soil": {
+          "ph": 6.5,
+          "ph_class": "neutral",
+          "texture": "clay loam",
+          "texture_simple": "clay",
+          "moisture": null,
+          "soc": 224.5
+        }
       }
     },
     {
@@ -945,7 +912,7 @@
       },
       "properties": {
         "zone": "87608b0b1ffffff",
-        "rank": 16,
+        "rank": 15,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.7625,
@@ -1002,7 +969,7 @@
       },
       "properties": {
         "zone": "87608b465ffffff",
-        "rank": 17,
+        "rank": 16,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.7603,
@@ -1059,7 +1026,7 @@
       },
       "properties": {
         "zone": "87608b0a5ffffff",
-        "rank": 18,
+        "rank": 17,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.7548,
@@ -1116,7 +1083,7 @@
       },
       "properties": {
         "zone": "87608b091ffffff",
-        "rank": 19,
+        "rank": 18,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.7501,
@@ -1128,63 +1095,6 @@
         "ndvi_trend_per_year": 0.0,
         "ndvi_pred_delta": 0.0,
         "plantable_space": 0.97,
-        "plantable_source": "proxy_1_minus_ndvi",
-        "n_sites": 0,
-        "species": [],
-        "justification": ""
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [
-          [
-            [
-              72.88343727768094,
-              18.951483735222475
-            ],
-            [
-              72.8794029660511,
-              18.963130676252074
-            ],
-            [
-              72.86726507861242,
-              18.96482544449921
-            ],
-            [
-              72.85916308727451,
-              18.95487499024026
-            ],
-            [
-              72.86319695201449,
-              18.94322943041566
-            ],
-            [
-              72.87533325520754,
-              18.941532943626832
-            ],
-            [
-              72.88343727768094,
-              18.951483735222475
-            ]
-          ]
-        ]
-      },
-      "properties": {
-        "zone": "87608b18cffffff",
-        "rank": 20,
-        "aqi_beyond_index": false,
-        "reasoned": false,
-        "priority_score": 0.7405,
-        "aqi_latest": 62.1,
-        "aqi_pred_delta": 29.5,
-        "traffic_latest": 50.0,
-        "traffic_pred_delta": 0.0,
-        "ndvi_latest": -0.001,
-        "ndvi_trend_per_year": 0.0,
-        "ndvi_pred_delta": 0.0109,
-        "plantable_space": 1.0,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
@@ -1230,7 +1140,7 @@
       },
       "properties": {
         "zone": "87608b548ffffff",
-        "rank": 21,
+        "rank": 19,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.7386,
@@ -1287,7 +1197,7 @@
       },
       "properties": {
         "zone": "87608b1b3ffffff",
-        "rank": 22,
+        "rank": 20,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.7363,
@@ -1344,7 +1254,7 @@
       },
       "properties": {
         "zone": "87608b509ffffff",
-        "rank": 23,
+        "rank": 21,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.7328,
@@ -1401,7 +1311,7 @@
       },
       "properties": {
         "zone": "87608b568ffffff",
-        "rank": 24,
+        "rank": 22,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.732,
@@ -1458,7 +1368,7 @@
       },
       "properties": {
         "zone": "87608b460ffffff",
-        "rank": 25,
+        "rank": 23,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.7233,
@@ -1515,7 +1425,7 @@
       },
       "properties": {
         "zone": "87608b56cffffff",
-        "rank": 26,
+        "rank": 24,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.7223,
@@ -1572,7 +1482,7 @@
       },
       "properties": {
         "zone": "87608b0b0ffffff",
-        "rank": 27,
+        "rank": 25,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.7213,
@@ -1629,7 +1539,7 @@
       },
       "properties": {
         "zone": "87608b19effffff",
-        "rank": 28,
+        "rank": 26,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.7187,
@@ -1644,7 +1554,15 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "soil": {
+          "ph": 6.4,
+          "ph_class": "acidic",
+          "texture": "clay loam",
+          "texture_simple": "clay",
+          "moisture": null,
+          "soc": 303.5
+        }
       }
     },
     {
@@ -1686,7 +1604,7 @@
       },
       "properties": {
         "zone": "87608b55dffffff",
-        "rank": 29,
+        "rank": 27,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.7129,
@@ -1701,7 +1619,15 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "soil": {
+          "ph": 6.6,
+          "ph_class": "neutral",
+          "texture": "clay loam",
+          "texture_simple": "clay",
+          "moisture": null,
+          "soc": 222.0
+        }
       }
     },
     {
@@ -1743,7 +1669,7 @@
       },
       "properties": {
         "zone": "87608b560ffffff",
-        "rank": 30,
+        "rank": 28,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.7098,
@@ -1800,7 +1726,7 @@
       },
       "properties": {
         "zone": "87608b0a2ffffff",
-        "rank": 31,
+        "rank": 29,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.7094,
@@ -1857,7 +1783,7 @@
       },
       "properties": {
         "zone": "87608b084ffffff",
-        "rank": 32,
+        "rank": 30,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.7087,
@@ -1914,7 +1840,7 @@
       },
       "properties": {
         "zone": "87608b0a3ffffff",
-        "rank": 33,
+        "rank": 31,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.7036,
@@ -1971,7 +1897,7 @@
       },
       "properties": {
         "zone": "87608b461ffffff",
-        "rank": 34,
+        "rank": 32,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.7011,
@@ -2028,7 +1954,7 @@
       },
       "properties": {
         "zone": "87608b54cffffff",
-        "rank": 35,
+        "rank": 33,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.6957,
@@ -2085,7 +2011,7 @@
       },
       "properties": {
         "zone": "87608b0a4ffffff",
-        "rank": 36,
+        "rank": 34,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.6934,
@@ -2142,7 +2068,7 @@
       },
       "properties": {
         "zone": "87608b572ffffff",
-        "rank": 37,
+        "rank": 35,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.6903,
@@ -2199,7 +2125,7 @@
       },
       "properties": {
         "zone": "87608b540ffffff",
-        "rank": 38,
+        "rank": 36,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.6896,
@@ -2256,7 +2182,7 @@
       },
       "properties": {
         "zone": "87608b090ffffff",
-        "rank": 39,
+        "rank": 37,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.6879,
@@ -2268,63 +2194,6 @@
         "ndvi_trend_per_year": -0.0083,
         "ndvi_pred_delta": -0.0276,
         "plantable_space": 0.62,
-        "plantable_source": "proxy_1_minus_ndvi",
-        "n_sites": 0,
-        "species": [],
-        "justification": ""
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [
-          [
-            [
-              72.88750820329605,
-              18.973081728183622
-            ],
-            [
-              72.88347352204485,
-              18.98472721007599
-            ],
-            [
-              72.87133405008665,
-              18.98642026013149
-            ],
-            [
-              72.86323084412453,
-              18.97646954646777
-            ],
-            [
-              72.86726507861242,
-              18.96482544449921
-            ],
-            [
-              72.8794029660511,
-              18.963130676252074
-            ],
-            [
-              72.88750820329605,
-              18.973081728183622
-            ]
-          ]
-        ]
-      },
-      "properties": {
-        "zone": "87608b18effffff",
-        "rank": 40,
-        "aqi_beyond_index": false,
-        "reasoned": false,
-        "priority_score": 0.6845,
-        "aqi_latest": 62.1,
-        "aqi_pred_delta": 29.5,
-        "traffic_latest": 50.0,
-        "traffic_pred_delta": 0.0,
-        "ndvi_latest": -0.052,
-        "ndvi_trend_per_year": 0.0074,
-        "ndvi_pred_delta": 0.0624,
-        "plantable_space": 1.0,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
@@ -2370,7 +2239,7 @@
       },
       "properties": {
         "zone": "87608b46cffffff",
-        "rank": 41,
+        "rank": 38,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.6839,
@@ -2427,7 +2296,7 @@
       },
       "properties": {
         "zone": "87608b094ffffff",
-        "rank": 42,
+        "rank": 39,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.6837,
@@ -2484,7 +2353,7 @@
       },
       "properties": {
         "zone": "87608b56bffffff",
-        "rank": 43,
+        "rank": 40,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.6818,
@@ -2541,7 +2410,7 @@
       },
       "properties": {
         "zone": "87608b562ffffff",
-        "rank": 44,
+        "rank": 41,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.6763,
@@ -2598,7 +2467,7 @@
       },
       "properties": {
         "zone": "87608b54dffffff",
-        "rank": 45,
+        "rank": 42,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.6732,
@@ -2655,7 +2524,7 @@
       },
       "properties": {
         "zone": "87608b56affffff",
-        "rank": 46,
+        "rank": 43,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.6718,
@@ -2712,7 +2581,7 @@
       },
       "properties": {
         "zone": "87608b0b2ffffff",
-        "rank": 47,
+        "rank": 44,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.6706,
@@ -2769,7 +2638,7 @@
       },
       "properties": {
         "zone": "87608b551ffffff",
-        "rank": 48,
+        "rank": 45,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.665,
@@ -2826,7 +2695,7 @@
       },
       "properties": {
         "zone": "87608b092ffffff",
-        "rank": 49,
+        "rank": 46,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.6585,
@@ -2883,7 +2752,7 @@
       },
       "properties": {
         "zone": "87608b0b3ffffff",
-        "rank": 50,
+        "rank": 47,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.6578,
@@ -2940,7 +2809,7 @@
       },
       "properties": {
         "zone": "87608b189ffffff",
-        "rank": 51,
+        "rank": 48,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.6575,
@@ -2997,7 +2866,7 @@
       },
       "properties": {
         "zone": "87608b545ffffff",
-        "rank": 52,
+        "rank": 49,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.651,
@@ -3009,63 +2878,6 @@
         "ndvi_trend_per_year": -0.0277,
         "ndvi_pred_delta": -0.1885,
         "plantable_space": 0.29,
-        "plantable_source": "proxy_1_minus_ndvi",
-        "n_sites": 0,
-        "species": [],
-        "justification": ""
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [
-          [
-            [
-              72.96855006463878,
-              19.006104932941277
-            ],
-            [
-              72.96451360573435,
-              19.0177559250568
-            ],
-            [
-              72.9523593715155,
-              19.01945212472694
-            ],
-            [
-              72.94424318201268,
-              19.00949904585933
-            ],
-            [
-              72.9482791979166,
-              18.99784942987641
-            ],
-            [
-              72.96043184655056,
-              18.996151516609064
-            ],
-            [
-              72.96855006463878,
-              19.006104932941277
-            ]
-          ]
-        ]
-      },
-      "properties": {
-        "zone": "87608b194ffffff",
-        "rank": 53,
-        "aqi_beyond_index": false,
-        "reasoned": false,
-        "priority_score": 0.65,
-        "aqi_latest": 67.0,
-        "aqi_pred_delta": 30.8,
-        "traffic_latest": 50.0,
-        "traffic_pred_delta": 0.0,
-        "ndvi_latest": -0.026,
-        "ndvi_trend_per_year": 0.0186,
-        "ndvi_pred_delta": 0.0821,
-        "plantable_space": 1.0,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
@@ -3111,7 +2923,7 @@
       },
       "properties": {
         "zone": "87608b010ffffff",
-        "rank": 54,
+        "rank": 50,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.6475,
@@ -3168,7 +2980,7 @@
       },
       "properties": {
         "zone": "87608b096ffffff",
-        "rank": 55,
+        "rank": 51,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.644,
@@ -3225,7 +3037,7 @@
       },
       "properties": {
         "zone": "87608b0b6ffffff",
-        "rank": 56,
+        "rank": 52,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.6439,
@@ -3282,7 +3094,7 @@
       },
       "properties": {
         "zone": "87608b19cffffff",
-        "rank": 57,
+        "rank": 53,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.6424,
@@ -3297,7 +3109,15 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "soil": {
+          "ph": 6.5,
+          "ph_class": "neutral",
+          "texture": "clay loam",
+          "texture_simple": "clay",
+          "moisture": null,
+          "soc": 269.0
+        }
       }
     },
     {
@@ -3339,7 +3159,7 @@
       },
       "properties": {
         "zone": "87608b0a6ffffff",
-        "rank": 58,
+        "rank": 54,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.6336,
@@ -3396,7 +3216,7 @@
       },
       "properties": {
         "zone": "87608b563ffffff",
-        "rank": 59,
+        "rank": 55,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.6309,
@@ -3453,7 +3273,7 @@
       },
       "properties": {
         "zone": "87608b18bffffff",
-        "rank": 60,
+        "rank": 56,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.6296,
@@ -3510,7 +3330,7 @@
       },
       "properties": {
         "zone": "87608b56effffff",
-        "rank": 61,
+        "rank": 57,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.6281,
@@ -3567,7 +3387,7 @@
       },
       "properties": {
         "zone": "87608b549ffffff",
-        "rank": 62,
+        "rank": 58,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.6239,
@@ -3624,7 +3444,7 @@
       },
       "properties": {
         "zone": "87608b014ffffff",
-        "rank": 63,
+        "rank": 59,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.6214,
@@ -3681,7 +3501,7 @@
       },
       "properties": {
         "zone": "87608b188ffffff",
-        "rank": 64,
+        "rank": 60,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.6116,
@@ -3738,7 +3558,7 @@
       },
       "properties": {
         "zone": "87608b016ffffff",
-        "rank": 65,
+        "rank": 61,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.6112,
@@ -3795,7 +3615,7 @@
       },
       "properties": {
         "zone": "87608b464ffffff",
-        "rank": 66,
+        "rank": 62,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.6066,
@@ -3810,7 +3630,15 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "soil": {
+          "ph": 6.35,
+          "ph_class": "acidic",
+          "texture": "clay loam",
+          "texture_simple": "clay",
+          "moisture": null,
+          "soc": 232.0
+        }
       }
     },
     {
@@ -3852,7 +3680,7 @@
       },
       "properties": {
         "zone": "87608b0a0ffffff",
-        "rank": 67,
+        "rank": 63,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.6057,
@@ -3909,7 +3737,7 @@
       },
       "properties": {
         "zone": "87608b032ffffff",
-        "rank": 68,
+        "rank": 64,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.6036,
@@ -3966,7 +3794,7 @@
       },
       "properties": {
         "zone": "87608b1a2ffffff",
-        "rank": 69,
+        "rank": 65,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.5965,
@@ -4023,7 +3851,7 @@
       },
       "properties": {
         "zone": "87608b192ffffff",
-        "rank": 70,
+        "rank": 66,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.5914,
@@ -4080,7 +3908,7 @@
       },
       "properties": {
         "zone": "87608b191ffffff",
-        "rank": 71,
+        "rank": 67,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.5899,
@@ -4095,7 +3923,15 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "soil": {
+          "ph": 6.4,
+          "ph_class": "acidic",
+          "texture": "clay loam",
+          "texture_simple": "clay",
+          "moisture": null,
+          "soc": 298.0
+        }
       }
     },
     {
@@ -4137,7 +3973,7 @@
       },
       "properties": {
         "zone": "87608b56dffffff",
-        "rank": 72,
+        "rank": 68,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.5872,
@@ -4194,7 +4030,7 @@
       },
       "properties": {
         "zone": "87608b19affffff",
-        "rank": 73,
+        "rank": 69,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.5764,
@@ -4251,7 +4087,7 @@
       },
       "properties": {
         "zone": "87608b570ffffff",
-        "rank": 74,
+        "rank": 70,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.5724,
@@ -4266,7 +4102,15 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "soil": {
+          "ph": 6.45,
+          "ph_class": "acidic",
+          "texture": "clay loam",
+          "texture_simple": "clay",
+          "moisture": null,
+          "soc": 250.5
+        }
       }
     },
     {
@@ -4308,7 +4152,7 @@
       },
       "properties": {
         "zone": "87608b1b4ffffff",
-        "rank": 75,
+        "rank": 71,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.5682,
@@ -4323,7 +4167,15 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "soil": {
+          "ph": 6.5,
+          "ph_class": "neutral",
+          "texture": "clay loam",
+          "texture_simple": "clay",
+          "moisture": null,
+          "soc": 336.0
+        }
       }
     },
     {
@@ -4365,7 +4217,7 @@
       },
       "properties": {
         "zone": "87608b54affffff",
-        "rank": 76,
+        "rank": 72,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.5672,
@@ -4422,7 +4274,7 @@
       },
       "properties": {
         "zone": "87608b193ffffff",
-        "rank": 77,
+        "rank": 73,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.5623,
@@ -4437,7 +4289,15 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "soil": {
+          "ph": 6.45,
+          "ph_class": "acidic",
+          "texture": "clay loam",
+          "texture_simple": "clay",
+          "moisture": null,
+          "soc": 271.5
+        }
       }
     },
     {
@@ -4479,7 +4339,7 @@
       },
       "properties": {
         "zone": "87608b1b6ffffff",
-        "rank": 78,
+        "rank": 74,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.5574,
@@ -4536,7 +4396,7 @@
       },
       "properties": {
         "zone": "87608b0b5ffffff",
-        "rank": 79,
+        "rank": 75,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.5531,
@@ -4593,7 +4453,7 @@
       },
       "properties": {
         "zone": "87608b559ffffff",
-        "rank": 80,
+        "rank": 76,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.5366,
@@ -4608,7 +4468,15 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "soil": {
+          "ph": 6.1,
+          "ph_class": "acidic",
+          "texture": "clay loam",
+          "texture_simple": "clay",
+          "moisture": null,
+          "soc": 227.5
+        }
       }
     },
     {
@@ -4650,7 +4518,7 @@
       },
       "properties": {
         "zone": "87608b54effffff",
-        "rank": 81,
+        "rank": 77,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.5343,
@@ -4707,7 +4575,7 @@
       },
       "properties": {
         "zone": "87608b18affffff",
-        "rank": 82,
+        "rank": 78,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.5286,
@@ -4764,7 +4632,7 @@
       },
       "properties": {
         "zone": "87608b1b5ffffff",
-        "rank": 83,
+        "rank": 79,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.5145,
@@ -4779,7 +4647,15 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "soil": {
+          "ph": 6.5,
+          "ph_class": "neutral",
+          "texture": "clay loam",
+          "texture_simple": "clay",
+          "moisture": null,
+          "soc": 237.0
+        }
       }
     },
     {
@@ -4821,7 +4697,7 @@
       },
       "properties": {
         "zone": "87608b0b4ffffff",
-        "rank": 84,
+        "rank": 80,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.514,
@@ -4878,7 +4754,7 @@
       },
       "properties": {
         "zone": "87608b565ffffff",
-        "rank": 85,
+        "rank": 81,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.5075,
@@ -4935,7 +4811,7 @@
       },
       "properties": {
         "zone": "87608b542ffffff",
-        "rank": 86,
+        "rank": 82,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.4986,
@@ -4992,7 +4868,7 @@
       },
       "properties": {
         "zone": "87608b198ffffff",
-        "rank": 87,
+        "rank": 83,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.4906,
@@ -5049,7 +4925,7 @@
       },
       "properties": {
         "zone": "87608b561ffffff",
-        "rank": 88,
+        "rank": 84,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.4875,
@@ -5106,7 +4982,7 @@
       },
       "properties": {
         "zone": "87608b558ffffff",
-        "rank": 89,
+        "rank": 85,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.4793,
@@ -5121,7 +4997,15 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "soil": {
+          "ph": 5.9,
+          "ph_class": "acidic",
+          "texture": "clay loam",
+          "texture_simple": "clay",
+          "moisture": null,
+          "soc": 291.5
+        }
       }
     },
     {
@@ -5163,7 +5047,7 @@
       },
       "properties": {
         "zone": "87608b555ffffff",
-        "rank": 90,
+        "rank": 86,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.477,
@@ -5220,7 +5104,7 @@
       },
       "properties": {
         "zone": "87608b1a6ffffff",
-        "rank": 91,
+        "rank": 87,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.4709,
@@ -5235,7 +5119,15 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "soil": {
+          "ph": 6.4,
+          "ph_class": "acidic",
+          "texture": "clay loam",
+          "texture_simple": "clay",
+          "moisture": null,
+          "soc": 248.0
+        }
       }
     },
     {
@@ -5277,7 +5169,7 @@
       },
       "properties": {
         "zone": "87608b566ffffff",
-        "rank": 92,
+        "rank": 88,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.468,
@@ -5334,7 +5226,7 @@
       },
       "properties": {
         "zone": "87608b564ffffff",
-        "rank": 93,
+        "rank": 89,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.4659,
@@ -5391,7 +5283,7 @@
       },
       "properties": {
         "zone": "87608b199ffffff",
-        "rank": 94,
+        "rank": 90,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.4254,
@@ -5448,7 +5340,7 @@
       },
       "properties": {
         "zone": "87608b190ffffff",
-        "rank": 95,
+        "rank": 91,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.4224,
@@ -5463,7 +5355,15 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "soil": {
+          "ph": 6.5,
+          "ph_class": "neutral",
+          "texture": "clay loam",
+          "texture_simple": "clay",
+          "moisture": null,
+          "soc": 543.5
+        }
       }
     },
     {
@@ -5505,7 +5405,7 @@
       },
       "properties": {
         "zone": "87608b546ffffff",
-        "rank": 96,
+        "rank": 92,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.4212,
@@ -5562,7 +5462,7 @@
       },
       "properties": {
         "zone": "87608b1b1ffffff",
-        "rank": 97,
+        "rank": 93,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.3946,
@@ -5577,7 +5477,15 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "soil": {
+          "ph": 5.9,
+          "ph_class": "acidic",
+          "texture": "clay loam",
+          "texture_simple": "clay",
+          "moisture": null,
+          "soc": 362.5
+        }
       }
     },
     {
@@ -5619,7 +5527,7 @@
       },
       "properties": {
         "zone": "87608b569ffffff",
-        "rank": 98,
+        "rank": 94,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.3873,
@@ -5676,7 +5584,7 @@
       },
       "properties": {
         "zone": "87608b0a1ffffff",
-        "rank": 99,
+        "rank": 95,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.3683,
@@ -5733,7 +5641,7 @@
       },
       "properties": {
         "zone": "87608b554ffffff",
-        "rank": 100,
+        "rank": 96,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.3592,
@@ -5790,7 +5698,7 @@
       },
       "properties": {
         "zone": "87608b550ffffff",
-        "rank": 101,
+        "rank": 97,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.2942,
@@ -5805,7 +5713,15 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "soil": {
+          "ph": 6.5,
+          "ph_class": "neutral",
+          "texture": "clay loam",
+          "texture_simple": "clay",
+          "moisture": null,
+          "soc": 293.0
+        }
       }
     },
     {
@@ -5847,7 +5763,7 @@
       },
       "properties": {
         "zone": "87608b571ffffff",
-        "rank": 102,
+        "rank": 98,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.2842,
@@ -5862,7 +5778,15 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "soil": {
+          "ph": 6.55,
+          "ph_class": "neutral",
+          "texture": "clay loam",
+          "texture_simple": "clay",
+          "moisture": null,
+          "soc": 246.0
+        }
       }
     },
     {
@@ -5904,7 +5828,7 @@
       },
       "properties": {
         "zone": "87608b19bffffff",
-        "rank": 103,
+        "rank": 99,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.2688,
@@ -5961,7 +5885,7 @@
       },
       "properties": {
         "zone": "87608b182ffffff",
-        "rank": 104,
+        "rank": 100,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.2586,
@@ -5976,7 +5900,15 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "soil": {
+          "ph": 6.5,
+          "ph_class": "neutral",
+          "texture": "clay loam",
+          "texture_simple": "clay",
+          "moisture": null,
+          "soc": 294.5
+        }
       }
     },
     {
@@ -6018,7 +5950,7 @@
       },
       "properties": {
         "zone": "87608b186ffffff",
-        "rank": 105,
+        "rank": 101,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.2502,
@@ -6033,7 +5965,15 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "soil": {
+          "ph": 5.95,
+          "ph_class": "acidic",
+          "texture": "clay loam",
+          "texture_simple": "clay",
+          "moisture": null,
+          "soc": 365.0
+        }
       }
     },
     {
@@ -6075,7 +6015,7 @@
       },
       "properties": {
         "zone": "87608b544ffffff",
-        "rank": 106,
+        "rank": 102,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.2481,
@@ -6132,7 +6072,7 @@
       },
       "properties": {
         "zone": "87608b184ffffff",
-        "rank": 107,
+        "rank": 103,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.2364,
@@ -6189,7 +6129,7 @@
       },
       "properties": {
         "zone": "87608b19dffffff",
-        "rank": 108,
+        "rank": 104,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": 0.0917,
@@ -6246,7 +6186,7 @@
       },
       "properties": {
         "zone": "87608b006ffffff",
-        "rank": 109,
+        "rank": 105,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": null,
@@ -6303,7 +6243,7 @@
       },
       "properties": {
         "zone": "87608b033ffffff",
-        "rank": 110,
+        "rank": 106,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": null,
@@ -6360,7 +6300,7 @@
       },
       "properties": {
         "zone": "87608b080ffffff",
-        "rank": 111,
+        "rank": 107,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": null,
@@ -6417,7 +6357,7 @@
       },
       "properties": {
         "zone": "87608b082ffffff",
-        "rank": 112,
+        "rank": 108,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": null,
@@ -6474,7 +6414,7 @@
       },
       "properties": {
         "zone": "87608b085ffffff",
-        "rank": 113,
+        "rank": 109,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": null,
@@ -6531,7 +6471,7 @@
       },
       "properties": {
         "zone": "87608b09effffff",
-        "rank": 114,
+        "rank": 110,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": null,
@@ -6588,7 +6528,7 @@
       },
       "properties": {
         "zone": "87608b0aeffffff",
-        "rank": 115,
+        "rank": 111,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": null,
@@ -6645,7 +6585,7 @@
       },
       "properties": {
         "zone": "87608b180ffffff",
-        "rank": 116,
+        "rank": 112,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": null,
@@ -6702,7 +6642,7 @@
       },
       "properties": {
         "zone": "87608b181ffffff",
-        "rank": 117,
+        "rank": 113,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": null,
@@ -6759,7 +6699,7 @@
       },
       "properties": {
         "zone": "87608b183ffffff",
-        "rank": 118,
+        "rank": 114,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": null,
@@ -6816,7 +6756,7 @@
       },
       "properties": {
         "zone": "87608b185ffffff",
-        "rank": 119,
+        "rank": 115,
         "aqi_beyond_index": false,
         "reasoned": false,
         "priority_score": null,
@@ -6829,6 +6769,234 @@
         "ndvi_pred_delta": null,
         "plantable_space": null,
         "plantable_source": null,
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              72.88343727768094,
+              18.951483735222475
+            ],
+            [
+              72.8794029660511,
+              18.963130676252074
+            ],
+            [
+              72.86726507861242,
+              18.96482544449921
+            ],
+            [
+              72.85916308727451,
+              18.95487499024026
+            ],
+            [
+              72.86319695201449,
+              18.94322943041566
+            ],
+            [
+              72.87533325520754,
+              18.941532943626832
+            ],
+            [
+              72.88343727768094,
+              18.951483735222475
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "87608b18cffffff",
+        "rank": 116,
+        "aqi_beyond_index": false,
+        "reasoned": false,
+        "priority_score": null,
+        "aqi_latest": 62.1,
+        "aqi_pred_delta": 29.5,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": -0.001,
+        "ndvi_trend_per_year": 0.0,
+        "ndvi_pred_delta": 0.0109,
+        "plantable_space": null,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              72.86319695201449,
+              18.94322943041566
+            ],
+            [
+              72.85916308727451,
+              18.95487499024026
+            ],
+            [
+              72.84702889317447,
+              18.956568976435392
+            ],
+            [
+              72.83893014801546,
+              18.946619122473177
+            ],
+            [
+              72.84296356492884,
+              18.934974944798306
+            ],
+            [
+              72.85509617505274,
+              18.933279238917986
+            ],
+            [
+              72.86319695201449,
+              18.94322943041566
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "87608b18dffffff",
+        "rank": 117,
+        "aqi_beyond_index": false,
+        "reasoned": false,
+        "priority_score": null,
+        "aqi_latest": 62.1,
+        "aqi_pred_delta": 28.4,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": -0.0,
+        "ndvi_trend_per_year": -0.0174,
+        "ndvi_pred_delta": 0.0101,
+        "plantable_space": null,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              72.88750820329605,
+              18.973081728183622
+            ],
+            [
+              72.88347352204485,
+              18.98472721007599
+            ],
+            [
+              72.87133405008665,
+              18.98642026013149
+            ],
+            [
+              72.86323084412453,
+              18.97646954646777
+            ],
+            [
+              72.86726507861242,
+              18.96482544449921
+            ],
+            [
+              72.8794029660511,
+              18.963130676252074
+            ],
+            [
+              72.88750820329605,
+              18.973081728183622
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "87608b18effffff",
+        "rank": 118,
+        "aqi_beyond_index": false,
+        "reasoned": false,
+        "priority_score": null,
+        "aqi_latest": 62.1,
+        "aqi_pred_delta": 29.5,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": -0.052,
+        "ndvi_trend_per_year": 0.0074,
+        "ndvi_pred_delta": 0.0624,
+        "plantable_space": null,
+        "plantable_source": "proxy_1_minus_ndvi",
+        "n_sites": 0,
+        "species": [],
+        "justification": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              72.96855006463878,
+              19.006104932941277
+            ],
+            [
+              72.96451360573435,
+              19.0177559250568
+            ],
+            [
+              72.9523593715155,
+              19.01945212472694
+            ],
+            [
+              72.94424318201268,
+              19.00949904585933
+            ],
+            [
+              72.9482791979166,
+              18.99784942987641
+            ],
+            [
+              72.96043184655056,
+              18.996151516609064
+            ],
+            [
+              72.96855006463878,
+              19.006104932941277
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "zone": "87608b194ffffff",
+        "rank": 119,
+        "aqi_beyond_index": false,
+        "reasoned": false,
+        "priority_score": null,
+        "aqi_latest": 67.0,
+        "aqi_pred_delta": 30.8,
+        "traffic_latest": 50.0,
+        "traffic_pred_delta": 0.0,
+        "ndvi_latest": -0.026,
+        "ndvi_trend_per_year": 0.0186,
+        "ndvi_pred_delta": 0.0821,
+        "plantable_space": null,
+        "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
         "justification": ""
@@ -7287,7 +7455,15 @@
         "plantable_source": null,
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "soil": {
+          "ph": 6.7,
+          "ph_class": "neutral",
+          "texture": "clay loam",
+          "texture_simple": "clay",
+          "moisture": null,
+          "soc": 343.0
+        }
       }
     },
     {
@@ -7344,7 +7520,15 @@
         "plantable_source": null,
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "soil": {
+          "ph": 6.2,
+          "ph_class": "acidic",
+          "texture": "clay loam",
+          "texture_simple": "clay",
+          "moisture": null,
+          "soc": 353.0
+        }
       }
     },
     {
@@ -7401,7 +7585,15 @@
         "plantable_source": null,
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "soil": {
+          "ph": 6.6,
+          "ph_class": "neutral",
+          "texture": "clay loam",
+          "texture_simple": "clay",
+          "moisture": null,
+          "soc": 324.5
+        }
       }
     },
     {
@@ -7458,7 +7650,15 @@
         "plantable_source": null,
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "soil": {
+          "ph": 6.5,
+          "ph_class": "neutral",
+          "texture": "clay loam",
+          "texture_simple": "clay",
+          "moisture": null,
+          "soc": 282.0
+        }
       }
     },
     {
@@ -7572,7 +7772,15 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "soil": {
+          "ph": 6.5,
+          "ph_class": "neutral",
+          "texture": "clay loam",
+          "texture_simple": "clay",
+          "moisture": null,
+          "soc": 223.0
+        }
       }
     },
     {
@@ -7629,7 +7837,15 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "soil": {
+          "ph": 6.4,
+          "ph_class": "acidic",
+          "texture": "clay loam",
+          "texture_simple": "clay",
+          "moisture": null,
+          "soc": 248.0
+        }
       }
     },
     {
@@ -7686,7 +7902,15 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "soil": {
+          "ph": 6.55,
+          "ph_class": "neutral",
+          "texture": "clay loam",
+          "texture_simple": "clay",
+          "moisture": null,
+          "soc": 214.0
+        }
       }
     },
     {
@@ -7743,7 +7967,15 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "soil": {
+          "ph": 6.35,
+          "ph_class": "acidic",
+          "texture": "clay loam",
+          "texture_simple": "clay",
+          "moisture": null,
+          "soc": 245.0
+        }
       }
     },
     {
@@ -7910,7 +8142,7 @@
         "ndvi_latest": -0.051,
         "ndvi_trend_per_year": 0.0465,
         "ndvi_pred_delta": 0.0605,
-        "plantable_space": 1.0,
+        "plantable_space": null,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
@@ -7971,7 +8203,15 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "soil": {
+          "ph": 6.45,
+          "ph_class": "acidic",
+          "texture": "clay loam",
+          "texture_simple": "clay",
+          "moisture": null,
+          "soc": 262.0
+        }
       }
     },
     {

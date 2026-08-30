@@ -1,9 +1,6 @@
 GREENGRID PLANTING BRIEF — Chennai
-Generated: 2026-08-30 10:56 UTC
+Generated: 2026-08-30 11:40 UTC
 Grid: H3 resolution 7 | Horizon: 12 months | Zones ranked: 84 | Top listed: 10
-
-Training: 60 backtest iterations at horizon 12. MAE — traffic 0.0, AQI 18.0, NDVI 0.051.
-With its memory the model beat a memory-free naive baseline on the same tasks (skill first half +0.167 -> second half +0.230; raw error 0.531 -> 0.560).
 
 TOP PRIORITY ZONES
 ============================================================
@@ -14,8 +11,9 @@ TOP PRIORITY ZONES
 
 #2  87618eb28ffffff  (lat 13.1314, lon 80.1785)  score 0.753
     AQI 72 (+6 predicted yr-on-yr), traffic 50 (+0 predicted yr-on-yr), NDVI 0.36 (-0.007/yr)
-    Plant: Siris, Neem, Shisham, Banyan
-    Why: Priority score 0.753: predicted AQI change +6.0, NDVI trend -0.0068/yr with canopy at 0.36 and plantable-space 0.40. Species chosen for pollution tolerance and fit to available space.
+    Soil: pH 7.0 (neutral), clay loam, SOC 280 g/kg
+    Plant: Siris, Neem, Banyan, Peepal
+    Why: Priority score 0.753: predicted AQI change +6.0, NDVI trend -0.0068/yr with canopy at 0.36 and plantable-space 0.40. Species chosen for pollution tolerance and fit to available space. Soil pH 7.0 (neutral), clay loam — species filtered for soil fit.
 
 #3  87618c4dcffffff  (lat 13.0634, lon 80.1638)  score 0.733
     AQI 72 (+2 predicted yr-on-yr), traffic 50 (+0 predicted yr-on-yr), NDVI 0.34 (-0.007/yr)
@@ -39,18 +37,21 @@ TOP PRIORITY ZONES
 
 #7  87618c4c1ffffff  (lat 13.0180, lon 80.1540)  score 0.652
     AQI 72 (+0 predicted yr-on-yr), traffic 50 (+0 predicted yr-on-yr), NDVI 0.32 (-0.006/yr)
-    Plant: Siris, Neem, Shisham, Banyan
-    Why: Priority score 0.652: predicted AQI change +0.1, NDVI trend -0.0058/yr with canopy at 0.32 and plantable-space 0.46. Species chosen for pollution tolerance and fit to available space.
+    Soil: pH 6.8 (neutral), clay loam, SOC 340 g/kg
+    Plant: Siris, Neem, Banyan, Peepal
+    Why: Priority score 0.652: predicted AQI change +0.1, NDVI trend -0.0058/yr with canopy at 0.32 and plantable-space 0.46. Species chosen for pollution tolerance and fit to available space. Soil pH 6.8 (neutral), clay loam — species filtered for soil fit.
 
 #8  87618c4d1ffffff  (lat 13.0707, lon 80.1856)  score 0.641
     AQI 72 (+3 predicted yr-on-yr), traffic 50 (+0 predicted yr-on-yr), NDVI 0.30 (+0.002/yr)
-    Plant: Siris, Neem, Shisham, Banyan
-    Why: Priority score 0.641: predicted AQI change +3.0, NDVI trend +0.0016/yr with canopy at 0.30 and plantable-space 0.49. Species chosen for pollution tolerance and fit to available space.
+    Soil: pH 6.8 (neutral), clay loam, SOC 347 g/kg
+    Plant: Siris, Neem, Banyan, Peepal
+    Why: Priority score 0.641: predicted AQI change +3.0, NDVI trend +0.0016/yr with canopy at 0.30 and plantable-space 0.49. Species chosen for pollution tolerance and fit to available space. Soil pH 6.8 (neutral), clay loam — species filtered for soil fit.
 
 #9  87618c4deffffff  (lat 13.0861, lon 80.1687)  score 0.636
     AQI 72 (+0 predicted yr-on-yr), traffic 50 (+0 predicted yr-on-yr), NDVI 0.35 (-0.006/yr)
-    Plant: Siris, Neem, Shisham, Banyan
-    Why: Priority score 0.636: predicted AQI change +0.1, NDVI trend -0.0056/yr with canopy at 0.35 and plantable-space 0.42. Species chosen for pollution tolerance and fit to available space.
+    Soil: pH 6.8 (neutral), clay loam, SOC 323 g/kg
+    Plant: Siris, Neem, Banyan, Peepal
+    Why: Priority score 0.636: predicted AQI change +0.1, NDVI trend -0.0056/yr with canopy at 0.35 and plantable-space 0.42. Species chosen for pollution tolerance and fit to available space. Soil pH 6.8 (neutral), clay loam — species filtered for soil fit.
 
 #10  87618c49affffff  (lat 13.1526, lon 80.3047)  score 0.614
     AQI 75 (-4 predicted yr-on-yr), traffic 50 (+0 predicted yr-on-yr), NDVI 0.21 (-0.010/yr)

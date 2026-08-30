@@ -119,10 +119,18 @@
         "species": [
           "Siris",
           "Neem",
-          "Shisham",
-          "Banyan"
+          "Banyan",
+          "Peepal"
         ],
-        "justification": "Priority score 0.753: predicted AQI change +6.0, NDVI trend -0.0068/yr with canopy at 0.36 and plantable-space 0.40. Species chosen for pollution tolerance and fit to available space."
+        "justification": "Priority score 0.753: predicted AQI change +6.0, NDVI trend -0.0068/yr with canopy at 0.36 and plantable-space 0.40. Species chosen for pollution tolerance and fit to available space. Soil pH 7.0 (neutral), clay loam \u2014 species filtered for soil fit.",
+        "soil": {
+          "ph": 6.95,
+          "ph_class": "neutral",
+          "texture": "clay loam",
+          "texture_simple": "clay",
+          "moisture": null,
+          "soc": 280.0
+        }
       }
     },
     {
@@ -429,10 +437,18 @@
         "species": [
           "Siris",
           "Neem",
-          "Shisham",
-          "Banyan"
+          "Banyan",
+          "Peepal"
         ],
-        "justification": "Priority score 0.652: predicted AQI change +0.1, NDVI trend -0.0058/yr with canopy at 0.32 and plantable-space 0.46. Species chosen for pollution tolerance and fit to available space."
+        "justification": "Priority score 0.652: predicted AQI change +0.1, NDVI trend -0.0058/yr with canopy at 0.32 and plantable-space 0.46. Species chosen for pollution tolerance and fit to available space. Soil pH 6.8 (neutral), clay loam \u2014 species filtered for soil fit.",
+        "soil": {
+          "ph": 6.85,
+          "ph_class": "neutral",
+          "texture": "clay loam",
+          "texture_simple": "clay",
+          "moisture": null,
+          "soc": 340.5
+        }
       }
     },
     {
@@ -491,10 +507,18 @@
         "species": [
           "Siris",
           "Neem",
-          "Shisham",
-          "Banyan"
+          "Banyan",
+          "Peepal"
         ],
-        "justification": "Priority score 0.641: predicted AQI change +3.0, NDVI trend +0.0016/yr with canopy at 0.30 and plantable-space 0.49. Species chosen for pollution tolerance and fit to available space."
+        "justification": "Priority score 0.641: predicted AQI change +3.0, NDVI trend +0.0016/yr with canopy at 0.30 and plantable-space 0.49. Species chosen for pollution tolerance and fit to available space. Soil pH 6.8 (neutral), clay loam \u2014 species filtered for soil fit.",
+        "soil": {
+          "ph": 6.85,
+          "ph_class": "neutral",
+          "texture": "clay loam",
+          "texture_simple": "clay",
+          "moisture": null,
+          "soc": 347.0
+        }
       }
     },
     {
@@ -553,10 +577,18 @@
         "species": [
           "Siris",
           "Neem",
-          "Shisham",
-          "Banyan"
+          "Banyan",
+          "Peepal"
         ],
-        "justification": "Priority score 0.636: predicted AQI change +0.1, NDVI trend -0.0056/yr with canopy at 0.35 and plantable-space 0.42. Species chosen for pollution tolerance and fit to available space."
+        "justification": "Priority score 0.636: predicted AQI change +0.1, NDVI trend -0.0056/yr with canopy at 0.35 and plantable-space 0.42. Species chosen for pollution tolerance and fit to available space. Soil pH 6.8 (neutral), clay loam \u2014 species filtered for soil fit.",
+        "soil": {
+          "ph": 6.8,
+          "ph_class": "neutral",
+          "texture": "clay loam",
+          "texture_simple": "clay",
+          "moisture": null,
+          "soc": 323.0
+        }
       }
     },
     {
@@ -675,7 +707,15 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "soil": {
+          "ph": 6.75,
+          "ph_class": "neutral",
+          "texture": "clay loam",
+          "texture_simple": "clay",
+          "moisture": null,
+          "soc": 358.0
+        }
       }
     },
     {
@@ -903,7 +943,15 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "soil": {
+          "ph": 6.55,
+          "ph_class": "neutral",
+          "texture": "clay loam",
+          "texture_simple": "clay",
+          "moisture": null,
+          "soc": 314.5
+        }
       }
     },
     {
@@ -1188,7 +1236,15 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "soil": {
+          "ph": 6.65,
+          "ph_class": "neutral",
+          "texture": "clay loam",
+          "texture_simple": "clay",
+          "moisture": null,
+          "soc": 336.5
+        }
       }
     },
     {
@@ -1245,7 +1301,15 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "soil": {
+          "ph": 6.6,
+          "ph_class": "neutral",
+          "texture": "clay loam",
+          "texture_simple": "clay",
+          "moisture": null,
+          "soc": 350.0
+        }
       }
     },
     {
@@ -1587,7 +1651,15 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "soil": {
+          "ph": 6.85,
+          "ph_class": "neutral",
+          "texture": "clay loam",
+          "texture_simple": "clay",
+          "moisture": null,
+          "soc": 382.0
+        }
       }
     },
     {
@@ -1701,7 +1773,15 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "soil": {
+          "ph": 6.6,
+          "ph_class": "neutral",
+          "texture": "clay loam",
+          "texture_simple": "clay",
+          "moisture": null,
+          "soc": 277.0
+        }
       }
     },
     {
@@ -1929,7 +2009,15 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "soil": {
+          "ph": 6.75,
+          "ph_class": "neutral",
+          "texture": "clay loam",
+          "texture_simple": "clay",
+          "moisture": null,
+          "soc": 334.5
+        }
       }
     },
     {
@@ -2043,7 +2131,15 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "soil": {
+          "ph": 7.0,
+          "ph_class": "neutral",
+          "texture": "clay loam",
+          "texture_simple": "clay",
+          "moisture": null,
+          "soc": 303.0
+        }
       }
     },
     {
@@ -2214,7 +2310,15 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "soil": {
+          "ph": 6.75,
+          "ph_class": "neutral",
+          "texture": "clay loam",
+          "texture_simple": "clay",
+          "moisture": null,
+          "soc": 342.5
+        }
       }
     },
     {
@@ -2442,7 +2546,15 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "soil": {
+          "ph": 6.9,
+          "ph_class": "neutral",
+          "texture": "clay loam",
+          "texture_simple": "clay",
+          "moisture": null,
+          "soc": 344.0
+        }
       }
     },
     {
@@ -2499,7 +2611,15 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "soil": {
+          "ph": 6.85,
+          "ph_class": "neutral",
+          "texture": "clay loam",
+          "texture_simple": "clay",
+          "moisture": null,
+          "soc": 313.5
+        }
       }
     },
     {
@@ -2841,7 +2961,15 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "soil": {
+          "ph": 6.65,
+          "ph_class": "neutral",
+          "texture": "clay loam",
+          "texture_simple": "clay",
+          "moisture": null,
+          "soc": 327.0
+        }
       }
     },
     {
@@ -3183,7 +3311,15 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "soil": {
+          "ph": 6.5,
+          "ph_class": "neutral",
+          "texture": "clay loam",
+          "texture_simple": "clay",
+          "moisture": null,
+          "soc": 257.0
+        }
       }
     },
     {
@@ -3240,7 +3376,15 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "soil": {
+          "ph": 6.45,
+          "ph_class": "acidic",
+          "texture": "clay loam",
+          "texture_simple": "clay",
+          "moisture": null,
+          "soc": 304.0
+        }
       }
     },
     {
@@ -3297,7 +3441,15 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "soil": {
+          "ph": 6.6,
+          "ph_class": "neutral",
+          "texture": "clay loam",
+          "texture_simple": "clay",
+          "moisture": null,
+          "soc": 339.5
+        }
       }
     },
     {
@@ -3354,7 +3506,15 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "soil": {
+          "ph": 6.4,
+          "ph_class": "acidic",
+          "texture": "clay loam",
+          "texture_simple": "clay",
+          "moisture": null,
+          "soc": 301.5
+        }
       }
     },
     {
@@ -3411,7 +3571,15 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "soil": {
+          "ph": 6.6,
+          "ph_class": "neutral",
+          "texture": "clay loam",
+          "texture_simple": "clay",
+          "moisture": null,
+          "soc": 352.5
+        }
       }
     },
     {
@@ -3468,7 +3636,15 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "soil": {
+          "ph": 6.45,
+          "ph_class": "acidic",
+          "texture": "clay loam",
+          "texture_simple": "clay",
+          "moisture": null,
+          "soc": 283.0
+        }
       }
     },
     {
@@ -3525,7 +3701,15 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "soil": {
+          "ph": 6.55,
+          "ph_class": "neutral",
+          "texture": "clay loam",
+          "texture_simple": "clay",
+          "moisture": null,
+          "soc": 267.0
+        }
       }
     },
     {
@@ -3582,7 +3766,15 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "soil": {
+          "ph": 6.4,
+          "ph_class": "acidic",
+          "texture": "clay loam",
+          "texture_simple": "clay",
+          "moisture": null,
+          "soc": 233.0
+        }
       }
     },
     {
@@ -3753,7 +3945,15 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "soil": {
+          "ph": 6.65,
+          "ph_class": "neutral",
+          "texture": "clay loam",
+          "texture_simple": "clay",
+          "moisture": null,
+          "soc": 348.5
+        }
       }
     },
     {
@@ -3810,7 +4010,15 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "soil": {
+          "ph": 6.45,
+          "ph_class": "acidic",
+          "texture": "clay loam",
+          "texture_simple": "clay",
+          "moisture": null,
+          "soc": 325.0
+        }
       }
     },
     {
@@ -3981,7 +4189,15 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "soil": {
+          "ph": 6.8,
+          "ph_class": "neutral",
+          "texture": "clay loam",
+          "texture_simple": "clay",
+          "moisture": null,
+          "soc": 343.0
+        }
       }
     },
     {
@@ -4038,7 +4254,15 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "soil": {
+          "ph": 6.7,
+          "ph_class": "neutral",
+          "texture": "clay loam",
+          "texture_simple": "clay",
+          "moisture": null,
+          "soc": 345.0
+        }
       }
     },
     {
@@ -4095,7 +4319,15 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "soil": {
+          "ph": 6.75,
+          "ph_class": "neutral",
+          "texture": "clay loam",
+          "texture_simple": "clay",
+          "moisture": null,
+          "soc": 337.5
+        }
       }
     },
     {
@@ -4152,7 +4384,15 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "soil": {
+          "ph": 6.85,
+          "ph_class": "neutral",
+          "texture": "clay loam",
+          "texture_simple": "clay",
+          "moisture": null,
+          "soc": 446.0
+        }
       }
     },
     {
@@ -4266,7 +4506,15 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "soil": {
+          "ph": 6.95,
+          "ph_class": "neutral",
+          "texture": "clay loam",
+          "texture_simple": "clay",
+          "moisture": null,
+          "soc": 290.0
+        }
       }
     },
     {
@@ -4380,7 +4628,15 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "soil": {
+          "ph": 6.85,
+          "ph_class": "neutral",
+          "texture": "clay loam",
+          "texture_simple": "clay",
+          "moisture": null,
+          "soc": 361.5
+        }
       }
     },
     {
@@ -4551,7 +4807,15 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "soil": {
+          "ph": 6.3,
+          "ph_class": "acidic",
+          "texture": "clay loam",
+          "texture_simple": "clay",
+          "moisture": null,
+          "soc": 389.5
+        }
       }
     },
     {
@@ -4608,7 +4872,15 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "soil": {
+          "ph": 6.95,
+          "ph_class": "neutral",
+          "texture": "clay loam",
+          "texture_simple": "clay",
+          "moisture": null,
+          "soc": 276.0
+        }
       }
     },
     {
@@ -4722,7 +4994,15 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "soil": {
+          "ph": 6.85,
+          "ph_class": "neutral",
+          "texture": "clay loam",
+          "texture_simple": "clay",
+          "moisture": null,
+          "soc": 450.0
+        }
       }
     },
     {
@@ -4779,7 +5059,15 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "soil": {
+          "ph": 7.0,
+          "ph_class": "neutral",
+          "texture": "clay loam",
+          "texture_simple": "clay",
+          "moisture": null,
+          "soc": 296.0
+        }
       }
     },
     {
@@ -4836,7 +5124,15 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "soil": {
+          "ph": 6.7,
+          "ph_class": "neutral",
+          "texture": "clay loam",
+          "texture_simple": "clay",
+          "moisture": null,
+          "soc": 267.5
+        }
       }
     }
   ]

@@ -60,7 +60,7 @@ soil:
   # SoilGrids masks built-up land, so cells in the dense core are recovered by
   # re-sampling offsets around the centre; a few may still come back empty and
   # simply fall through to pollution-only species matching.
-  soilgrids_csv:
+  soilgrids_csv: data/delhi_soilgrids.csv
   # moisture_csv: data/ahmedabad_smap.csv   # NASA SMAP needs an Earthdata login
 
 training:

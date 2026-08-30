@@ -1,9 +1,6 @@
 GREENGRID PLANTING BRIEF — Delhi
-Generated: 2026-08-30 09:49 UTC
+Generated: 2026-08-30 11:42 UTC
 Grid: H3 resolution 7 | Horizon: 12 months | Zones ranked: 127 | Top listed: 10
-
-Training: 60 backtest iterations at horizon 12. MAE — traffic 0.0, AQI 106.6, NDVI 0.041.
-With its memory the model beat a memory-free naive baseline on the same tasks (skill first half +0.043 -> second half +0.076; raw error 0.339 -> 0.308).
 
 TOP PRIORITY ZONES
 ============================================================
@@ -24,8 +21,9 @@ TOP PRIORITY ZONES
 
 #4  873da1175ffffff  (lat 28.6407, lon 77.1563)  score 0.838
     AQI 301 (-20 predicted yr-on-yr), traffic 50 (+0 predicted yr-on-yr), NDVI 0.32 (-0.013/yr)
+    Soil: pH 7.8 (alkaline), loam, SOC 70 g/kg
     Plant: Palash, Pongamia (Karanj), Siris, Neem
-    Why: Priority score 0.838: predicted AQI change -20.2, NDVI trend -0.0125/yr with canopy at 0.32 and plantable-space 0.46. Species chosen for pollution tolerance and fit to available space.
+    Why: Priority score 0.838: predicted AQI change -20.2, NDVI trend -0.0125/yr with canopy at 0.32 and plantable-space 0.46. Species chosen for pollution tolerance and fit to available space. Soil pH 7.8 (alkaline), loam — species filtered for soil fit.
 
 #5  873da1b9affffff  (lat 28.7074, lon 77.2795)  score 0.831
     AQI 301 (+1 predicted yr-on-yr), traffic 50 (+0 predicted yr-on-yr), NDVI 0.17 (-0.003/yr)
@@ -34,8 +32,9 @@ TOP PRIORITY ZONES
 
 #6  873da1b9effffff  (lat 28.7202, lon 77.2587)  score 0.827
     AQI 301 (+6 predicted yr-on-yr), traffic 50 (+0 predicted yr-on-yr), NDVI 0.22 (-0.003/yr)
+    Soil: pH 7.7 (alkaline), loam, SOC 74 g/kg
     Plant: Siris, Neem, Shisham, Banyan
-    Why: Priority score 0.827: predicted AQI change +6.2, NDVI trend -0.0031/yr with canopy at 0.22 and plantable-space 0.64. Species chosen for pollution tolerance and fit to available space.
+    Why: Priority score 0.827: predicted AQI change +6.2, NDVI trend -0.0031/yr with canopy at 0.22 and plantable-space 0.64. Species chosen for pollution tolerance and fit to available space. Soil pH 7.7 (alkaline), loam — species filtered for soil fit.
 
 #7  873da1ab1ffffff  (lat 28.6907, lon 77.3452)  score 0.813
     AQI 301 (+6 predicted yr-on-yr), traffic 50 (+0 predicted yr-on-yr), NDVI 0.22 (-0.002/yr)
@@ -44,8 +43,9 @@ TOP PRIORITY ZONES
 
 #8  873da1aa2ffffff  (lat 28.7125, lon 77.3484)  score 0.810
     AQI 301 (+15 predicted yr-on-yr), traffic 50 (+0 predicted yr-on-yr), NDVI 0.36 (-0.007/yr)
+    Soil: pH 8.1 (alkaline), loam, SOC 88 g/kg
     Plant: Palash, Pongamia (Karanj), Bakul (Maulsari), Putranjiva
-    Why: Priority score 0.810: predicted AQI change +14.7, NDVI trend -0.0071/yr with canopy at 0.36 and plantable-space 0.40. Species chosen for pollution tolerance and fit to available space.
+    Why: Priority score 0.810: predicted AQI change +14.7, NDVI trend -0.0071/yr with canopy at 0.36 and plantable-space 0.40. Species chosen for pollution tolerance and fit to available space. Soil pH 8.1 (alkaline), loam — species filtered for soil fit.
 
 #9  873da1a96ffffff  (lat 28.6254, lon 77.3355)  score 0.809
     AQI 301 (+7 predicted yr-on-yr), traffic 50 (+0 predicted yr-on-yr), NDVI 0.22 (-0.002/yr)

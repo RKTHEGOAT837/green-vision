@@ -76,7 +76,23 @@ def main(argv: list[str] | None = None) -> int:
     print("  cells ranked   : %d" % h["zones"])
     print("  green / amber / red: %(green)d / %(yellow)d / %(red)d" % h["greenloss"])
     print("  memory records : %d" % h["memory_records"])
-    print("  soil cells     : %d" % h["soil_cells"])
+    # Soil coverage, with a warning when it is thin.
+    #
+    # SoilGrids legitimately masks water and dense built-up land, so partial
+    # coverage is normal - Ahmedabad gets 120 of 146. But a run that was
+    # interrupted also produces a short file, and the two look identical from
+    # the outside. Anything under half the cells is worth a second look rather
+    # than a silent pass: re-run the export and see whether the number is
+    # stable. If it is, that is masking; if it grows, the first run was cut off.
+    n_soil, n_cells = h["soil_cells"], h["zones"]
+    print("  soil cells     : %d of %d" % (n_soil, n_cells))
+    if 0 < n_soil < n_cells * 0.5:
+        print("    NOTE: under half the cells have soil. Normal for a coastal or")
+        print("          dense city (SoilGrids masks water and built-up land), but")
+        print("          re-run scripts/soilgrids_export.py to confirm the count is")
+        print("          stable rather than a truncated export.")
+    elif n_soil == 0:
+        print("    NOTE: no soil. Species are matched on pollution tolerance only.")
 
     aqi_hi = float(r.aqi_latest.max())
     beyond = int((r.aqi_latest > 500).sum())
