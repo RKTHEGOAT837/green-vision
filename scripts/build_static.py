@@ -44,6 +44,7 @@ import datetime as _dt
 import json
 import logging
 import math
+import pathlib
 import shutil
 import sys
 from pathlib import Path
@@ -250,11 +251,41 @@ def build(config: str, out_dir: Path) -> None:
     # to Pages, Netlify or Cloudflare all come from the same artefact.
     import shutil as _sh
     docs = ROOT / "docs"
-    if docs.exists():
-        _sh.rmtree(docs)
-    _sh.copytree(out_dir, docs)
+
+    # Copy OVER the existing tree rather than deleting it first.
+    #
+    # rmtree fails with WinError 5 whenever OneDrive (or an editor, or an
+    # antivirus scan) holds a handle on any file underneath - and it failed
+    # exactly that way here, leaving docs/ stale while the build reported
+    # success and the commit went out. A stale docs/ means the LIVE SITE
+    # silently serves the previous version: the worst kind of failure,
+    # because everything looks fine.
+    #
+    # dirs_exist_ok merges in place and never needs the directory handle, so
+    # a locked file fails loudly on that one file instead of taking out the
+    # whole mirror. Stale leftovers are then pruned explicitly.
+    _sh.copytree(out_dir, docs, dirs_exist_ok=True)
+    keep = {q.relative_to(out_dir) for q in out_dir.rglob("*") if q.is_file()}
+    keep.add(pathlib.Path(".nojekyll"))
+    for q in sorted((f for f in docs.rglob("*") if f.is_file()), reverse=True):
+        if q.relative_to(docs) not in keep:
+            try:
+                q.unlink()
+            except OSError as exc:
+                log.warning("  could not remove stale %s: %s", q.name, exc)
     (docs / ".nojekyll").write_text("", encoding="utf-8")
-    log.info("  mirrored to docs/ for GitHub Pages")
+
+    # Verify rather than assume. If the mirror did not actually take, say so
+    # loudly - a silent stale mirror is what caused this comment to exist.
+    src_html = (out_dir / "index.html").read_bytes()
+    dst_html = (docs / "index.html").read_bytes()
+    if src_html != dst_html:
+        raise RuntimeError(
+            "docs/index.html does not match dist/index.html after the mirror. "
+            "Something is holding the file open (OneDrive, an editor, antivirus). "
+            "Close it and re-run; do NOT commit, the live site would go stale."
+        )
+    log.info("  mirrored to docs/ for GitHub Pages (verified identical)")
 
     total = sum(sizes.values())
     log.info("wrote %s", out_dir)
