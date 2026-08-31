@@ -50,6 +50,7 @@ from .engine import load_panel, recommend, train
 from .features.h3grid import cell_boundary_lonlat, cell_center, latlng_to_cell
 from .features.soil import load_soil, species_soil_ok
 from . import osmlocal
+from .cities import CityRegistry
 from .reasoning import i18n
 from .reasoning.assistant import Assistant
 from .reasoning.client import MockModel, build_model
@@ -75,7 +76,12 @@ def _osm_health() -> dict:
     on. If the index has not been touched yet this reports that it exists and
     will load on the first map query, which is the truth."""
     try:
-        path = Path(__file__).resolve().parent.parent / "data" / "osm" / "index.jsonl.gz"
+        base = Path(__file__).resolve().parent.parent / "data" / "osm"
+        # index.all.jsonl.gz covers every served city; index.jsonl.gz is the
+        # older single-zone build. Prefer the wider one when it exists.
+        path = base / "index.all.jsonl.gz"
+        if not path.is_file():
+            path = base / "index.jsonl.gz"
         if osmlocal._INSTANCE is None:
             if not path.is_file():
                 return {"ready": False, "loaded": False,
@@ -112,15 +118,27 @@ class Engine:
         # tracked YAML. Shared with the CLI so both entry points behave
         # identically — see config.apply_env_overrides for the reasoning.
         apply_env_overrides(self.cfg)
-        # The local OSM index loads a disc around the city being planned, not
-        # the whole extract — see osmlocal.LocalOSM. Derive the centre from the
-        # configured bbox so a second city needs no code change.
+        # The local OSM index loads discs around the cities being served.
+        #
+        # An Engine contributes its own centre but must NOT overwrite what is
+        # already there. Engines are built LAZILY, so the first click in
+        # Bengaluru would otherwise reset the focus to Bengaluru alone and
+        # silently drop the map data for every other city the server is
+        # serving - a bug that only appears on the second city, which is
+        # exactly the kind that reaches a demo.
         try:
             bb = self.cfg.city.bbox                     # [lon_min, lat_min, lon_max, lat_max]
-            _CITY_FOCUS[0] = ((bb[1] + bb[3]) / 2.0, (bb[0] + bb[2]) / 2.0)
-            _CITY_FOCUS[1] = float(getattr(self.cfg.city, "osm_focus_km", 150.0) or 150.0)
+            here = ((bb[1] + bb[3]) / 2.0, (bb[0] + bb[2]) / 2.0)
+            cur = _CITY_FOCUS[0]
+            if cur is None:
+                _CITY_FOCUS[0] = [here]
+            elif isinstance(cur, tuple):
+                _CITY_FOCUS[0] = [cur, here] if cur != here else [cur]
+            elif here not in cur:
+                _CITY_FOCUS[0] = list(cur) + [here]
+            _CITY_FOCUS[1] = float(getattr(self.cfg.city, "osm_focus_km", 60.0) or 60.0)
         except Exception:
-            _CITY_FOCUS[0] = None
+            pass
         # Two independent "mock" decisions:
         #  * adapters ALWAYS follow config (so real csv: streams like AQI are
         #    honored) — pass mock=False to load_panel.
@@ -822,7 +840,7 @@ def _num(v: Any, default: float) -> float:
         return default
 
 
-def make_handler(engine: Engine):
+def make_handler(registry: CityRegistry):
     class Handler(BaseHTTPRequestHandler):
         server_version = "GreenGridEngine/1.0"
 
@@ -903,6 +921,28 @@ def make_handler(engine: Engine):
             self.wfile.write(body)
             return True
 
+        def _pick(self):
+            """The engine that should answer THIS request.
+
+            Order: an explicit ?city=, then the lat/lon if one was given, then
+            the city the server booted with. Returns (engine, slug, error) so a
+            route can report a bad city name instead of quietly serving the
+            wrong one - answering Bengaluru's question with Ahmedabad's data
+            would be worse than refusing."""
+            qs = parse_qs(self.path.split("?", 1)[1] if "?" in self.path else "")
+            want = (qs.get("city") or [None])[0]
+            lat = lon = None
+            try:
+                if qs.get("lat") and qs.get("lon"):
+                    lat, lon = float(qs["lat"][0]), float(qs["lon"][0])
+            except ValueError:
+                pass
+            slug = registry.pick(want, lat, lon)
+            if slug is None:
+                names = ", ".join(c["slug"] for c in registry.summary() if c["ready"])
+                return None, None, "unknown or unavailable city %r; have: %s" % (want, names)
+            return registry.engine(slug), slug, None
+
         def do_GET(self) -> None:  # noqa: N802
             path = self.path.split("?", 1)[0]
 
@@ -910,10 +950,27 @@ def make_handler(engine: Engine):
                 self.send_response(204)
                 self._cors()
                 self.end_headers()
+            elif path.startswith("/api/cities"):
+                # What the browser needs to know before it can route anything:
+                # which cities exist, where they are, which are ready.
+                self._json({"cities": registry.summary(),
+                            "default": registry.default_slug,
+                            "loaded": registry.loaded})
             elif path.startswith("/api/health"):
-                self._json(engine.health())
+                eng, slug, err = self._pick()
+                if err:
+                    self._json({"error": err}, 404)
+                else:
+                    h = eng.health()
+                    h["city_slug"] = slug
+                    h["cities"] = registry.summary()
+                    self._json(h)
             elif path.startswith("/api/greenloss"):
-                self._json(engine.greenloss)
+                eng, slug, err = self._pick()
+                if err:
+                    self._json({"error": err}, 404)
+                else:
+                    self._json(eng.greenloss)
             elif path.startswith("/api/cells"):
                 # Every ranked cell, numbers only - what the map needs to draw
                 # the whole city rather than the top ten.
@@ -922,12 +979,20 @@ def make_handler(engine: Engine):
                     n = int((qs.get("n") or ["0"])[0])
                 except ValueError:
                     n = 0
-                self._json({"cells": engine.top_cells(n or engine.n_zones()),
-                            "total": engine.n_zones()})
+                eng, slug, err = self._pick()
+                if err:
+                    self._json({"error": err}, 404)
+                else:
+                    self._json({"cells": eng.top_cells(n or eng.n_zones()),
+                                "total": eng.n_zones(), "city": slug})
             elif path.startswith("/api/languages"):
                 self._json({"languages": i18n.available()})
             elif path.startswith("/api/zones"):
-                self._json(engine.zones_geojson)
+                eng, slug, err = self._pick()
+                if err:
+                    self._json({"error": err}, 404)
+                else:
+                    self._json(eng.zones_geojson)
             elif path in self.STATIC:
                 rel, ctype = self.STATIC[path]
                 if not self._send_file(rel, ctype):
@@ -985,7 +1050,10 @@ def make_handler(engine: Engine):
                         from urllib.parse import unquote_plus
                         ql = unquote_plus(raw[5:])
                     root = Path(__file__).resolve().parent.parent
-                    res = osmlocal.get(root / "data" / "osm" / "index.jsonl.gz",
+                    _idx = root / "data" / "osm" / "index.all.jsonl.gz"
+                    if not _idx.is_file():
+                        _idx = root / "data" / "osm" / "index.jsonl.gz"
+                    res = osmlocal.get(_idx,
                                        focus=_CITY_FOCUS[0],
                                        radius_km=_CITY_FOCUS[1]).query(ql)
                 except Exception as exc:
@@ -997,15 +1065,29 @@ def make_handler(engine: Engine):
                     self._json(res)
                 return
 
+            def _eng_for(b):
+                """Engine for a POST body. The body carries lat/lon for every
+                one of these calls, so a click routes itself to the right city
+                without the page having to track which one it is looking at."""
+                try:
+                    lat = float(b.get("lat")) if b.get("lat") is not None else None
+                    lon = float(b.get("lon")) if b.get("lon") is not None else None
+                except (TypeError, ValueError):
+                    lat = lon = None
+                slug = registry.pick(b.get("city"), lat, lon)
+                return registry.engine(slug) or registry.engine(registry.default_slug)
+
             routes = {
-                "/api/recommend": lambda b: engine.recommend_point(b),
-                "/api/species": lambda b: engine.match_species(
+                "/api/recommend": lambda b: _eng_for(b).recommend_point(b),
+                "/api/species": lambda b: _eng_for(b).match_species(
                     lat=b.get("lat"), lon=b.get("lon"), aqi=b.get("aqi"),
                     canopy_pct=b.get("canopy_pct"), rain_mm_yr=b.get("rain_mm_yr"),
                     goal=str(b.get("goal") or "park"), limit=int(b.get("limit") or 5),
                     lang=i18n.normalise(b.get("lang")),
                 ),
-                "/api/assistant": lambda b: engine.assistant.handle(
+                "/api/assistant": lambda b: _eng_for(
+                    (b.get("context") or {}) if isinstance(b.get("context"), dict) else {}
+                ).assistant.handle(
                     str(b.get("message") or ""), b.get("context"), b.get("lang"),
                 ),
             }
@@ -1033,11 +1115,32 @@ def main() -> None:
     args = ap.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
 
-    engine = Engine(args.config)
-    httpd = ThreadingHTTPServer((args.host, args.port), make_handler(engine))
+    root = Path(__file__).resolve().parent.parent
+    registry = CityRegistry(root / "config", args.config, Engine)
+
+    # Build the boot city up front so the first page load is not the one that
+    # pays for it. Every other city is built when someone first clicks in it.
+    if registry.default_slug:
+        registry.engine(registry.default_slug)
+
+    # Every ready city's centre is a focus for the local OSM index, so map
+    # features work in all of them rather than only the one the server booted
+    # with. Points outside every disc still fall through to public Overpass.
+    foci = []
+    for c in registry.summary():
+        if c["ready"]:
+            lon0, lat0, lon1, lat1 = c["bbox"]
+            foci.append(((lat0 + lat1) / 2.0, (lon0 + lon1) / 2.0))
+    if foci:
+        _CITY_FOCUS[0] = foci
+
+    httpd = ThreadingHTTPServer((args.host, args.port), make_handler(registry))
     log.info("GreenGrid engine serving on http://%s:%d  (Ctrl+C to stop)", args.host, args.port)
-    log.info("  GET  /api/health  /api/zones  /api/greenloss  /api/cells")
-    log.info("  POST /api/recommend  /api/species  /api/assistant")
+    ready = [c["name"] for c in registry.summary() if c["ready"]]
+    log.info("  cities: %s", ", ".join(ready) or "none")
+    log.info("  GET  /api/cities  /api/health  /api/zones  /api/greenloss  /api/cells")
+    log.info("       add ?city=<slug> or ?lat=&lon= to any of them")
+    log.info("  POST /api/recommend  /api/species  /api/assistant  (routed by lat/lon)")
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:

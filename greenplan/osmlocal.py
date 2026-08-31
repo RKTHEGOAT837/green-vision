@@ -101,7 +101,8 @@ class LocalOSM:
 
     CELL = 0.01
 
-    def __init__(self, path: Path, focus: tuple[float, float] | None = None,
+    def __init__(self, path: Path,
+                 focus: tuple[float, float] | list[tuple[float, float]] | None = None,
                  radius_km: float = 60.0) -> None:
         """Load the index, keeping only what is within `radius_km` of `focus`.
 
@@ -121,7 +122,17 @@ class LocalOSM:
         planning another city; nothing here is Ahmedabad-specific.
         """
         self.path = path
-        self.focus = focus
+        # One focus or several. A single-city server passes one point; the
+        # multi-city server passes every city it serves, because a lone focus
+        # cannot cover Ahmedabad and Bengaluru at once - they are 1,500 km
+        # apart, and a radius wide enough to span them would load the whole
+        # subcontinent into memory to serve two discs of it.
+        if focus is None:
+            self.focus: list[tuple[float, float]] = []
+        elif isinstance(focus, tuple):
+            self.focus = [focus]
+        else:
+            self.focus = [tuple(f) for f in focus if f]
         self.radius_m = radius_km * 1000.0
         # cell -> kind -> records. Bucketing by kind INSIDE the cell is what
         # makes this usable: the census asks nine questions about the same
@@ -140,11 +151,13 @@ class LocalOSM:
         if not self.path.is_file():
             log.info("no local OSM index at %s — the public Overpass stays the only source", self.path)
             return
-        flat, flon = self.focus if self.focus else (None, None)
-        # Cheap pre-filter in degrees so the haversine runs only near the edge.
-        if flat is not None:
+        # Pre-compute a degree box per focus so the haversine runs only for
+        # points that are already close to one of them.
+        boxes = []
+        for flat, flon in self.focus:
             dlat = self.radius_m / 111320.0
             dlon = self.radius_m / (111320.0 * max(0.2, math.cos(math.radians(flat))))
+            boxes.append((flat, flon, dlat, dlon))
         opener = gzip.open if self.path.suffix == ".gz" else open
         with opener(self.path, "rt", encoding="utf-8") as fh:
             for line in fh:
@@ -155,11 +168,15 @@ class LocalOSM:
                 lat, lon = rec.get("lat"), rec.get("lon")
                 if lat is None or lon is None:
                     continue
-                if flat is not None:
-                    if abs(lat - flat) > dlat or abs(lon - flon) > dlon:
-                        self.skipped += 1
-                        continue
-                    if _haversine(flat, flon, lat, lon) > self.radius_m:
+                if boxes:
+                    keep = False
+                    for flat, flon, dlat, dlon in boxes:
+                        if abs(lat - flat) > dlat or abs(lon - flon) > dlon:
+                            continue
+                        if _haversine(flat, flon, lat, lon) <= self.radius_m:
+                            keep = True
+                            break
+                    if not keep:
                         self.skipped += 1
                         continue
                 cell = self.grid.setdefault((int(lat / self.CELL), int(lon / self.CELL)), {})
@@ -175,22 +192,44 @@ class LocalOSM:
                      f"{self.n:,}", f"{self.skipped:,}", self.radius_m / 1000,
                      self.bbox[0], self.bbox[1], self.bbox[2], self.bbox[3])
         else:
-            log.warning("local OSM index at %s held nothing within %.0f km of %s",
-                        self.path, self.radius_m / 1000, self.focus)
+            log.warning(
+                "local OSM index at %s held nothing within %.0f km of %s - the "
+                "extract does not cover these cities. Download the right "
+                "Geofabrik zone and re-run scripts/osm_index.py; until then map "
+                "features fall back to the public Overpass instance.",
+                self.path, self.radius_m / 1000, self.focus)
 
     @property
     def ready(self) -> bool:
         return self.n > 0
 
     def covers(self, lat: float, lon: float, margin: float = 0.05) -> bool:
-        """Is this point inside the indexed extract, with a little slack?
+        """Is this point somewhere we actually hold data?
 
-        Outside it we must NOT answer — an empty result would read as 'nothing
-        is there', which is a different and false claim."""
+        Tested against the LOADED DISCS, not the union bounding box. With one
+        focus the two are the same; with several they are not, and the
+        difference is a false answer. Ahmedabad and Mumbai together span a
+        bbox reaching from 18.9 to 23.2 N - Surat sits inside that rectangle
+        and we hold nothing there, so a bbox test would report "covered" and
+        the query would return zero buildings for a city of six million. An
+        empty result and an out-of-coverage result are different claims, and
+        this is the method that keeps them apart.
+
+        `margin` is the slack a caller may sit outside a disc and still be
+        answered; it is applied to the radius, in metres, rather than to a
+        rectangle in degrees."""
         if not self.ready:
             return False
-        return (self.bbox[0] - margin <= lat <= self.bbox[2] + margin
-                and self.bbox[1] - margin <= lon <= self.bbox[3] + margin)
+        if not self.focus:
+            # No focus means the whole extract was loaded; the bbox IS the
+            # coverage in that case.
+            return (self.bbox[0] - margin <= lat <= self.bbox[2] + margin
+                    and self.bbox[1] - margin <= lon <= self.bbox[3] + margin)
+        slack_m = self.radius_m + margin * 111320.0
+        for flat, flon in self.focus:
+            if _haversine(flat, flon, lat, lon) <= slack_m:
+                return True
+        return False
 
     def _near(self, lat: float, lon: float, r_m: float, kind: str) -> Iterable[dict]:
         """Records of ONE kind within r_m. Kind is filtered before distance so
@@ -462,7 +501,7 @@ _INSTANCE: LocalOSM | None = None
 
 
 def get(index_path: Path | str = "data/osm/index.jsonl.gz",
-        focus: tuple[float, float] | None = None,
+        focus: tuple[float, float] | list[tuple[float, float]] | None = None,
         radius_km: float = 60.0) -> LocalOSM:
     """The process-wide index. Built once, on first use.
 

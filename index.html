@@ -419,7 +419,27 @@ const GV_STATIC_ENGINE = {
    when BOTH are unavailable, so callers keep their existing "no engine"
    branch for the genuinely-absent case. */
 window.gvEngineGet = async function (path, ms) {
-  const live = await getJSON(gvEngineUrl(path), {}, ms || 8000);
+  /* Tell the server WHERE we are looking, so it can answer with the right
+     city's engine. One server now holds several cities and routes by point;
+     without this the page would keep receiving whichever city the server
+     booted with, and panning to Bengaluru would silently draw Ahmedabad's
+     ranking over it - wrong data that looks entirely plausible.
+
+     The AOI wins when one is set, because that is the place the reader has
+     actually chosen; otherwise the map centre is the best available guess.
+     Omitted entirely when neither exists, which leaves the old behaviour.
+     The baked-file fallback below ignores it: a static build is one city. */
+  let q = "";
+  try {
+    const a = (window.GV && GV.aoi) ? GV.aoi : null;
+    const c = a ? { lat: a.lat, lng: a.lon } : (window.map ? map.getCenter() : null);
+    if (c && isFinite(c.lat) && isFinite(c.lng)) {
+      q = (path.indexOf("?") < 0 ? "?" : "&") +
+          "lat=" + c.lat.toFixed(5) + "&lon=" + c.lng.toFixed(5);
+    }
+  } catch (e) { /* map not up yet - fall through unqualified */ }
+
+  const live = await getJSON(gvEngineUrl(path + q), {}, ms || 8000);
   if (live) return live;
   const stat = GV_STATIC_ENGINE[path];
   if (!stat) return null;

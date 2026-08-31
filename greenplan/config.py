@@ -32,7 +32,14 @@ class CityCfg:
     # than the 100 km2 ring any single reading uses. Anything outside falls
     # back to the public Overpass instance, so raising this buys reach, not
     # correctness.
-    osm_focus_km: float = 60.0
+    #
+    # Lowered 60 -> 25 once one server began holding SEVERAL cities at once.
+    # The cost is now paid five times over, and 25 km still covers the whole
+    # metro plus any realistic pan: the widest reading the studio takes is a
+    # 5.64 km radius. Ahmedabad and Mumbai together came to 502,000 features
+    # at 25 km, so five cities at 60 km would have run to gigabytes for data
+    # nobody was going to look at.
+    osm_focus_km: float = 25.0
 
 
 @dataclass
