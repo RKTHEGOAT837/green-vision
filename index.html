@@ -86,9 +86,27 @@ button{font-family:inherit;cursor:pointer;color:inherit;}
 .viewbtn:not(.active):hover{color:var(--ink);background:var(--bg2);}
 #mapctrl{position:absolute;right:14px;top:50%;transform:translateY(-50%);z-index:1000;display:flex;flex-direction:column;gap:8px;}
 #mapctrl .iconbtn{width:42px;height:42px;border-radius:13px;}
-#panel{position:fixed;top:0;right:0;bottom:0;width:min(400px,94vw);z-index:1200;transform:translateX(102%);
+#panel{position:fixed;top:0;right:0;bottom:0;width:min(400px,34vw,94vw);z-index:1200;
+  transform:translateX(102%);
   transition:transform .34s cubic-bezier(.22,1,.36,1);display:flex;flex-direction:column;border-left:1px solid var(--glass-brd);}
 #panel.open{transform:translateX(0);}
+/* Collapsed, not gone: RAIL_W of it stays on screen so the reader keeps their
+   place and can put it back with one click. */
+#panel.open.rail{transform:translateX(calc(100% - 46px));}
+#panel.rail .pbody,#panel.rail .ph .sub,#panel.rail .ph .eyebrow{opacity:0;pointer-events:none;}
+#panel.rail .ph h2{writing-mode:vertical-rl;margin:44px 0 0 11px;font-size:14px;
+  max-height:calc(100vh - 90px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+#panel.rail .ph{border-bottom:0;}
+.railtab{position:absolute;top:12px;left:7px;width:32px;height:32px;border-radius:10px;border:0;
+  background:var(--bg2);color:var(--ink-soft);display:none;align-items:center;justify-content:center;
+  cursor:pointer;z-index:2;}
+#panel.rail .railtab{display:flex;}
+#panel.rail .close{display:none;}
+.railtab:hover{color:var(--brand-solid);}
+@media (max-width:820px){
+  #panel{width:min(400px,94vw);}
+  #panel.open.rail{transform:translateX(calc(100% - 40px));}
+}
 .ph{padding:16px 18px 12px;border-bottom:1px solid var(--line);position:relative;}
 .ph .close{position:absolute;top:14px;right:14px;width:32px;height:32px;border-radius:10px;border:0;background:var(--bg2);display:flex;align-items:center;justify-content:center;}
 .ph .eyebrow{font-size:10.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--brand-dk);padding-right:38px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
@@ -838,9 +856,8 @@ function setView(v){
   currentView=v;
   $$(".viewbtn").forEach(b=>b.classList.toggle("active",b.dataset.view===v));
   if(prev==="green"&&v!=="green") greenExit();
-  // The card is keyed to where the reader is, so a view change is a good
-  // moment to make sure it is mounted and showing this city's numbers.
-  if(window.GVACC){ GVACC.mount(); GVACC.render(); }
+  // Accuracy is keyed to where the reader is, so a view change invalidates it.
+  if(window.GVACC) GVACC.cache = {};
   [esriLayer,osmLayer].forEach(l=>{if(l&&map.hasLayer(l))map.removeLayer(l);});
   if(window.GVP) GVP.setActive(v==="priority");
   if(v==="map"){osmLayer.addTo(map);}
@@ -1051,7 +1068,6 @@ function greenDrawHexes() {
   }).addTo(map);
   if (GVG.hexes.bringToBack) GVG.hexes.bringToBack();
   greenDrawLabels();
-  if (window.GVW && GVG.loss) GVW.autoOpen("green");
 }
 
 function greenCellReport(p) {
@@ -1233,16 +1249,22 @@ function greenLegend() {
 
   if (GVG.loss) {
     // Only with the engine's forecast in hand: the canopy raster alone is a
-    // snapshot with no per-cell history to list.
+    // snapshot with no per-cell history to export.
+    //
+    // Export, not a table. The legend above already gives the counts, the
+    // area at risk and the rate it is going at, and every cell answers a
+    // click - so a sheet listing the same figures was repetition that covered
+    // the map to deliver it. What the legend cannot do is leave the browser,
+    // and that is the one thing the button is for.
     el.insertAdjacentHTML("beforeend",
-      '<button class="gvw-open" id="grnWork">Open canopy watch list</button>');
+      '<button class="gvw-open" id="grnWork">Export CSV</button>');
   }
 
   document.getElementById("map").appendChild(el);
   GVG.legend = el;
 
   const gw = el.querySelector("#grnWork");
-  if (gw) gw.onclick = () => GVW.toggle("green");
+  if (gw) gw.onclick = () => greenExportCSV();
 
   const c = el.querySelector("#glCanopy");
   if (c) c.onchange = () => {
@@ -1258,6 +1280,24 @@ function greenLegend() {
   };
   const gl = el.querySelector("#glLabels");
   if (gl) gl.onchange = () => { GVG.showLabels = gl.checked; greenDrawLabels(); };
+}
+
+/* The canopy forecast as a file, without standing a table up first.
+
+   gvwExportCSV() reads GVW.mode and the column set the sheet is showing, so
+   it used to need the sheet open. Flipping the mode around the call keeps one
+   column definition and one provenance stamp for both views - two exporters
+   would drift, and the CSV is the artefact that outlives the session. */
+function greenExportCSV(){
+  if(!(GVG.loss && GVG.loss.features && GVG.loss.features.length)){
+    toast("No canopy forecast loaded to export");
+    return;
+  }
+  const wasMode = GVW.mode, wasPicked = GVW.picked;
+  GVW.mode = "green";
+  GVW.picked = GVW.picked || new Set();
+  try { gvwExportCSV(); }
+  finally { GVW.mode = wasMode; GVW.picked = wasPicked; }
 }
 
 /* ---------- lifecycle ---------- */
@@ -1490,7 +1530,11 @@ function metric(label,value,detail,barVal,col){
   const bar=barVal!=null?`<div class="bar"><i style="width:${clamp(barVal,0,100)}%;background:${col||grade(barVal)[1]}"></i></div>`:"";
   return `<div class="metric"><div class="l">${label}</div><div class="v">${value}</div>${detail?`<div class="d">${detail}</div>`:""}${bar}</div>`;}
 
-function openPanel(){$("#panel").classList.add("open");}
+function openPanel(){
+  // A new report arriving is a reason to show it. Leaving it railed would
+  // make the next map click look like it did nothing.
+  const _p = document.getElementById("panel");
+  if (_p) _p.classList.remove("rail");$("#panel").classList.add("open");}
 function skeleton(){
   $("#pTitle").textContent="Analysing…";$("#pSub").textContent="Reading real environmental data…";
   $("#pBody").innerHTML=`<div class="hero" style="border:0;background:transparent;box-shadow:none;padding:4px 0"><div class="skel" style="width:96px;height:96px;border-radius:50%"></div><div style="flex:1"><div class="skel" style="height:18px;width:60%"></div><div class="skel" style="height:12px;width:90%;margin-top:8px"></div></div></div><div class="mgrid" style="margin-top:16px">${Array(6).fill('<div class="skel" style="height:78px"></div>').join("")}</div>`;
@@ -2009,7 +2053,37 @@ window.addEventListener("DOMContentLoaded",()=>{
   $("#zoomIn").onclick=()=>map.zoomIn();
   $("#zoomOut").onclick=()=>map.zoomOut();
   $("#locBtn").onclick=()=>navigator.geolocation&&navigator.geolocation.getCurrentPosition(p=>{map.setView([p.coords.latitude,p.coords.longitude],15);analyse(p.coords.latitude,p.coords.longitude);},()=>toast("Location unavailable"));
-  $("#pClose").onclick=()=>$("#panel").classList.remove("open");
+  /* Collapse, do not close.
+
+     Closing threw the report away: the reader had to find the same point on
+     the map again to get it back, and the readings behind it are network
+     calls. The rail keeps the panel mounted with its title legible sideways,
+     so one click restores exactly what was there. Clicking anywhere on the
+     rail expands it; the X only ever collapses. */
+  const _panel = $("#panel");
+  $("#pClose").onclick = () => {
+    _panel.classList.add("rail");
+    if (window.gvwFitSoon) gvwFitSoon();
+    if (window.GVACC && GVACC.node) GVACC.node.classList.remove("open"), GVACC.open = false;
+  };
+  const _rail = document.createElement("button");
+  _rail.className = "railtab";
+  _rail.type = "button";
+  _rail.title = "Expand the report";
+  _rail.setAttribute("aria-label", "Expand the report");
+  _rail.innerHTML = '<svg viewBox="0 0 24 24" width="16" fill="none" stroke="currentColor" ' +
+                    'stroke-width="2.4"><path d="M15 6l-6 6 6 6"/></svg>';
+  _rail.onclick = () => { _panel.classList.remove("rail"); if (window.gvwFitSoon) gvwFitSoon(); };
+  const _ph = _panel.querySelector(".ph");
+  if (_ph) _ph.appendChild(_rail);
+  // The whole rail is a target, not just the little chevron: a 46 px strip is
+  // an awkward thing to hit precisely, and there is nothing else in it.
+  _panel.addEventListener("click", e => {
+    if (!_panel.classList.contains("rail")) return;
+    if (e.target.closest(".railtab")) return;      // already handled
+    _panel.classList.remove("rail");
+    if (window.gvwFitSoon) gvwFitSoon();
+  });
   $("#themeBtn").onclick=()=>{
     const dark=document.documentElement.getAttribute("data-theme")!=="dark";
     applyTheme(dark?"dark":"light",true);
@@ -2062,11 +2136,27 @@ window.addEventListener("DOMContentLoaded",()=>{
 /* ---------- dock ---------- */
 #gvDock{
   position:absolute; top:0; left:0; bottom:0; z-index:1250;
-  width:min(var(--gv-dock-w),96vw);
+  width:min(var(--gv-dock-w),38vw,96vw);
   transform:translateX(-102%);
   transition:transform .34s cubic-bezier(.22,1,.36,1);
   display:flex; flex-direction:column;
   border-right:1px solid var(--glass-brd);
+}
+/* Same rail treatment as the report panel. The dock holds the area readings,
+   which are expensive to fetch - collapsing should not discard them. */
+#gvDock.on.rail{ transform:translateX(calc(-100% + 46px)); }
+#gvDock.on.rail > *{ opacity:0; pointer-events:none; transition:opacity .16s; }
+#gvDock.on.rail::after{
+  content:"Panel"; position:absolute; top:52px; left:0; right:0; text-align:center;
+  writing-mode:vertical-rl; font:800 10px 'Sora',sans-serif; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--ink-soft); pointer-events:none;
+}
+#gvDock.on.rail::before{
+  content:""; position:absolute; inset:0; cursor:pointer; pointer-events:auto; z-index:3;
+}
+@media (max-width:820px){
+  #gvDock{ width:min(var(--gv-dock-w),96vw); }
+  #gvDock.on.rail{ transform:translateX(calc(-100% + 40px)); }
 }
 #gvDock.on{ transform:translateX(0); }
 
@@ -5754,6 +5844,13 @@ function buildShell() {
 
   $("#gvAuthBtn").onclick = openAuth;
   $("#gvDockClose").onclick = closeDock;
+  $("#gvDock").addEventListener("click", e => {
+    const d = $("#gvDock");
+    if (!d.classList.contains("rail")) return;
+    e.stopPropagation();
+    d.classList.remove("rail");
+    if (window.gvwFitSoon) gvwFitSoon();
+  }, true);
   $("#gvSheetClose").onclick = closeSheet;
   $("#gvSheetWrap").addEventListener("click", e => { if (e.target.id === "gvSheetWrap") closeSheet(); });
   $$("#gvTabs button").forEach(b => b.onclick = () => openDock(b.dataset.tab));
@@ -5784,6 +5881,8 @@ function openDock(tab) {
 function _openDock(tab) {
   const d = $("#gvDock");
   d.classList.add("on");
+  d.classList.remove("rail");
+  if (window.gvwFitSoon) gvwFitSoon();
   document.body.classList.add("gv-dock-on");
   const reopen = $("#gvDockOpen");
   if (reopen) reopen.classList.remove("show");
@@ -5811,6 +5910,17 @@ function _openDock(tab) {
   else if (tab === "gallery") drawGallery();
 }
 function closeDock() {
+  // Rail rather than remove. The dock holds the 100 km2 area readings, which
+  // cost several network calls to assemble; discarding them to see the map
+  // and then paying for them again is a bad trade for the reader.
+  const d0 = $("#gvDock");
+  if (d0 && d0.classList.contains("on") && !d0.classList.contains("rail")) {
+    d0.classList.add("rail");
+    if (window.GVP && GVP.legend) priLegend(true);
+    if (window.gvwFitSoon) gvwFitSoon();
+    stopDraw(); clearTraffic();
+    return;
+  }
   document.body.classList.remove("gv-dock-on");
   // Leave a way back in. Without this the panel was a one-way door: every
   // tab behind it became unreachable until the next map click.
@@ -8276,6 +8386,18 @@ function priSpecies(raw){
 }
 
 /* ---------- the per-cell report ---------- */
+/* Append the accuracy section to whatever report is currently rendered.
+   Async, so it lands a moment after the report rather than delaying it. */
+function gvaccAppend(){
+  if(!window.GVACC || !GVACC.section) return;
+  GVACC.section().then(function(html){
+    if(!html) return;
+    const body = document.getElementById("pBody");
+    if(!body || body.querySelector(".acc-inline")) return;
+    body.insertAdjacentHTML("beforeend", html);
+  }).catch(function(){ /* no engine, no section: the report stands alone */ });
+}
+
 function priReport(props){
   const sp = priSpecies(props.species);
   const score = Math.round((props.priority_score||0)*100);
@@ -8347,6 +8469,7 @@ function priReport(props){
       'Plan this cell</button></div>';
 
   openPanel();
+  gvaccAppend();
 
   const btn = $("#gvpDesign");
   if(btn) btn.onclick = function(){
@@ -8388,7 +8511,6 @@ function priRender(gj){
   try { map.fitBounds(GVP.layer.getBounds(), {padding:[40,40]}); } catch(e){}
   priDrawLabels();
   priLegend(true);
-  GVW.autoOpen("priority");
   toast(gj.features.length + " ranked cells from the engine");
 }
 
@@ -9684,43 +9806,17 @@ GVACC.render = async function(){
   } finally { GVACC.busy = false; }
 };
 
-GVACC.mount = function(){
-  if(GVACC.node) { GVACC.render(); return; }
-  const el = document.createElement("aside");
-  el.className = "gv-acc glass" + (GVACC.open ? " open" : "");
-  el.innerHTML =
-    '<button class="acc-tab" title="How accurate is this?">' +
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
-      '<circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.01"/></svg>' +
-      "<span>Accuracy</span></button>" +
-    '<div class="acc-body"></div>';
-  document.body.appendChild(el);
-  GVACC.node = el;
-  el.querySelector(".acc-tab").onclick = function(){
-    GVACC.open = !GVACC.open;
-    el.classList.toggle("open", GVACC.open);
-    if(GVACC.open) GVACC.render();
-  };
-  GVACC.render();
-};
+/* Kept as a no-op so any older call site cannot throw. The card is no longer
+   a floating panel: its content is appended to the report panel instead, by
+   gvaccSection(), because a third fixed sidebar made the right-hand edge
+   unreadable. */
+GVACC.mount = function(){ return; };
 
 GVACC.refresh = function(){ GVACC.cache = {}; GVACC.render(); };
 
 (function(){
   const css = document.createElement("style");
   css.textContent =
-  ".gv-acc{position:fixed;right:0;top:96px;z-index:1150;width:min(330px,86vw);" +
-    "border-radius:16px 0 0 16px;transform:translateX(calc(100% - 42px));transition:transform .22s;" +
-    "max-height:calc(100vh - 130px);display:flex;overflow:hidden;}" +
-  ".gv-acc.open{transform:translateX(0);}" +
-  ".acc-tab{flex:none;width:42px;border:0;background:transparent;color:var(--ink-soft);" +
-    "cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:9px;" +
-    "padding:14px 0;border-right:1px solid var(--line);}" +
-  ".acc-tab:hover{color:var(--brand-solid);}" +
-  ".acc-tab svg{width:19px;height:19px;flex:none;}" +
-  ".acc-tab span{writing-mode:vertical-rl;font:800 10px 'Sora',sans-serif;" +
-    "letter-spacing:.14em;text-transform:uppercase;}" +
-  ".acc-body{flex:1;overflow-y:auto;padding:15px 16px 18px;min-width:0;}" +
   ".acc-h{font:800 10px 'Sora',sans-serif;letter-spacing:.08em;text-transform:uppercase;" +
     "color:var(--ink-soft);margin-bottom:3px;}" +
   ".acc-h2{margin-top:16px;padding-top:13px;border-top:1px solid var(--line);}" +
@@ -9737,7 +9833,7 @@ GVACC.refresh = function(){ GVACC.cache = {}; GVACC.render(); };
   ".acc-un{font-size:11px;color:var(--ink-soft);line-height:1.65;}" +
   ".acc-un b{color:var(--ink);}" +
   ".acc-none{font-size:11.5px;color:var(--ink-soft);line-height:1.6;}" +
-  "@media (max-width:820px){.gv-acc{top:auto;bottom:96px;max-height:52vh;}}";
+  "";
   document.head.appendChild(css);
 })();
 
