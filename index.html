@@ -2479,6 +2479,9 @@ code{ font:700 11.5px ui-monospace,Menlo,Consolas,monospace; background:var(--bg
 .gv-total-lab{ font:800 10.5px 'Manrope',sans-serif; letter-spacing:.13em; text-transform:uppercase; color:var(--ink-soft); }
 .gv-total-amt{ font:800 40px 'Sora',sans-serif; letter-spacing:-.035em; line-height:1.05; margin:5px 0 3px; }
 .gv-total-sub{ font-size:11.5px; font-weight:700; color:var(--ink-soft); }
+.gv-overage{ margin-top:9px; padding:9px 11px; border-radius:11px; font-size:11.5px;
+  font-weight:600; line-height:1.55; background:rgba(245,166,35,.14);
+  border:1px solid rgba(245,166,35,.4); color:var(--ink); }
 
 .gv-catbars{ margin-bottom:14px; }
 .gv-catbar{ margin-bottom:9px; }
@@ -4133,6 +4136,21 @@ const ELEMENTS = [
   { id: "tap",         cat: "Services",  name: "Drinking water point",  unit: "each", rate: 32000, icon: "water", perm: 1.0,  water: 0,   maint: 2400, life: 15, note: "" },
   { id: "toilet",      cat: "Services",  name: "Toilet block",          unit: "each", rate: 620000, icon: "roof", perm: 0.1, water: 0,   maint: 48000, life: 25, note: "" },
   { id: "compost",     cat: "Services",  name: "Composting bay",        unit: "each", rate: 38000, icon: "leaf",  perm: 0.9,  water: 0,   maint: 3600, life: 12, note: "Turns leaf litter into the soil amendment you'd otherwise buy." },
+  { id: "paver_perm", cat: "Ground",    name: "Permeable paver block", unit: "m2",  rate: 950,   icon: "path",   perm: 0.60, water: 0,    maint: 30,  life: 20, note: "Interlocking block on a sand bed. Takes light vehicles and still lets water through, which ordinary paving does not." },
+  { id: "track",      cat: "Ground",    name: "Jogging track",         unit: "m2",  rate: 1100,  icon: "track",  perm: 0.35, water: 0,    maint: 65,  life: 10, note: "Murram or synthetic. The single most used thing in most Indian neighbourhood parks." },
+  { id: "amphi",      cat: "Ground",    name: "Stepped seating",       unit: "m2",  rate: 2600,  icon: "amphi",  perm: 0.10, water: 0,    maint: 45,  life: 30, note: "Doubles as an amphitheatre and as retaining structure on a slope." },
+  { id: "kerb",       cat: "Ground",    name: "Kerb and edging",       unit: "m",   rate: 520,   icon: "path",   perm: 0,    water: 0,    maint: 18,  life: 25, note: "Keeps mulch and soil off the paving. Cheap, and its absence is why beds wash out." },
+  { id: "miyawaki",   cat: "Planting",  name: "Miyawaki dense block",  unit: "m2",  rate: 1800,  icon: "leaf",   perm: 0.90, water: 900,  maint: 140, life: 50, note: "3-4 native saplings per m\u00B2 in amended soil. Closes canopy in 3-5 years and needs no irrigation after that, but the first three years are expensive." },
+  { id: "greenwall",  cat: "Planting",  name: "Green screen",          unit: "m2",  rate: 3200,  icon: "shrub",  perm: 0,    water: 700,  maint: 320, life: 12, note: "Climbers on a frame. Screens a boundary wall or a service yard where there is no ground to plant in." },
+  { id: "percolation",cat: "Water",     name: "Percolation trench",    unit: "m",   rate: 1800,  icon: "water",  perm: 1.0,  water: 0,    maint: 90,  life: 20, note: "Gravel-filled trench that puts roof and path runoff back into the ground instead of into the storm drain." },
+  { id: "sump",       cat: "Water",     name: "Irrigation sump + pump",unit: "each", rate: 165000, icon: "water", perm: 0,   water: 0,    maint: 9000, life: 15, note: "Stores tanker or borewell water so irrigation does not depend on supply timing." },
+  { id: "borewell",   cat: "Water",     name: "Borewell with recharge",unit: "each", rate: 185000, icon: "water", perm: 0,   water: 0,    maint: 7000, life: 20, note: "Only with a recharge pit alongside it. A borewell without one is a withdrawal with no deposit." },
+  { id: "court",      cat: "Furniture", name: "Multi-purpose court",   unit: "each", rate: 450000, icon: "court", perm: 0.05, water: 0,   maint: 22000, life: 15, note: "Badminton, basketball or volleyball on one marked slab." },
+  { id: "cycle",      cat: "Furniture", name: "Cycle stand",           unit: "each", rate: 26000, icon: "bench",  perm: 0,    water: 0,    maint: 900, life: 15, note: "Holds about ten cycles." },
+  { id: "signage",    cat: "Services",  name: "Interpretive signage",  unit: "each", rate: 18000, icon: "sign",   perm: 0,    water: 0,    maint: 800, life: 10, note: "Species names and a site map. Cheap, and it is what turns a planting into something people learn from." },
+  { id: "bin",        cat: "Services",  name: "Waste segregation bay", unit: "each", rate: 12000, icon: "bin",    perm: 0,    water: 0,    maint: 2400, life: 8, note: "Wet, dry and reject. Sized for one bay per 60 m of path." },
+  { id: "ramp",       cat: "Services",  name: "Accessible ramp",       unit: "each", rate: 22000, icon: "ramp",   perm: 0,    water: 0,    maint: 600, life: 25, note: "1:12 gradient with handrails. A park with steps at every entrance is a park half the ward cannot use." },
+  { id: "cctv",       cat: "Services",  name: "Solar CCTV pole",       unit: "each", rate: 58000, icon: "light",  perm: 0,    water: 0,    maint: 4200, life: 8, note: "Off-grid. Usage of public parks after dark tracks whether people feel watched over." },
   { id: "fence",       cat: "Services",  name: "Boundary fence",        unit: "m",   rate: 1250, icon: "fence",  perm: 1.0,  water: 0,   maint: 65,  life: 20, note: "" },
   { id: "gate",        cat: "Services",  name: "Entrance gate",         unit: "each", rate: 46000, icon: "fence", perm: 1.0, water: 0,   maint: 1800, life: 20, note: "" }
 ];
@@ -4564,7 +4582,13 @@ function elIcon(k) {
     play:  '<path d="M5 21V9l7-5 7 5v12"/><path d="M9 21v-6h6v6"/>',
     light: '<path d="M12 3v3M12 21v-6M8 9a4 4 0 018 0c0 3-2 3-2 6h-4c0-3-2-3-2-6z"/>',
     leaf:  '<path d="M4 20C4 10 12 4 20 4c0 8-6 16-16 16z"/><path d="M4 20l9-9"/>',
-    fence: '<path d="M4 20V8l2-3 2 3v12M14 20V8l2-3 2 3v12M2 12h20M2 16h20"/>'
+    fence: '<path d="M4 20V8l2-3 2 3v12M14 20V8l2-3 2 3v12M2 12h20M2 16h20"/>',
+    track: '<ellipse cx="12" cy="12" rx="9" ry="5.5"/><ellipse cx="12" cy="12" rx="5" ry="2.5"/>',
+    amphi: '<path d="M3 19h18M5 19v-3h14v3M7 16v-3h10v3M9 13v-3h6v3"/>',
+    court: '<rect x="3" y="5" width="18" height="14" rx="1.5"/><path d="M12 5v14M3 12h4M17 12h4"/>',
+    sign:  '<path d="M12 21V10M6 4h10l3 3-3 3H6z"/>',
+    bin:   '<path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/>',
+    ramp:  '<path d="M3 19h18M3 19L17 8M17 8v11"/>'
   }[k] || '<circle cx="12" cy="12" r="7"/>';
   return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round">${p}</svg>`;
 }
@@ -4834,7 +4858,40 @@ function computeCost(d, ctx) {
   const area = d.plot ? d.plot.area_m2 : 0;
   add("Site preparation", "Clearing and grubbing", area, "m\u00B2", 12);
   add("Site preparation", "Rough grading and levelling", area, "m\u00B2", 38);
-  add("Site preparation", "Topsoil spreading, 150 mm", area * 0.6, "m\u00B2", 55, "Only over planted ground, not paving");
+
+  /* Topsoil goes under planting, so it is measured from the planting that is
+     actually in the design.
+
+     This line used to be a flat 60% of the plot with the note "Only over
+     planted ground, not paving" attached to it - a note describing a
+     calculation that was not being done. A paved plaza was charged topsoil
+     for 60% of its area and a design that was nothing but lawn was charged
+     for 60% of that too. On a hectare the error runs to lakhs either way, on
+     the third largest line in site prep.
+
+     Where no ground element has been placed yet the old 60% stands in, and
+     the note says it is standing in rather than measuring. */
+  const GROUND_PLANTED = { lawn: 1, meadow: 1, mulch: 1, shrub: 1, miyawaki: 1 };
+  const GROUND_PAVED = { path_stone: 1, path_gravel: 1, paver_perm: 1, track: 1, amphi: 1 };
+  let plantedM2 = 0, pavedM2 = 0, groundPlaced = 0;
+  for (const it of d.items) {
+    if (it.k === "tree") continue;
+    const e = ELEMENTS.find(x => x.id === it.ref);
+    if (!e || e.unit !== "m2") continue;
+    if (GROUND_PLANTED[e.id]) { plantedM2 += it.qty; groundPlaced++; }
+    else if (GROUND_PAVED[e.id]) { pavedM2 += it.qty; groundPlaced++; }
+  }
+  // Tree pits still need soil even where they sit in bare ground. 4 m2 is the
+  // pit plus its watering basin at the avenue-grade sizes this costs.
+  const treePitM2 = d.items.filter(i => i.k === "tree").length * 4;
+  const topsoilM2 = groundPlaced
+    ? Math.min(area, plantedM2 + treePitM2)
+    : area * 0.6;
+  add("Site preparation", "Topsoil spreading, 150 mm", topsoilM2, "m\u00B2", 55,
+      groundPlaced
+        ? "Measured from the planted ground in this design plus 4 m\u00B2 per tree pit"
+        : "No ground surfaces placed yet, so this assumes 60% of the plot is planted");
+
   add("Site preparation", "Survey and setting out", 1, "job", Math.max(18000, area * 3.5));
 
   /* --- planting -------------------------------------------------------- */
@@ -4915,8 +4972,20 @@ function computeCost(d, ctx) {
   const estTree = nTrees ? (cats["Establishment (3 yr)"] || 0) * clamp(nTrees * 3000 / Math.max(totalWaterL, 1), 0, 1) : 0;
   const treeAttrib = (plantingDirect + estTree) * (1 + R.contingency + R.design_fee) * (1 + R.gst);
 
+  /* Does the design physically fit?
+
+     Nothing stopped a reader placing 1.5 hectares of surface inside a
+     one-hectare plot, and the costing added it all up without comment - a
+     quote for a park that cannot be built. This does not block anything,
+     because a plot boundary can legitimately be adjusted afterwards; it
+     states the overage so the number is not quoted in ignorance of it. */
+  const surfacedM2 = plantedM2 + pavedM2;
+  const overageM2 = area ? Math.max(0, surfacedM2 - area) : 0;
+
   return {
     lines, cats, direct, contingency, design, gst, grand,
+    planted_m2: plantedM2, paved_m2: pavedM2, topsoil_m2: topsoilM2,
+    surfaced_m2: surfacedM2, overage_m2: overageM2,
     per_m2: area ? grand / area : 0,
     // ATTRIBUTABLE, not the project divided by the tree count - see above.
     // The interface used to label this "per tree, all in", which reads as
@@ -5353,6 +5422,7 @@ function drawCostPanel() {
       <span class="gv-total-lab">Estimated cost to build</span>
       <div class="gv-total-amt">${inr(c.grand)}</div>
       <div class="gv-total-sub">${inrFull(c.grand)} \u00B7 ${inrFull(round(c.per_m2))}/m&sup2;${c.nTrees ? " \u00B7 " + inrFull(round(c.per_tree)) + " per tree planted" : ""}</div>
+    ${c.overage_m2 > 1 ? `<div class="gv-overage">The surfaces in this design cover <b>${fmt(round(c.surfaced_m2))} m&sup2;</b> inside a <b>${fmt(round(c.area))} m&sup2;</b> plot — ${fmt(round(c.overage_m2))} m&sup2; more than fits. The cost below includes all of it, so either the plot or the layout needs adjusting before this is quoted.</div>` : ""}
     </div>
 
     <div class="gv-catbars">
