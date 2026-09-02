@@ -24,3 +24,8 @@ temp_script.js
 # Local OSM index: rebuild with scripts/osm_index.py, do not commit (99 MB + 220 MB)
 data/osm/*.pbf
 data/osm/*.jsonl.gz
+
+# Built OSM indexes are large and regenerable from the PBFs.
+data/osm/*.jsonl.gz
+data/osm/*.pbf
+logs/

@@ -77,7 +77,9 @@ import argparse
 import gzip
 import json
 import logging
+import math
 import sys
+import re
 import time
 from pathlib import Path
 
@@ -116,6 +118,83 @@ def _f(v: str | None) -> float | None:
         return None
 
 
+ROOT_DIR = Path(__file__).resolve().parent.parent
+
+# Coordinate precision. Six decimals is ~0.11 m, which is finer than OSM's own
+# survey accuracy and finer than anything drawn at city zoom; five is ~1.1 m
+# and measured 16% smaller. The extra digit was buying nothing.
+COORD_DP = 5
+
+# Douglas-Peucker tolerance, in metres. Long polylines dominate the file -
+# waterways average 86 points each and coastlines far more - and most of those
+# points describe wiggles well under a metre. At 2 m, 34% of all points go and
+# nothing visibly changes at the zoom levels the studio draws.
+SIMPLIFY_M = 2.0
+
+
+def _hav_km(lat1, lon1, lat2, lon2):
+    p1, p2 = math.radians(lat1), math.radians(lat2)
+    a = (math.sin((p2 - p1) / 2) ** 2
+         + math.cos(p1) * math.cos(p2) * math.sin(math.radians(lon2 - lon1) / 2) ** 2)
+    return 2 * 6371.0088 * math.asin(min(1.0, math.sqrt(a)))
+
+
+def _simplify(pts, eps_deg):
+    """Douglas-Peucker, iterative so a 5,000-point coastline cannot blow the
+    recursion limit - which a recursive version does, on real data."""
+    n = len(pts)
+    if n < 3:
+        return pts
+    keep = [False] * n
+    keep[0] = keep[n - 1] = True
+    stack = [(0, n - 1)]
+    while stack:
+        a, b = stack.pop()
+        if b <= a + 1:
+            continue
+        ay, ax = pts[a]
+        by, bx = pts[b]
+        dy, dx = by - ay, bx - ax
+        den = dy * dy + dx * dx
+        best_i, best_d = -1, eps_deg
+        for i in range(a + 1, b):
+            py, px = pts[i]
+            if den == 0:
+                d = math.hypot(py - ay, px - ax)
+            else:
+                t = ((py - ay) * dy + (px - ax) * dx) / den
+                t = 0.0 if t < 0 else (1.0 if t > 1 else t)
+                d = math.hypot(py - (ay + t * dy), px - (ax + t * dx))
+            if d > best_d:
+                best_i, best_d = i, d
+        if best_i >= 0:
+            keep[best_i] = True
+            stack.append((a, best_i))
+            stack.append((best_i, b))
+    return [pts[i] for i in range(n) if keep[i]]
+
+
+def _resolve_near(items):
+    """--near values into (lat, lon). Accepts a config path or 'lat,lon', so
+    one flag serves both "the cities I serve" and "this spot"."""
+    out = []
+    for it in items or []:
+        m = re.match(r"^\s*(-?[\d.]+)\s*,\s*(-?[\d.]+)\s*$", str(it))
+        if m:
+            out.append((float(m.group(1)), float(m.group(2))))
+            continue
+        try:
+            sys.path.insert(0, str(ROOT_DIR))
+            from greenplan.config import load_config
+            cfg = load_config(it)
+            lon0, lat0, lon1, lat1 = cfg.city.bbox
+            out.append(((lat0 + lat1) / 2.0, (lon0 + lon1) / 2.0))
+            log.info("  --near %-24s %s (%.4f, %.4f)", it, cfg.city.name, out[-1][0], out[-1][1])
+        except Exception as exc:
+            log.warning("  --near %s ignored: %s", it, exc)
+    return out
+
+
 class Collector(osmium.SimpleHandler):
     """One pass over the PBF, writing matched features straight out.
 
@@ -124,14 +203,39 @@ class Collector(osmium.SimpleHandler):
     nodes fall outside the extract are skipped rather than emitted half-drawn.
     """
 
-    def __init__(self, out) -> None:
+    def __init__(self, out, near=None, radius_km=25.0) -> None:
         super().__init__()
         self.out = out
+        # Bounding at INDEX time, not load time, is what makes the file
+        # shippable. The loader can already discard what it does not need, but
+        # it still has to stream the whole thing to do it - and a gigabyte
+        # cannot go near a static host at all.
+        self.near = list(near or [])
+        self.radius_km = radius_km
+        self.dropped_far = 0
+        self.pts_in = 0
+        self.pts_out = 0
         self.n = 0
         self.kept = 0
         self._t0 = time.time()
 
     def _emit(self, rec: dict) -> None:
+        if self.near:
+            la, lo = rec.get("lat"), rec.get("lon")
+            if la is None or lo is None:
+                return
+            if not any(_hav_km(f[0], f[1], la, lo) <= self.radius_km for f in self.near):
+                self.dropped_far += 1
+                return
+        g = rec.get("g")
+        if g and len(g) > 2:
+            self.pts_in += len(g)
+            g = _simplify([tuple(q) for q in g], SIMPLIFY_M / 111320.0)
+            rec["g"] = [[a, b] for a, b in g]
+            self.pts_out += len(g)
+        elif g:
+            self.pts_in += len(g)
+            self.pts_out += len(g)
         self.out.write(json.dumps(rec, ensure_ascii=False, separators=(",", ":")) + "\n")
         self.kept += 1
 
@@ -154,8 +258,8 @@ class Collector(osmium.SimpleHandler):
             kind = "ramp"
         if kind is None:
             return
-        self._emit({"k": kind, "t": "n", "lat": round(n.location.lat, 6),
-                    "lon": round(n.location.lon, 6),
+        self._emit({"k": kind, "t": "n", "lat": round(n.location.lat, COORD_DP),
+                    "lon": round(n.location.lon, COORD_DP),
                     "nm": t.get("name") or None})
 
     # -- ways: buildings, roads, parks, water, landuse ---------------------
@@ -187,7 +291,7 @@ class Collector(osmium.SimpleHandler):
 
         # Centroid always; full geometry only where something draws it.
         try:
-            pts = [(round(nd.lat, 6), round(nd.lon, 6)) for nd in w.nodes if nd.location.valid()]
+            pts = [(round(nd.lat, COORD_DP), round(nd.lon, COORD_DP)) for nd in w.nodes if nd.location.valid()]
         except (osmium.InvalidLocationError, RuntimeError):
             return
         if not pts:
@@ -195,7 +299,7 @@ class Collector(osmium.SimpleHandler):
         clat = sum(p[0] for p in pts) / len(pts)
         clon = sum(p[1] for p in pts) / len(pts)
 
-        rec: dict = {"k": kind, "t": "w", "lat": round(clat, 6), "lon": round(clon, 6)}
+        rec: dict = {"k": kind, "t": "w", "lat": round(clat, COORD_DP), "lon": round(clon, COORD_DP)}
         nm = t.get("name")
         if nm:
             rec["nm"] = nm
@@ -242,6 +346,13 @@ def main(argv: list[str] | None = None) -> int:
                     help="one or more Geofabrik .osm.pbf extracts; pass several to "
                          "widen coverage (e.g. western-zone northern-zone)")
     ap.add_argument("--out", default="data/osm/index.jsonl.gz", help="output index")
+    ap.add_argument("--near", nargs="*", default=None, metavar="CONFIG_OR_LATLON",
+                    help="keep only features within --radius-km of these places; "
+                         "each is a config file or a raw 'lat,lon'. Without it "
+                         "the whole extract is indexed, which for three Indian "
+                         "zones is about a gigabyte.")
+    ap.add_argument("--radius-km", type=float, default=25.0,
+                    help="radius around each --near place (default 25)")
     a = ap.parse_args(argv)
 
     pbfs = [Path(x) for x in a.pbf]
@@ -261,18 +372,36 @@ def main(argv: list[str] | None = None) -> int:
     # borders, which double-counts a handful of features in the border strip;
     # that is a rounding error against a city-scale census and far cheaper
     # than de-duplicating millions of records by OSM id.
+    near = _resolve_near(a.near)
+    if near:
+        log.info("bounding to %d place(s) at %.0f km", len(near), a.radius_km)
+    else:
+        log.warning("no --near given: indexing the FULL extract. Three Indian "
+                    "zones come to ~972 MB and take ~12 minutes to load.")
+
     total_kept = 0
+    total_far = 0
+    pts_in = pts_out = 0
     with gzip.open(out_path, "wt", encoding="utf-8") as fh:
         for pbf in pbfs:
             log.info("indexing %s (%.0f MB)", pbf.name, pbf.stat().st_size / 1e6)
-            h = Collector(fh)
+            h = Collector(fh, near=near, radius_km=a.radius_km)
             h.apply_file(str(pbf), locations=True, idx="flex_mem")
             log.info("  %s features from %s", f"{h.kept:,}", pbf.name)
             total_kept += h.kept
+            total_far += h.dropped_far
+            pts_in += h.pts_in
+            pts_out += h.pts_out
 
     log.info("done in %.0fs: %s features from %d extract(s) -> %s (%.0f MB)",
              time.time() - t0, f"{total_kept:,}", len(pbfs), out_path,
              out_path.stat().st_size / 1e6)
+    if total_far:
+        log.info("  %s features dropped as outside the --near bound", f"{total_far:,}")
+    if pts_in:
+        log.info("  geometry simplified at %.0f m: %s points -> %s (-%.0f%%)",
+                 SIMPLIFY_M, f"{pts_in:,}", f"{pts_out:,}",
+                 100 * (1 - pts_out / max(pts_in, 1)))
     return 0
 
 

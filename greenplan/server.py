@@ -26,6 +26,8 @@ import json
 import logging
 import math
 import os
+import threading
+import time as _time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
@@ -1133,6 +1135,38 @@ def main() -> None:
             foci.append(((lat0 + lat1) / 2.0, (lon0 + lon1) / 2.0))
     if foci:
         _CITY_FOCUS[0] = foci
+
+    # Warm the OSM index on a BACKGROUND thread.
+    #
+    # The three-zone index is most of a gigabyte, and streaming it to pull out
+    # the discs around five cities takes long enough that doing it lazily
+    # would blow past the 25 s budget the studio gives its first map query -
+    # the panel would time out, fall back to public Overpass, and look broken
+    # for a reason that has nothing to do with the data.
+    #
+    # Loading it here instead means the server answers immediately, the map
+    # and every engine route work at once, and the feature panels start
+    # working the moment the index is ready. Nothing waits on it: osmlocal
+    # returns None until it is loaded, which is the same path as "not
+    # covered", and that already falls through to the public instance.
+    def _warm_osm():
+        try:
+            base = root / "data" / "osm"
+            idx = base / "index.all.jsonl.gz"
+            if not idx.is_file():
+                idx = base / "index.jsonl.gz"
+            if not idx.is_file():
+                return
+            t = _time.time()
+            got = osmlocal.get(idx, focus=_CITY_FOCUS[0], radius_km=_CITY_FOCUS[1])
+            if got.ready:
+                log.info("local OSM index warm: %s features across %d cities in %.0fs",
+                         f"{got.n:,}", len(got.focus), _time.time() - t)
+        except Exception as exc:
+            log.warning("OSM index warm-up failed (%s); map features will use "
+                        "the public Overpass instance", exc)
+
+    threading.Thread(target=_warm_osm, name="osm-warm", daemon=True).start()
 
     httpd = ThreadingHTTPServer((args.host, args.port), make_handler(registry))
     log.info("GreenGrid engine serving on http://%s:%d  (Ctrl+C to stop)", args.host, args.port)

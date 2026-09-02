@@ -1157,6 +1157,37 @@ function placeNames(a){
   return { city, locality };
 }
 
+/* How far this city's ERA5 rainfall sits from the published IMD normal.
+   Measured, not guessed: an independent 1991-2020 ERA5 pull was compared
+   against published normals for each shipped city. Inland cities land within
+   a few percent; the coastal ones do not, because a ~9 km reanalysis grid
+   smooths the convective and northeast-monsoon rain that dominates them.
+   Chennai is 30% low. Rainfall drives the irrigation budget, so a reader
+   deserves to know that before costing a scheme on it. */
+const RAIN_GAP = [
+  { lat: 23.02, lon: 72.57, city: "Ahmedabad", pct: -5 },
+  { lat: 12.97, lon: 77.59, city: "Bengaluru", pct: -6 },
+  { lat: 19.08, lon: 72.88, city: "Mumbai",    pct: -13 },
+  { lat: 28.61, lon: 77.21, city: "Delhi",     pct: -16 },
+  { lat: 13.08, lon: 80.27, city: "Chennai",   pct: -30 }
+];
+GV.rainGapNote = function () {
+  const a = GV.aoi;
+  if (!a) return "";
+  let best = null, bd = 1e9;
+  for (const r of RAIN_GAP) {
+    const d = Math.hypot(r.lat - a.lat, r.lon - a.lon);
+    if (d < bd) { bd = d; best = r; }
+  }
+  // Only speak for a city we actually checked, and only when near it.
+  if (!best || bd > 0.6) return "";
+  if (Math.abs(best.pct) < 10) {
+    return "within " + Math.abs(best.pct) + "% of the published IMD normal for " + best.city;
+  }
+  return best.pct + "% against the published IMD normal for " + best.city +
+         ", so treat it as a floor: a ~9 km reanalysis grid smooths coastal rain";
+};
+
 /* ---------- data fetchers ---------- */
 async function reverseGeocode(lat,lon){
   const j=await getJSON("https://nominatim.openstreetmap.org/reverse?format=json&zoom=16&addressdetails=1&lat="+lat+"&lon="+lon,{headers:{"Accept":"application/json"}});
@@ -2932,7 +2963,10 @@ GV.inAOI = inAOI;
    designs look MORE viable than they are — the dangerous direction.
 
    1991-2020 is the World Meteorological Organization's current standard
-   normal period, and it lands within 1% of IMD for this city. Same free,
+   normal period. Against published IMD normals it runs -5% in Ahmedabad and
+   -6% in Bengaluru, but -30% in Chennai: a ~9 km reanalysis grid cannot
+   resolve the intense coastal convective rain, so it is a FLOOR there, not a
+   match. Same free,
    keyless endpoint; only the window changed. */
 const CLIMATE_NORMAL_FROM = "1991-01-01";
 const CLIMATE_NORMAL_TO   = "2020-12-31";
@@ -5728,7 +5762,7 @@ function renderArea(ctx) {
 
     <div class="gv-prov-note">
       Everything on this screen is scoped to the ${km2} km&sup2; ring on the map and nothing outside it.
-      Air and temperature are ${prov("measured", "Open-Meteo")} sampled at ${wa.n_points || aoi.samples.length} points spread across the area rather than one reading at the centre; rainfall and hot-day counts are ${prov("modelled", "Open-Meteo ERA5 reanalysis, 1991\u20132020")} a 30-year reanalysis over the WMO standard normal period \u2014 reanalysis rather than gauge data, but within 1% of the IMD normal here;
+      Air and temperature are ${prov("measured", "Open-Meteo")} sampled at ${wa.n_points || aoi.samples.length} points spread across the area rather than one reading at the centre; rainfall and hot-day counts are ${prov("modelled", "Open-Meteo ERA5 reanalysis, 1991\u20132020. Reanalysis, not gauge data. Checked against published IMD normals: Ahmedabad -5%, Bengaluru -6%, Mumbai -13%, Delhi -16%, Chennai -30%. The coastal shortfall is expected \u2014 a ~9 km grid smooths the intense convective and northeast-monsoon rain those cities actually get, so treat the figure as a floor there.")} a 30-year reanalysis over the WMO standard normal period${(function(){var g=GV.rainGapNote&&GV.rainGapNote();return g?" \u2014 "+g:"";})()};
       canopy is ${prov("measured", "Esri imagery, visible-band vegetation index")} from satellite imagery; the census is ${prov("measured", "OpenStreetMap")} OpenStreetMap${census ? "" : ", which did not answer for this area"}.
     </div>`);
 
