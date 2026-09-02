@@ -455,13 +455,32 @@ def _write_outputs(
             "n_sites": int(getattr(r, "n_sites", 0)),
             "species": rec.get("species", []),
             "justification": rec.get("justification", ""),
+            # The score decomposed into what actually produced it. Each entry is
+            # the WEIGHTED contribution, so the five of them sum to
+            # priority_score and a reader can see which criterion carried the
+            # cell rather than inferring it from a colour. Emitted because a
+            # planner asked to defend a ranking needs the arithmetic, not the
+            # verdict; the interface sorts and exports on these.
+            "components": {
+                k: round(float(cfg.mcda.weights[k]) * float(getattr(r, "c_" + k)), 4)
+                for k in ("aqi_worsening", "traffic_worsening", "ndvi_decline",
+                          "low_green_cover", "plantable_space")
+                if hasattr(r, "c_" + k) and math.isfinite(float(getattr(r, "c_" + k)))
+            },
         }
         if prof is not None:
             props["soil"] = prof.as_dict()
         features.append({"type": "Feature", "geometry": geom, "properties": props})
     geojson_path = out_dir / "recommendations.geojson"
     geojson_path.write_text(
-        json.dumps(_json_safe({"type": "FeatureCollection", "features": features}), indent=2),
+        json.dumps(_json_safe({
+            "type": "FeatureCollection",
+            # Shipped alongside the features so the interface can state the
+            # weights it is decomposing against instead of hard-coding a copy
+            # that silently drifts when the config changes.
+            "mcda_weights": dict(cfg.mcda.weights),
+            "features": features,
+        }), indent=2),
         encoding="utf-8",
     )
 

@@ -439,7 +439,7 @@ window.gvEngineGet = async function (path, ms) {
     }
   } catch (e) { /* map not up yet - fall through unqualified */ }
 
-  const live = await getJSON(gvEngineUrl(path + q), {}, ms || 8000);
+  const live = await getJSON(gvEngineUrl(path + q), { cache: "no-cache" }, ms || 8000);
   if (live) return live;
   const stat = GV_STATIC_ENGINE[path];
   if (!stat) return null;
@@ -949,12 +949,21 @@ const LOSS_WORD = {
 };
 
 async function greenLoadLoss() {
-  if (GVG.loss || GVG.lossTried) return GVG.loss;
+  const here = gvHerePoint();
+  // Same cache rule as the ranking: a forecast for another city is not a
+  // forecast for this one, and `lossTried` used to make the first answer
+  // permanent for the life of the tab.
+  if (GVG.loss && gvCollectionCovers(GVG.loss, here)) return GVG.loss;
+  if (GVG.loss) { GVG.loss = null; GVG.lossTried = false; greenClearHexes(); }
+  if (GVG.lossTried) return null;
   GVG.lossTried = true;
   // Same-origin only. On file:// this simply returns null and the layer is
   // quietly absent rather than throwing a console error at the reader.
   const j = await gvEngineGet("/api/greenloss", 8000);
-  if (j && j.features && j.features.length) GVG.loss = j;
+  if (j && j.features && j.features.length && gvCollectionCovers(j, here)) GVG.loss = j;
+  // A `lossTried` that stays true would freeze this city's miss into every
+  // later city. Clear it so moving somewhere covered asks again.
+  GVG.lossTried = !!GVG.loss;
   return GVG.loss;
 }
 
@@ -1076,8 +1085,18 @@ function greenLegend() {
         '<code>python -m greenplan.server</code> to overlay the engine\'s ' +
         '42-month forecast.</div>');
 
+  if (GVG.loss) {
+    // Only with the engine's forecast in hand: the canopy raster alone is a
+    // snapshot with no per-cell history to list.
+    el.insertAdjacentHTML("beforeend",
+      '<button class="gvw-open" id="grnWork">Open canopy watch list</button>');
+  }
+
   document.getElementById("map").appendChild(el);
   GVG.legend = el;
+
+  const gw = el.querySelector("#grnWork");
+  if (gw) gw.onclick = () => GVW.toggle("green");
 
   const c = el.querySelector("#glCanopy");
   if (c) c.onchange = () => {
@@ -1115,6 +1134,9 @@ function greenExit() {
   if (GVG.legend) { GVG.legend.remove(); GVG.legend = null; }
   GVG.stats = null;
   GVG.gen++;                         // cancel any render still in flight
+  // Same reason as the priority view: a watch list outliving its map is a
+  // table describing something the reader can no longer see.
+  if (window.GVW && GVW.open && GVW.mode === "green") GVW.close();
 }
 
 /* The old code had a comment explaining why there was no move handler. That
@@ -1157,36 +1179,6 @@ function placeNames(a){
   return { city, locality };
 }
 
-/* How far this city's ERA5 rainfall sits from the published IMD normal.
-   Measured, not guessed: an independent 1991-2020 ERA5 pull was compared
-   against published normals for each shipped city. Inland cities land within
-   a few percent; the coastal ones do not, because a ~9 km reanalysis grid
-   smooths the convective and northeast-monsoon rain that dominates them.
-   Chennai is 30% low. Rainfall drives the irrigation budget, so a reader
-   deserves to know that before costing a scheme on it. */
-const RAIN_GAP = [
-  { lat: 23.02, lon: 72.57, city: "Ahmedabad", pct: -5 },
-  { lat: 12.97, lon: 77.59, city: "Bengaluru", pct: -6 },
-  { lat: 19.08, lon: 72.88, city: "Mumbai",    pct: -13 },
-  { lat: 28.61, lon: 77.21, city: "Delhi",     pct: -16 },
-  { lat: 13.08, lon: 80.27, city: "Chennai",   pct: -30 }
-];
-GV.rainGapNote = function () {
-  const a = GV.aoi;
-  if (!a) return "";
-  let best = null, bd = 1e9;
-  for (const r of RAIN_GAP) {
-    const d = Math.hypot(r.lat - a.lat, r.lon - a.lon);
-    if (d < bd) { bd = d; best = r; }
-  }
-  // Only speak for a city we actually checked, and only when near it.
-  if (!best || bd > 0.6) return "";
-  if (Math.abs(best.pct) < 10) {
-    return "within " + Math.abs(best.pct) + "% of the published IMD normal for " + best.city;
-  }
-  return best.pct + "% against the published IMD normal for " + best.city +
-         ", so treat it as a floor: a ~9 km reanalysis grid smooths coastal rain";
-};
 
 /* ---------- data fetchers ---------- */
 async function reverseGeocode(lat,lon){
@@ -2554,6 +2546,38 @@ code{ font:700 11.5px ui-monospace,Menlo,Consolas,monospace; background:var(--bg
    ===================================================================== */
 
 const GV = window.GV = {};
+
+/* How far this city's ERA5 rainfall sits from the published IMD normal.
+   Measured, not guessed: an independent 1991-2020 ERA5 pull was compared
+   against published normals for each shipped city. Inland cities land within
+   a few percent; the coastal ones do not, because a ~9 km reanalysis grid
+   smooths the convective and northeast-monsoon rain that dominates them.
+   Chennai is 30% low. Rainfall drives the irrigation budget, so a reader
+   deserves to know that before costing a scheme on it. */
+const RAIN_GAP = [
+  { lat: 23.02, lon: 72.57, city: "Ahmedabad", pct: -5 },
+  { lat: 12.97, lon: 77.59, city: "Bengaluru", pct: -6 },
+  { lat: 19.08, lon: 72.88, city: "Mumbai",    pct: -13 },
+  { lat: 28.61, lon: 77.21, city: "Delhi",     pct: -16 },
+  { lat: 13.08, lon: 80.27, city: "Chennai",   pct: -30 }
+];
+GV.rainGapNote = function () {
+  const a = GV.aoi;
+  if (!a) return "";
+  let best = null, bd = 1e9;
+  for (const r of RAIN_GAP) {
+    const d = Math.hypot(r.lat - a.lat, r.lon - a.lon);
+    if (d < bd) { bd = d; best = r; }
+  }
+  // Only speak for a city we actually checked, and only when near it.
+  if (!best || bd > 0.6) return "";
+  if (Math.abs(best.pct) < 10) {
+    return "within " + Math.abs(best.pct) + "% of the published IMD normal for " + best.city;
+  }
+  return best.pct + "% against the published IMD normal for " + best.city +
+         ", so treat it as a floor: a ~9 km reanalysis grid smooths coastal rain";
+};
+
 
 GV.CFG = {
   /* --- Area of interest -------------------------------------------- */
@@ -8215,18 +8239,75 @@ function priLegend(show){
     }).join("") +
     '<div style="margin-top:8px;padding-top:7px;border-top:1px solid var(--line);font-weight:600;' +
     'color:var(--ink-soft);font-size:10.5px;max-width:150px;line-height:1.45">' +
-    "Click a cell for the engine's reasoning</div>";
+    "Click a cell for the engine's reasoning</div>" +
+    // The colours say where. The worklist is where a planner turns that into
+    // an area, a quantity, a cost and a list they can hand over.
+    '<button class="gvw-open" id="priWork">Open planting programme</button>';
   document.getElementById("map").appendChild(el);
   GVP.legend = el;
+  const pw = el.querySelector("#priWork");
+  if(pw) pw.onclick = function(){ GVW.toggle("priority"); };
 }
 
 /* ---------- loading ---------- */
+/* Where the reader is actually looking: the chosen area if there is one,
+   otherwise the map centre. Both engine layers key their cache on this, so
+   that panning to another city cannot leave the previous city's answer on
+   screen. */
+function gvHerePoint(){
+  const a = (window.GV && GV.aoi) ? GV.aoi : null;
+  if(a && isFinite(a.lat) && isFinite(a.lon)) return [a.lat, a.lon];
+  try{ const c = map.getCenter(); return [c.lat, c.lng]; }catch(e){ return null; }
+}
+
+/* Does this FeatureCollection actually cover that point?
+
+   One server now holds five cities and routes by coordinate, so a cached
+   ranking is only reusable while the reader is still inside the city it
+   describes. Without this check the page fetched once, kept the answer for
+   the life of the tab, and drew Ahmedabad's 146 cells over Delhi - a silent
+   geographic leak, and the worst kind, because every number on screen was a
+   real measurement of somewhere else.
+
+   Deliberately a bounds test rather than point-in-polygon: the cells tile a
+   metro with gaps at the edges, and being just outside a boundary hexagon is
+   still the same city. Being 900 km away is not. */
+function gvCollectionCovers(gj, pt){
+  if(!gj || !gj.features || !gj.features.length || !pt) return false;
+  let minLat = 90, maxLat = -90, minLon = 180, maxLon = -180;
+  for(const f of gj.features){
+    const g = f.geometry;
+    if(!g || g.type !== "Polygon") continue;
+    for(const c of g.coordinates[0]){          // GeoJSON order is [lon, lat]
+      if(c[1] < minLat) minLat = c[1];
+      if(c[1] > maxLat) maxLat = c[1];
+      if(c[0] < minLon) minLon = c[0];
+      if(c[0] > maxLon) maxLon = c[0];
+    }
+  }
+  if(minLat > maxLat) return false;             // no usable geometry at all
+  const pad = 0.15;                             // ~16 km of slack at the rim
+  return pt[0] >= minLat - pad && pt[0] <= maxLat + pad &&
+         pt[1] >= minLon - pad && pt[1] <= maxLon + pad;
+}
+
 async function priTryFetch(){
   for(const raw of ENGINE_PATHS){
     // Resolve now, not at module load: the engine origin may have
     // been discovered after this array was built.
-    const path = raw.charAt(0) === "/" ? gvEngineUrl(raw) : raw;
-    const j = await getJSON(path, {}, 8000);
+    // Carry the point. The server routes /api/zones by coordinate across the
+    // cities it holds; asking without one gets whichever city it booted with,
+    // which is right exactly once and wrong every time the reader moves.
+    let path = raw.charAt(0) === "/" ? gvEngineUrl(raw) : raw;
+    const pt = gvHerePoint();
+    if(pt && raw.charAt(0) === "/"){
+      path += (path.indexOf("?") < 0 ? "?" : "&") +
+              "lat=" + pt[0].toFixed(5) + "&lon=" + pt[1].toFixed(5);
+    }
+    // Revalidate: a stale ranking is indistinguishable from a current one on
+    // screen, and the whole point of this file is that it is the engine's
+    // latest answer.
+    const j = await getJSON(path, { cache: "no-cache" }, 8000);
     if(j && j.type === "FeatureCollection" && j.features && j.features.length) return j;
   }
   return null;
@@ -8280,18 +8361,799 @@ function priPrompt(){
   if(b) b.onclick = priPickFile;
 }
 
+/* Say so, on the map, when the engine has no ranking here.
+
+   An empty map is ambiguous: it reads as "nothing to plant here" just as
+   easily as "we have no data for this place", and those are opposite claims.
+   The brief for this view is that an unsupported location must return
+   UNAVAILABLE, and unavailable has to be legible, not merely absent.
+
+   Where the engine does serve is asked of the engine (/api/cities), never
+   hard-coded, so a sixth city appears here the day it is added and a removed
+   one stops being advertised. If that call fails the notice still shows,
+   just without the list. */
+GVP.noData = null;
+
+async function priNoDataNotice(show){
+  if(GVP.noData){ GVP.noData.remove(); GVP.noData = null; }
+  if(!show) return;
+  const el = document.createElement("div");
+  el.className = "glass gv-nodata";
+  el.innerHTML = '<div class="nd-h">No ranking for this area</div>' +
+    '<p>The planting engine is trained per city, on 42 months of satellite and ' +
+    'air-quality history for that city’s own grid. It has none here, so this ' +
+    'view is showing nothing rather than a number it cannot stand behind.</p>' +
+    '<div class="nd-list">Checking where it does run…</div>';
+  document.getElementById("map").appendChild(el);
+  GVP.noData = el;
+
+  const j = await gvEngineGet("/api/cities", 6000);
+  if(!GVP.noData) return;                       // reader moved on already
+  const list = (j && j.cities || []).filter(c => c.ready);
+  const box = GVP.noData.querySelector(".nd-list");
+  if(!list.length){ box.textContent = "Could not reach the engine to ask which cities it serves."; return; }
+  box.innerHTML = "<b>It runs here:</b>" + list.map(c =>
+    '<button class="nd-city" data-lat="' + ((c.bbox[1] + c.bbox[3]) / 2).toFixed(4) +
+    '" data-lon="' + ((c.bbox[0] + c.bbox[2]) / 2).toFixed(4) + '">' + c.name + "</button>").join("");
+  box.onclick = function(e){
+    const b = e.target.closest(".nd-city");
+    if(!b) return;
+    GV.aoi = null;
+    map.setView([parseFloat(b.dataset.lat), parseFloat(b.dataset.lon)], 11);
+    GVP.setActive(true);
+  };
+}
+
 GVP.setActive = async function(on){
   GVP.active = on;
   if(!on){
     if(GVP.layer){ map.removeLayer(GVP.layer); GVP.layer=null; }
     priLegend(false);
+    priNoDataNotice(false);
+    // A worklist left standing over a different view is a table that no
+    // longer describes what is on the map.
+    if(window.GVW && GVW.open && GVW.mode === "priority") GVW.close();
     return;
   }
-  if(GVP.data){ priRender(GVP.data); return; }
+  // Reuse the cached ranking only while it still describes where we are.
+  const here = gvHerePoint();
+  priNoDataNotice(false);
+  if(GVP.data && gvCollectionCovers(GVP.data, here)){ priRender(GVP.data); return; }
   toast("Looking for the engine's ranking…");
   const gj = await priTryFetch();
-  if(gj) priRender(gj); else priPrompt();
+  if(gj && gvCollectionCovers(gj, here)){ priRender(gj); return; }
+  // Either nothing answered, or what answered is somewhere else. Both must
+  // clear the map: leaving the previous city's hexagons up is the failure
+  // this whole path exists to prevent.
+  GVP.data = null;
+  if(GVP.layer){ map.removeLayer(GVP.layer); GVP.layer = null; }
+  priLegend(false);
+  if(window.GVW && GVW.open && GVW.mode === "priority") GVW.close();
+  priNoDataNotice(true);
+  if(!gj) priPrompt();
 };
+
+/* =====================================================================
+   14. THE WORKLIST — the ranking as something you can actually work from
+   =====================================================================
+   Both map views above answer a question well and then stop. Priority
+   colours 486 cells by score; Green colours them by whether the canopy is
+   holding. A reader can see WHERE. What neither could do is the thing the
+   person paying for the planting has to do next: pull the top cells into
+   a programme, put an area and a quantity against each one, total it,
+   drop the ones that are somebody else's land, and hand the rest to a
+   contractor as a list.
+
+   So this is a table, and it is deliberately a table. Three things in it
+   are worth being precise about:
+
+   THE RANK IS NOT NEGOTIABLE. You can sort this table by any column, and
+   sorting changes nothing but the order of the rows on screen. The Rank
+   column is always present and always shows the engine's own position, so
+   no arrangement of this table can be mistaken for a re-ranking. Nothing
+   here recomputes a score.
+
+   WHY A CELL RANKS WHERE IT DOES comes from the engine, not from here.
+   rank_zones() already decomposes each score into five weighted
+   contributions and now writes them into the geojson, so "Air worsening
+   carried this cell, 0.31 of 0.83" is the engine's arithmetic quoted
+   back. Where an export predates that field the column says so and stays
+   empty; it is never inferred. (An earlier attempt to re-derive the
+   components in the page was wrong by up to 0.019 of score — enough to
+   swap neighbouring cells — which is exactly why it is quoted instead.)
+
+   TREES AND MONEY ARE ARITHMETIC ON ASSUMPTIONS, and the interface says
+   so in those words. plantable_space is, for most cells, a 1-minus-NDVI
+   proxy: it is the fraction of the cell that is not vegetated, which
+   includes every road, roof, runway and car park in it. Multiplying that
+   by a planting density gives a number in the hundreds of thousands and
+   it would be nonsense. So the chain is broken into inputs the planner
+   sets and can see: what share of non-vegetated land is really available,
+   how far apart the trees go, what one costs. The defaults are marked
+   ASSUMED, they are placeholders for a local schedule of rates, and the
+   panel says to replace them before quoting anything.
+
+   No carbon figure. Sequestration per tree varies by more than an order
+   of magnitude across species, age and survival rate, and a single number
+   here would be quoted as if it were measured.
+   ===================================================================== */
+
+const GVW = window.GVW = {
+  open: false, mode: "priority", node: null,
+  sortKey: "rank", sortDir: 1, picked: null, topN: 20
+};
+
+/* Defaults for the four planning assumptions. Every one of these is a
+   placeholder, not a measurement, and the panel labels them that way.
+
+   spacing_m       3 m grid = 1,111 stems/ha, the ordinary block-plantation
+                   spacing; avenue and park planting are wider.
+   realisable_pct  what share of the non-vegetated fraction is actually
+                   plantable ground rather than carriageway, roof or water.
+                   Only a site survey settles this. 5% is deliberately
+                   conservative so an untouched default cannot flatter a
+                   scheme.
+   cost_per_tree   sapling, pitting, guard and establishment maintenance.
+   survival_pct    what fraction is expected to be alive at establishment,
+                   which is what decides how many you have to PUT IN to end
+                   up with the number you wanted. */
+const GVW_DEFAULTS = { spacing_m: 3, realisable_pct: 5, cost_per_tree: 250, survival_pct: 70 };
+
+GVW.assume = (function () {
+  const a = Object.assign({}, GVW_DEFAULTS);
+  try {
+    const raw = localStorage.getItem("gv.assume");
+    if (raw) Object.assign(a, JSON.parse(raw));
+  } catch (e) { /* private window, or storage blocked: defaults are fine */ }
+  return a;
+})();
+
+function gvwSaveAssume() {
+  try { localStorage.setItem("gv.assume", JSON.stringify(GVW.assume)); } catch (e) {}
+}
+
+/* ---------- geometry ----------------------------------------------------
+   Cell area from the polygon itself rather than the nominal H3 average.
+   Resolution 7 averages 5.16 km2 but individual cells vary with latitude,
+   and the areas here get multiplied by a cost. */
+function gvwAreaKm2(ring) {
+  if (!ring || ring.length < 4) return null;
+  const R = 6371.0088, rad = Math.PI / 180;
+  let total = 0;
+  for (let i = 0; i < ring.length - 1; i++) {
+    const a = ring[i], b = ring[i + 1];
+    total += (b[0] - a[0]) * rad * (2 + Math.sin(a[1] * rad) + Math.sin(b[1] * rad));
+  }
+  return Math.abs(total * R * R / 2);
+}
+
+const GVW_COMP_LABEL = {
+  aqi_worsening:     "Air worsening",
+  ndvi_decline:      "Canopy falling",
+  low_green_cover:   "Little green now",
+  plantable_space:   "Room to plant",
+  traffic_worsening: "Traffic"
+};
+
+/* ---------- rows --------------------------------------------------------
+   One row object per cell, carrying both the engine's figures and the
+   derived quantities. Anything the engine did not measure stays null and
+   renders as an em dash — never as zero, which in a cost column reads as
+   "free" rather than "unknown". */
+function gvwRows() {
+  const src = GVW.mode === "priority"
+    ? (GVP.data && GVP.data.features)
+    : (GVG.loss && GVG.loss.features);
+  if (!src) return [];
+
+  const a = GVW.assume;
+  const perHa = 10000 / (a.spacing_m * a.spacing_m);
+  const survival = Math.max(1, a.survival_pct) / 100;
+
+  return src.map(function (f) {
+    const p = f.properties;
+    const ring = f.geometry && f.geometry.coordinates && f.geometry.coordinates[0];
+    const areaKm2 = gvwAreaKm2(ring);
+
+    const r = {
+      zone: p.zone,
+      // H3 ids pad unused resolution digits with 'f', so res-7 cells ALL end
+      // "ffffff" and a last-six abbreviation labelled every row identically.
+      // The distinguishing digits are at the front.
+      short: String(p.zone || "").replace(/f+$/, "") || String(p.zone || ""),
+      rank: p.rank,
+      score: p.priority_score != null ? p.priority_score : null,
+      status: p.status || null,
+      aqi: p.aqi_latest != null ? p.aqi_latest : null,
+      aqiBeyond: !!p.aqi_beyond_index,
+      aqiDelta: p.aqi_pred_delta != null ? p.aqi_pred_delta : null,
+      ndvi: p.ndvi_latest != null ? p.ndvi_latest : null,
+      trend: p.ndvi_trend_per_year != null ? p.ndvi_trend_per_year
+             : (p.ndvi_slope_per_year != null ? p.ndvi_slope_per_year : null),
+      fdelta: p.ndvi_pred_delta != null ? p.ndvi_pred_delta : null,
+      plantable: p.plantable_space != null ? p.plantable_space : null,
+      psource: p.plantable_source || null,
+      sites: p.n_sites != null ? p.n_sites : null,
+      species: Array.isArray(p.species) ? p.species : [],
+      areaKm2: areaKm2,
+      driver: null, driverShare: null, components: null,
+      ha: null, trees: null, cost: null,
+      feature: f
+    };
+
+    // Top driver, quoted from the engine's own decomposition.
+    const comp = p.components;
+    if (comp) {
+      let bk = null, bv = -Infinity;
+      for (const k in comp) if (comp[k] > bv) { bv = comp[k]; bk = k; }
+      if (bk != null && r.score) {
+        r.driver = GVW_COMP_LABEL[bk] || bk;
+        r.driverShare = bv / r.score;
+        r.components = comp;
+      }
+    }
+
+    // Quantities. Only where there is a plantable estimate at all: the
+    // cells outside NDVI coverage have none, and must not acquire one here.
+    if (areaKm2 != null && r.plantable != null) {
+      r.ha = areaKm2 * 100 * r.plantable * (a.realisable_pct / 100);
+      r.trees = Math.round(r.ha * perHa / survival);
+      r.cost = r.trees * a.cost_per_tree;
+    }
+    return r;
+  });
+}
+
+/* Which cells are in the programme. Seeded from the engine's top N and then
+   the planner's to change: a cell can be top-ranked and still be a runway,
+   a cantonment or somebody else's land. Unticking one is a planning
+   decision, and it alters no score. */
+function gvwSeedPicked(rows) {
+  GVW.picked = new Set();
+  rows.filter(function (r) { return r.score != null; })
+      .sort(function (x, y) { return x.rank - y.rank; })
+      .slice(0, GVW.topN)
+      .forEach(function (r) { GVW.picked.add(r.zone); });
+}
+
+/* ---------- formatting ---------- */
+function gvwNum(v, d) {
+  if (v == null || !isFinite(v)) return "—";
+  return v.toLocaleString(undefined, { minimumFractionDigits: d || 0, maximumFractionDigits: d || 0 });
+}
+function gvwSigned(v, d) {
+  if (v == null || !isFinite(v)) return "—";
+  return (v > 0 ? "+" : "") + v.toFixed(d == null ? 1 : d);
+}
+function gvwRupees(v) {
+  if (v == null || !isFinite(v)) return "—";
+  if (v >= 1e7) return "₹" + (v / 1e7).toFixed(2) + " cr";
+  if (v >= 1e5) return "₹" + (v / 1e5).toFixed(2) + " L";
+  return "₹" + Math.round(v).toLocaleString();
+}
+
+const GVW_STATUS_WORD = { yellow: "Losing cover", green: "Holding", red: "Already bare" };
+const GVW_STATUS_ORDER = { yellow: 0, red: 1, green: 2 };
+
+/* ---------- columns -----------------------------------------------------
+   `get` feeds both the cell and the sort, so a column can never sort on
+   something other than what it displays. */
+function gvwCols() {
+  if (GVW.mode === "green") {
+    return [
+      { k: "status", h: "Status", w: 112,
+        get: function (r) { return r.status; },
+        sort: function (r) { var o = GVW_STATUS_ORDER[r.status]; return o == null ? 9 : o; },
+        cell: function (r) {
+          return '<span class="gvw-dot" style="background:' + (LOSS_COL[r.status] || "#64748b") +
+                 '"></span>' + (GVW_STATUS_WORD[r.status] || "—");
+        } },
+      { k: "rank", h: "Rank", w: 58, num: true,
+        get: function (r) { return r.rank; }, cell: function (r) { return "#" + r.rank; } },
+      { k: "short", h: "Cell", w: 74,
+        get: function (r) { return r.short; },
+        cell: function (r) { return "<code>" + r.short + "</code>"; } },
+      { k: "ndvi", h: "Canopy now", w: 96, num: true,
+        get: function (r) { return r.ndvi; },
+        cell: function (r) { return r.ndvi == null ? "—" : r.ndvi.toFixed(3); } },
+      { k: "trend", h: "Trend / yr", w: 96, num: true,
+        get: function (r) { return r.trend; },
+        cell: function (r) {
+          return r.trend == null ? "—"
+            : '<span style="color:' + (r.trend < 0 ? "#ef4444" : "#12b981") + '">' +
+              gvwSigned(r.trend, 4) + "</span>";
+        } },
+      { k: "fdelta", h: "Forecast Δ", w: 104, num: true,
+        get: function (r) { return r.fdelta; },
+        cell: function (r) {
+          return r.fdelta == null ? "—"
+            : '<span style="color:' + (r.fdelta < 0 ? "#ef4444" : "#12b981") + '">' +
+              gvwSigned(r.fdelta, 4) + "</span>";
+        } },
+      { k: "areaKm2", h: "Area km²", w: 88, num: true,
+        get: function (r) { return r.areaKm2; },
+        cell: function (r) { return r.areaKm2 == null ? "—" : r.areaKm2.toFixed(2); } }
+    ];
+  }
+  return [
+    { k: "rank", h: "Rank", w: 58, num: true,
+      get: function (r) { return r.rank; }, cell: function (r) { return "#" + r.rank; } },
+    { k: "short", h: "Cell", w: 74,
+      get: function (r) { return r.short; },
+      cell: function (r) { return "<code>" + r.short + "</code>"; } },
+    { k: "score", h: "Score", w: 78, num: true,
+      get: function (r) { return r.score; },
+      cell: function (r) {
+        return r.score == null
+          ? '<span class="gvw-un" title="Outside the NDVI source coverage: the engine could not score this cell">not scored</span>'
+          : '<b style="color:' + priColor(r.score) + '">' + r.score.toFixed(3) + "</b>";
+      } },
+    { k: "driver", h: "What drove it", w: 168,
+      get: function (r) { return r.driver; },
+      cell: function (r) {
+        if (r.driver == null) return '<span class="gvw-un">—</span>';
+        return r.driver + ' <span class="gvw-sub">' + Math.round(r.driverShare * 100) + "%</span>";
+      } },
+    { k: "aqi", h: "AQI now", w: 84, num: true,
+      get: function (r) { return r.aqi; },
+      cell: function (r) { return r.aqi == null ? "—" : (r.aqiBeyond ? "500+" : Math.round(r.aqi)); } },
+    { k: "aqiDelta", h: "AQI Δ", w: 78, num: true,
+      get: function (r) { return r.aqiDelta; },
+      cell: function (r) { return gvwSigned(r.aqiDelta, 1); } },
+    { k: "ndvi", h: "Canopy", w: 78, num: true,
+      get: function (r) { return r.ndvi; },
+      cell: function (r) { return r.ndvi == null ? "—" : r.ndvi.toFixed(3); } },
+    { k: "trend", h: "Trend / yr", w: 92, num: true,
+      get: function (r) { return r.trend; },
+      cell: function (r) {
+        return r.trend == null ? "—"
+          : '<span style="color:' + (r.trend < 0 ? "#ef4444" : "#12b981") + '">' +
+            gvwSigned(r.trend, 4) + "</span>";
+      } },
+    { k: "plantable", h: "Non-veg", w: 96, num: true,
+      get: function (r) { return r.plantable; },
+      cell: function (r) {
+        if (r.plantable == null) return '<span class="gvw-un">—</span>';
+        var tag = r.psource === "proxy_1_minus_ndvi"
+          ? ' <span class="gvw-flag" title="A 1-minus-NDVI proxy: the share of the cell that is not vegetated, roads and roofs included. Not a survey.">proxy</span>'
+          : r.psource ? ' <span class="gvw-flag gvw-ok" title="From the bare-ground site survey">survey</span>' : "";
+        return Math.round(r.plantable * 100) + "%" + tag;
+      } },
+    { k: "ha", h: "Plantable ha", w: 108, num: true,
+      get: function (r) { return r.ha; },
+      cell: function (r) { return r.ha == null ? '<span class="gvw-un">—</span>' : gvwNum(r.ha, 1); } },
+    { k: "trees", h: "Trees", w: 92, num: true,
+      get: function (r) { return r.trees; }, cell: function (r) { return gvwNum(r.trees); } },
+    { k: "cost", h: "Indicative cost", w: 120, num: true,
+      get: function (r) { return r.cost; }, cell: function (r) { return gvwRupees(r.cost); } }
+  ];
+}
+
+/* ---------- render ---------- */
+function gvwRender() {
+  if (!GVW.open || !GVW.node) return;
+  const rows = gvwRows();
+  if (!GVW.picked) gvwSeedPicked(rows);
+
+  const cols = gvwCols();
+  let col = null;
+  for (const c of cols) if (c.k === GVW.sortKey) col = c;
+  if (!col) col = cols[0];
+
+  const keyed = rows.slice().sort(function (x, y) {
+    const f = col.sort || col.get;
+    const a = f(x), b = f(y);
+    // Nulls sort last in either direction: an unknown is not a small value.
+    if (a == null && b == null) return x.rank - y.rank;
+    if (a == null) return 1;
+    if (b == null) return -1;
+    if (typeof a === "string") return GVW.sortDir * a.localeCompare(b);
+    return GVW.sortDir * (a - b);
+  });
+
+  const sel = rows.filter(function (r) { return GVW.picked.has(r.zone); });
+  const sum = sel.reduce(function (t, r) {
+    if (r.ha != null) { t.ha += r.ha; t.trees += r.trees; t.cost += r.cost; t.quantified++; }
+    return t;
+  }, { ha: 0, trees: 0, cost: 0, quantified: 0 });
+
+  const head = cols.map(function (c) {
+    return '<th data-k="' + c.k + '" class="' + (c.num ? "n " : "") +
+      (c.k === GVW.sortKey ? "s" : "") + '" style="min-width:' + c.w + 'px">' + c.h +
+      (c.k === GVW.sortKey ? (GVW.sortDir > 0 ? " ↑" : " ↓") : "") + "</th>";
+  }).join("");
+
+  const pick = GVW.mode === "priority";
+  const body = keyed.map(function (r) {
+    const on = pick && GVW.picked.has(r.zone);
+    return '<tr data-z="' + r.zone + '" class="' + (on ? "on" : "") + '">' +
+      (pick ? '<td class="pick"><input type="checkbox" data-z="' + r.zone + '"' +
+              (on ? " checked" : "") + "></td>" : "") +
+      cols.map(function (c) { return '<td class="' + (c.num ? "n" : "") + '">' + c.cell(r) + "</td>"; }).join("") +
+      "</tr>";
+  }).join("");
+
+  GVW.node.querySelector(".gvw-table-wrap").innerHTML =
+    '<table class="gvw-t"><thead><tr>' + (pick ? '<th class="pick"></th>' : "") + head +
+    "</tr></thead><tbody>" + body + "</tbody></table>";
+
+  const roll = GVW.node.querySelector(".gvw-roll");
+  if (GVW.mode === "priority") {
+    const unquant = sel.length - sum.quantified;
+    roll.innerHTML =
+      '<div class="gvw-k"><span>' + sel.length + "</span>cells in programme</div>" +
+      '<div class="gvw-k"><span>' + gvwNum(sum.ha, 1) + "</span>plantable ha</div>" +
+      '<div class="gvw-k"><span>' + gvwNum(sum.trees) + "</span>trees to plant</div>" +
+      '<div class="gvw-k gvw-cost"><span>' + gvwRupees(sum.cost) + "</span>indicative cost</div>" +
+      (unquant > 0
+        ? '<div class="gvw-warn">' + unquant + " selected cell" + (unquant === 1 ? " has" : "s have") +
+          " no plantable estimate, and " + (unquant === 1 ? "is" : "are") +
+          " excluded from these totals rather than counted as zero.</div>"
+        : "");
+  } else {
+    const c = (GVG.loss && GVG.loss.count) || {};
+    roll.innerHTML =
+      '<div class="gvw-k"><span style="color:' + LOSS_COL.yellow + '">' + (c.yellow || 0) +
+        "</span>losing cover</div>" +
+      '<div class="gvw-k"><span style="color:' + LOSS_COL.red + '">' + (c.red || 0) +
+        "</span>already bare</div>" +
+      '<div class="gvw-k"><span style="color:' + LOSS_COL.green + '">' + (c.green || 0) +
+        "</span>holding</div>" +
+      '<div class="gvw-warn gvw-quiet">Sorted so the cells that are green today and forecast to ' +
+        "lose it come first. Those are the ones where holding on to cover is cheaper than " +
+        "replacing it.</div>";
+  }
+
+  const anyComp = rows.some(function (r) { return r.components; });
+  gvwFitSoon();
+  GVW.node.querySelector(".gvw-note").innerHTML = GVW.mode === "green"
+    ? "Status from the engine's 42-month MODIS history: green at NDVI ≥ " +
+      ((GVG.loss && GVG.loss.thresholds && GVG.loss.thresholds.green_ndvi) || "?") +
+      ", amber when the forecast change is ≤ " +
+      ((GVG.loss && GVG.loss.thresholds && GVG.loss.thresholds.loss_delta) || "?") +
+      ". Rank is the planting-priority rank, so the two views line up."
+    : (anyComp ? ""
+       : "<b>This export predates score decomposition.</b> The “what drove it” column is " +
+         "left empty rather than guessed — re-run the engine, or " +
+         "<code>python scripts/backfill_components.py</code>, to fill it.");
+}
+
+/* ---------- export ------------------------------------------------------
+   CSV for the spreadsheet the budget actually lives in, GeoJSON for the
+   GIS. Both carry the assumptions inside them, because a file that leaves
+   this page without them is a file whose numbers cannot be checked. */
+function gvwDownload(name, mime, text) {
+  const url = URL.createObjectURL(new Blob([text], { type: mime }));
+  const a = document.createElement("a");
+  a.href = url; a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+  toast("Saved " + name);
+}
+
+function gvwStamp() {
+  const a = GVW.assume;
+  return "Green Vision worklist, " + new Date().toISOString().slice(0, 16).replace("T", " ") +
+    ". Ranking and score components are the engine's, from 42 months of MODIS NDVI and " +
+    "Open-Meteo air quality; nothing here recomputes them. Plantable ha, trees and cost are " +
+    "ARITHMETIC ON ASSUMPTIONS, not measurements: realisable share of non-vegetated land " +
+    a.realisable_pct + "%, spacing " + a.spacing_m + " m (" +
+    Math.round(10000 / (a.spacing_m * a.spacing_m)) + " stems/ha), expected survival " +
+    a.survival_pct + "%, cost " + a.cost_per_tree + " INR per tree. Replace all four with a " +
+    "local schedule of rates and a site survey before quoting.";
+}
+
+function gvwExportCSV() {
+  const rows = gvwRows(), cols = gvwCols();
+  // in_programme only means something where there IS a programme.
+  const prog = GVW.mode === "priority";
+  const head = (prog ? ["in_programme", "h3_zone"] : ["h3_zone"])
+    .concat(cols.map(function (c) { return c.k; }));
+  function esc(v) {
+    if (v == null) return "";
+    // Areas come out of a spherical polygon calculation at full double
+    // precision. "16.5100570634448 ha" in a spreadsheet claims a hectare
+    // measured to the width of an atom; four decimals is already well past
+    // what any input here justifies.
+    if (typeof v === "number" && isFinite(v) && !Number.isInteger(v)) v = +v.toFixed(4);
+    const s = String(v);
+    return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  }
+  const lines = ["# " + gvwStamp(), head.join(",")];
+  rows.sort(function (x, y) { return x.rank - y.rank; }).forEach(function (r) {
+    lines.push((prog ? [GVW.picked.has(r.zone) ? "yes" : "no", r.zone] : [r.zone])
+      .concat(cols.map(function (c) { return esc(c.get(r)); })).join(","));
+  });
+  gvwDownload("green-vision-worklist-" + GVW.mode + ".csv", "text/csv;charset=utf-8", lines.join("\n"));
+}
+
+function gvwExportGeoJSON() {
+  const rows = gvwRows().filter(function (r) { return GVW.picked.has(r.zone); });
+  if (!rows.length) { toast("Nothing selected to export"); return; }
+  const gj = {
+    type: "FeatureCollection",
+    note: gvwStamp(),
+    assumptions: Object.assign({}, GVW.assume),
+    features: rows.sort(function (x, y) { return x.rank - y.rank; }).map(function (r) {
+      return {
+        type: "Feature",
+        geometry: r.feature.geometry,
+        properties: Object.assign({}, r.feature.properties, {
+          cell_area_km2: r.areaKm2 == null ? null : Math.round(r.areaKm2 * 100) / 100,
+          plantable_ha_modelled: r.ha == null ? null : Math.round(r.ha * 10) / 10,
+          trees_modelled: r.trees,
+          cost_inr_modelled: r.cost
+        })
+      };
+    })
+  };
+  gvwDownload("green-vision-programme.geojson", "application/geo+json", JSON.stringify(gj, null, 2));
+}
+
+/* Dock the sheet between whatever side panels are open rather than under
+   them. Clicking a row opens the point report on the right, so the two are
+   meant to be read together and an overlap would defeat the whole point of
+   the row click. Below a workable width the insets are dropped and the sheet
+   goes full-bleed in front instead - a 200px-wide table is worse than a
+   covered panel. */
+const GVW_SIDES = ["gvDock", "panel", "gvaPanel"];
+const GVW_MIN_W = 560;
+
+function gvwFit() {
+  if (!GVW.node) return;
+  const vw = window.innerWidth;
+  let left = 16, right = 16;
+  for (const id of GVW_SIDES) {
+    const el = document.getElementById(id);
+    if (!el) continue;
+    const r = el.getBoundingClientRect();
+    if (r.width < 40 || r.height < 40) continue;          // closed or collapsed
+    const cs = getComputedStyle(el);
+    if (cs.display === "none" || cs.visibility === "hidden" || parseFloat(cs.opacity) < 0.05) continue;
+    if (r.left <= vw / 2) left = Math.max(left, r.right + 12);
+    else right = Math.max(right, vw - r.left + 12);
+  }
+  if (vw - left - right < GVW_MIN_W) { left = 16; right = 16; }
+  GVW.node.style.left = left + "px";
+  GVW.node.style.right = right + "px";
+  // In front only when it had to overlap something to stay readable.
+  GVW.node.style.zIndex = (left === 16 && right === 16) ? 1300 : 1200;
+}
+
+window.addEventListener("resize", gvwFit);
+
+/* The side panels slide in rather than appearing, so measuring them the
+   instant a click opens one reads the position they are sliding FROM. Watch
+   for the transition to finish instead of guessing at a delay; the trailing
+   timeouts cover panels that open with no transition at all. */
+let gvwSidesWatched = false;
+function gvwWatchSides() {
+  if (gvwSidesWatched) return;
+  gvwSidesWatched = true;
+  for (const id of GVW_SIDES) {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener("transitionend", gvwFit);
+  }
+}
+
+function gvwFitSoon() {
+  gvwWatchSides();
+  gvwFit();
+  setTimeout(gvwFit, 120);
+  setTimeout(gvwFit, 460);
+}
+
+/* ---------- shell ---------- */
+function gvwBuild() {
+  const el = document.createElement("div");
+  el.className = "gvw glass";
+  el.innerHTML =
+    '<div class="gvw-bar">' +
+      '<div class="gvw-title"><b class="gvw-h"></b><span class="gvw-sub2"></span></div>' +
+      '<div class="gvw-acts">' +
+        '<button class="gvw-btn" data-a="csv">Export CSV</button>' +
+        '<button class="gvw-btn" data-a="geo">Export selection</button>' +
+        '<button class="gvw-btn gvw-x" data-a="close" title="Close worklist">×</button>' +
+      "</div>" +
+    "</div>" +
+    '<div class="gvw-roll"></div>' +
+    '<div class="gvw-assume"></div>' +
+    '<div class="gvw-table-wrap"></div>' +
+    '<div class="gvw-note"></div>';
+
+  el.addEventListener("click", function (e) {
+    const th = e.target.closest("th[data-k]");
+    if (th) {
+      const k = th.dataset.k;
+      if (GVW.sortKey === k) GVW.sortDir *= -1;
+      else { GVW.sortKey = k; GVW.sortDir = (k === "rank" || k === "status") ? 1 : -1; }
+      gvwRender();
+      return;
+    }
+    const b = e.target.closest("button[data-a]");
+    if (b) {
+      if (b.dataset.a === "csv") gvwExportCSV();
+      else if (b.dataset.a === "geo") gvwExportGeoJSON();
+      else GVW.close();
+      return;
+    }
+    if (e.target.matches('input[type="checkbox"][data-z]')) return;   // handled on change
+    const tr = e.target.closest("tr[data-z]");
+    if (!tr) return;
+    // Row click flies to the cell and opens its full report, so the table and
+    // the map stay one thing rather than two.
+    let row = null;
+    for (const r of gvwRows()) if (r.zone === tr.dataset.z) row = r;
+    if (!row) return;
+    const ring = row.feature.geometry && row.feature.geometry.coordinates[0];
+    if (ring) {
+      let x = 0, y = 0;
+      for (const pt of ring) { x += pt[0]; y += pt[1]; }
+      map.setView([y / ring.length, x / ring.length], Math.max(map.getZoom(), 12));
+    }
+    if (GVW.mode === "priority") priReport(row.feature.properties);
+    else greenCellReport(row.feature.properties);
+    gvwFitSoon();                   // the report panel is claiming width now
+  });
+
+  el.addEventListener("change", function (e) {
+    const cb = e.target.closest('input[type="checkbox"][data-z]');
+    if (cb) {
+      if (cb.checked) GVW.picked.add(cb.dataset.z); else GVW.picked.delete(cb.dataset.z);
+      gvwRender();
+      return;
+    }
+    const inp = e.target.closest("input[data-assume]");
+    if (!inp) return;
+    const k = inp.dataset.assume, v = parseFloat(inp.value);
+    if (isFinite(v) && v > 0) { GVW.assume[k] = v; gvwSaveAssume(); }
+    else inp.value = GVW.assume[k];
+    GVW.node.querySelector(".gvw-assume").innerHTML = gvwAssumeUI();
+    gvwRender();
+  });
+
+  document.body.appendChild(el);
+  return el;
+}
+
+function gvwAssumeUI() {
+  const a = GVW.assume;
+  function f(k, label, suffix, step) {
+    return '<label class="gvw-in"><span>' + label + "</span>" +
+      '<input data-assume="' + k + '" type="number" min="0" step="' + (step || 1) +
+      '" value="' + a[k] + '"><i>' + suffix + "</i></label>";
+  }
+  const planted = Math.round(10000 / (a.spacing_m * a.spacing_m));
+  return '<div class="gvw-ah"><span class="gvw-chip">assumed</span>Trees and cost are arithmetic ' +
+    "on these four numbers, not measurements. Replace them with your own schedule of rates and " +
+    "a site survey before quoting anything." +
+    "</div>" +
+    f("realisable_pct", "Realisable share of non-veg land", "%") +
+    f("spacing_m", "Spacing", "m", 0.5) +
+    f("survival_pct", "Expected survival", "%") +
+    f("cost_per_tree", "Cost per tree", "₹", 10) +
+    '<div class="gvw-derived">= ' + planted.toLocaleString() + " stems/ha planted, " +
+    Math.round(planted * a.survival_pct / 100).toLocaleString() + " surviving</div>";
+}
+
+GVW.close = function () {
+  GVW.open = false;
+  if (GVW.node) { GVW.node.remove(); GVW.node = null; }
+};
+
+GVW.show = function (mode) {
+  GVW.mode = mode;
+  const have = mode === "priority" ? (GVP.data && GVP.data.features)
+                                   : (GVG.loss && GVG.loss.features);
+  if (!have) {
+    toast(mode === "priority"
+      ? "Load the engine's ranking first"
+      : "The canopy forecast needs the engine — run python -m greenplan.server");
+    return;
+  }
+  if (!GVW.node) GVW.node = gvwBuild();
+  GVW.open = true;
+  GVW.sortKey = mode === "green" ? "status" : "rank";
+  GVW.sortDir = 1;
+  GVW.picked = null;
+
+  GVW.node.querySelector(".gvw-h").textContent =
+    mode === "priority" ? "Planting programme" : "Canopy watch list";
+  GVW.node.querySelector(".gvw-sub2").textContent =
+    have.length + " cells · the engine's ranking, unaltered · sort any column";
+  GVW.node.querySelector(".gvw-assume").innerHTML = mode === "priority" ? gvwAssumeUI() : "";
+  GVW.node.querySelector('[data-a="geo"]').style.display = mode === "priority" ? "" : "none";
+  gvwRender();
+};
+
+GVW.toggle = function (mode) {
+  if (GVW.open && GVW.mode === mode) GVW.close(); else GVW.show(mode);
+};
+
+/* Styles injected rather than sitting in the stylesheet so this section stays
+   one removable unit. */
+(function () {
+  const css = document.createElement("style");
+  css.textContent =
+  ".gvw{position:fixed;left:16px;right:16px;bottom:16px;max-height:64vh;z-index:1200;" +
+    "border-radius:18px;display:flex;flex-direction:column;overflow:hidden;" +
+    "box-shadow:0 24px 60px rgba(0,0,0,.28);font-size:13px;}" +
+  ".gvw-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;" +
+    "padding:12px 16px;border-bottom:1px solid var(--line);}" +
+  ".gvw-h{font-family:'Sora';font-size:16px;font-weight:800;display:block;}" +
+  ".gvw-sub2{font-size:11.5px;color:var(--ink-soft);}" +
+  ".gvw-acts{display:flex;gap:8px;align-items:center;}" +
+  ".gvw-btn{border:1px solid var(--line);background:var(--card-solid);color:var(--ink);" +
+    "font-weight:700;font-size:12.5px;padding:7px 13px;border-radius:10px;cursor:pointer;}" +
+  ".gvw-btn:hover{border-color:var(--brand-solid);color:var(--brand-solid);}" +
+  ".gvw-x{font-size:17px;line-height:1;padding:5px 11px;}" +
+  ".gvw-roll{display:flex;flex-wrap:wrap;gap:22px;align-items:baseline;padding:12px 16px;" +
+    "border-bottom:1px solid var(--line);}" +
+  ".gvw-k{font-size:11px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.06em;" +
+    "font-weight:700;}" +
+  ".gvw-k span{display:block;font-family:'Sora';font-size:21px;font-weight:800;color:var(--ink);" +
+    "text-transform:none;letter-spacing:0;}" +
+  ".gvw-cost span{color:var(--brand-solid);}" +
+  ".gvw-warn{flex:1 1 100%;font-size:11.5px;color:var(--amber);font-weight:600;" +
+    "text-transform:none;letter-spacing:0;line-height:1.5;}" +
+  ".gvw-quiet{color:var(--ink-soft);font-weight:500;}" +
+  ".gvw-assume{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;padding:11px 16px;" +
+    "border-bottom:1px solid var(--line);background:rgba(245,166,35,.07);}" +
+  ".gvw-assume:empty{display:none;}" +
+  ".gvw-ah{flex:1 1 100%;font-size:11.5px;color:var(--ink-soft);line-height:1.55;}" +
+  ".gvw-chip{background:var(--red);color:#fff;font-size:9.5px;font-weight:800;padding:2px 7px;" +
+    "border-radius:6px;text-transform:uppercase;letter-spacing:.06em;margin-right:7px;}" +
+  ".gvw-in{display:flex;flex-direction:column;gap:3px;font-size:10.5px;font-weight:700;" +
+    "color:var(--ink-soft);text-transform:uppercase;letter-spacing:.05em;position:relative;}" +
+  ".gvw-in input{width:112px;border:1px solid var(--line);border-radius:9px;" +
+    "padding:6px 26px 6px 9px;font-size:13px;font-weight:700;background:var(--card-solid);" +
+    "color:var(--ink);}" +
+  ".gvw-in i{position:absolute;right:9px;bottom:7px;font-style:normal;font-size:11px;" +
+    "color:var(--ink-soft);}" +
+  ".gvw-derived{font-size:11.5px;color:var(--ink-soft);font-weight:600;padding-bottom:6px;}" +
+  ".gvw-table-wrap{overflow:auto;flex:1;}" +
+  ".gvw-t{border-collapse:separate;border-spacing:0;width:100%;}" +
+  ".gvw-t th{position:sticky;top:0;z-index:2;background:var(--card-solid);text-align:left;" +
+    "font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-soft);" +
+    "padding:9px 10px;border-bottom:1px solid var(--line);cursor:pointer;white-space:nowrap;}" +
+  ".gvw-t th:hover{color:var(--brand-solid);}" +
+  ".gvw-t th.s{color:var(--brand-solid);}" +
+  ".gvw-t th.n,.gvw-t td.n{text-align:right;}" +
+  ".gvw-t td{padding:7px 10px;border-bottom:1px solid var(--line);white-space:nowrap;}" +
+  ".gvw-t tbody tr{cursor:pointer;}" +
+  ".gvw-t tbody tr:hover{background:rgba(10,122,84,.07);}" +
+  ".gvw-t tbody tr.on{background:rgba(10,122,84,.06);box-shadow:inset 3px 0 0 var(--brand-solid);}" +
+  ".gvw-t tbody tr.on:hover{background:rgba(10,122,84,.12);}" +
+  ".gvw-t td.pick,.gvw-t th.pick{width:34px;padding-left:14px;}" +
+  ".gvw-t code{font-size:11.5px;color:var(--ink-soft);}" +
+  ".gvw-dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:7px;" +
+    "vertical-align:middle;}" +
+  ".gvw-sub{color:var(--ink-soft);font-size:11px;font-weight:700;}" +
+  ".gvw-un{color:var(--ink-soft);opacity:.7;font-style:italic;font-size:12px;}" +
+  ".gvw-flag{font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;" +
+    "padding:1px 5px;border-radius:5px;background:rgba(245,166,35,.22);color:#8a5a00;" +
+    "cursor:help;margin-left:3px;}" +
+  ".gvw-flag.gvw-ok{background:rgba(18,185,129,.2);color:#0a7a54;}" +
+  ".gvw-note{padding:9px 16px;font-size:11.5px;color:var(--ink-soft);line-height:1.5;" +
+    "border-top:1px solid var(--line);}" +
+  ".gvw-note:empty{display:none;}" +
+  ".gvw-open{width:100%;margin-top:9px;border:0;background:var(--brand-solid);color:#fff;" +
+    "font-family:'Sora';font-weight:700;font-size:12.5px;padding:8px 12px;border-radius:11px;" +
+    "cursor:pointer;}" +
+  ".gvw-open:hover{filter:brightness(1.08);}" +
+  ".gv-nodata{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:1100;width:min(420px,88vw);padding:20px 22px;border-radius:18px;text-align:left;}" +
+  ".gv-nodata .nd-h{font-family:'Sora';font-size:17px;font-weight:800;margin-bottom:7px;}" +
+  ".gv-nodata p{font-size:12.5px;color:var(--ink-soft);line-height:1.6;margin:0 0 13px;}" +
+  ".nd-list{font-size:12px;color:var(--ink-soft);display:flex;flex-wrap:wrap;gap:7px;align-items:center;}" +
+  ".nd-list b{width:100%;font-size:11px;text-transform:uppercase;letter-spacing:.06em;}" +
+  ".nd-city{border:1px solid var(--line);background:var(--card-solid);color:var(--ink);font-weight:700;font-size:12px;padding:6px 12px;border-radius:9px;cursor:pointer;}" +
+  ".nd-city:hover{border-color:var(--brand-solid);color:var(--brand-solid);}" +
+  "@media (max-width:820px){.gvw{left:8px;right:8px;bottom:8px;max-height:72vh;}" +
+    ".gvw-roll{gap:14px}.gvw-k span{font-size:17px}}" +
+  '[data-theme="dark"] .gvw-flag{background:rgba(245,166,35,.18);color:#f5c46a;}' +
+  '[data-theme="dark"] .gvw-flag.gvw-ok{background:rgba(18,185,129,.18);color:#5fd6a8;}';
+  document.head.appendChild(css);
+})();
 
 /* =====================================================================
    15. THE ASSISTANT — natural language that actually operates the map

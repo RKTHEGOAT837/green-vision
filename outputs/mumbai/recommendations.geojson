@@ -60,7 +60,14 @@
           "Shisham",
           "Banyan"
         ],
-        "justification": "Priority score 0.945: predicted AQI change +28.0, NDVI trend -0.0331/yr with canopy at 0.03 and plantable-space 0.96. Species chosen for pollution tolerance and fit to available space."
+        "justification": "Priority score 0.945: predicted AQI change +28.0, NDVI trend -0.0331/yr with canopy at 0.03 and plantable-space 0.96. Species chosen for pollution tolerance and fit to available space.",
+        "components": {
+          "aqi_worsening": 0.3499,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.35,
+          "low_green_cover": 0.1495,
+          "plantable_space": 0.0957
+        }
       }
     },
     {
@@ -122,7 +129,14 @@
           "Shisham",
           "Banyan"
         ],
-        "justification": "Priority score 0.929: predicted AQI change +28.0, NDVI trend -0.0364/yr with canopy at 0.06 and plantable-space 0.90. Species chosen for pollution tolerance and fit to available space."
+        "justification": "Priority score 0.929: predicted AQI change +28.0, NDVI trend -0.0364/yr with canopy at 0.06 and plantable-space 0.90. Species chosen for pollution tolerance and fit to available space.",
+        "components": {
+          "aqi_worsening": 0.3499,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.35,
+          "low_green_cover": 0.1388,
+          "plantable_space": 0.0899
+        }
       }
     },
     {
@@ -192,6 +206,13 @@
           "texture_simple": "clay",
           "moisture": null,
           "soc": 593.5
+        },
+        "components": {
+          "aqi_worsening": 0.3386,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.35,
+          "low_green_cover": 0.1211,
+          "plantable_space": 0.0803
         }
       }
     },
@@ -254,7 +275,14 @@
           "Shisham",
           "Banyan"
         ],
-        "justification": "Priority score 0.873: predicted AQI change +27.6, NDVI trend -0.0340/yr with canopy at 0.16 and plantable-space 0.73. Species chosen for pollution tolerance and fit to available space."
+        "justification": "Priority score 0.873: predicted AQI change +27.6, NDVI trend -0.0340/yr with canopy at 0.16 and plantable-space 0.73. Species chosen for pollution tolerance and fit to available space.",
+        "components": {
+          "aqi_worsening": 0.3416,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.35,
+          "low_green_cover": 0.108,
+          "plantable_space": 0.0731
+        }
       }
     },
     {
@@ -316,7 +344,14 @@
           "Shisham",
           "Banyan"
         ],
-        "justification": "Priority score 0.859: predicted AQI change +27.0, NDVI trend -0.0376/yr with canopy at 0.16 and plantable-space 0.74. Species chosen for pollution tolerance and fit to available space."
+        "justification": "Priority score 0.859: predicted AQI change +27.0, NDVI trend -0.0376/yr with canopy at 0.16 and plantable-space 0.74. Species chosen for pollution tolerance and fit to available space.",
+        "components": {
+          "aqi_worsening": 0.3253,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.35,
+          "low_green_cover": 0.1097,
+          "plantable_space": 0.0741
+        }
       }
     },
     {
@@ -378,7 +413,14 @@
           "Shisham",
           "Banyan"
         ],
-        "justification": "Priority score 0.851: predicted AQI change +30.0, NDVI trend -0.0280/yr with canopy at 0.26 and plantable-space 0.57. Species chosen for pollution tolerance and fit to available space."
+        "justification": "Priority score 0.851: predicted AQI change +30.0, NDVI trend -0.0280/yr with canopy at 0.26 and plantable-space 0.57. Species chosen for pollution tolerance and fit to available space.",
+        "components": {
+          "aqi_worsening": 0.4,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.315,
+          "low_green_cover": 0.0786,
+          "plantable_space": 0.0571
+        }
       }
     },
     {
@@ -440,7 +482,14 @@
           "Shisham",
           "Banyan"
         ],
-        "justification": "Priority score 0.850: predicted AQI change +30.0, NDVI trend -0.0311/yr with canopy at 0.31 and plantable-space 0.49. Species chosen for pollution tolerance and fit to available space."
+        "justification": "Priority score 0.850: predicted AQI change +30.0, NDVI trend -0.0311/yr with canopy at 0.31 and plantable-space 0.49. Species chosen for pollution tolerance and fit to available space.",
+        "components": {
+          "aqi_worsening": 0.4,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.3387,
+          "low_green_cover": 0.0627,
+          "plantable_space": 0.0485
+        }
       }
     },
     {
@@ -502,7 +551,14 @@
           "Shisham",
           "Banyan"
         ],
-        "justification": "Priority score 0.839: predicted AQI change +28.9, NDVI trend -0.0272/yr with canopy at 0.21 and plantable-space 0.65. Species chosen for pollution tolerance and fit to available space."
+        "justification": "Priority score 0.839: predicted AQI change +28.9, NDVI trend -0.0272/yr with canopy at 0.21 and plantable-space 0.65. Species chosen for pollution tolerance and fit to available space.",
+        "components": {
+          "aqi_worsening": 0.3712,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.31,
+          "low_green_cover": 0.0929,
+          "plantable_space": 0.0649
+        }
       }
     },
     {
@@ -572,6 +628,13 @@
           "texture_simple": "clay",
           "moisture": null,
           "soc": 255.5
+        },
+        "components": {
+          "aqi_worsening": 0.4,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.2724,
+          "low_green_cover": 0.0681,
+          "plantable_space": 0.0514
         }
       }
     },
@@ -634,7 +697,14 @@
           "Shisham",
           "Banyan"
         ],
-        "justification": "Priority score 0.789: predicted AQI change +27.0, NDVI trend -0.0200/yr with canopy at 0.10 and plantable-space 0.83. Species chosen for pollution tolerance and fit to available space."
+        "justification": "Priority score 0.789: predicted AQI change +27.0, NDVI trend -0.0200/yr with canopy at 0.10 and plantable-space 0.83. Species chosen for pollution tolerance and fit to available space.",
+        "components": {
+          "aqi_worsening": 0.3253,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.2549,
+          "low_green_cover": 0.1262,
+          "plantable_space": 0.0831
+        }
       }
     },
     {
@@ -691,7 +761,14 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "components": {
+          "aqi_worsening": 0.3027,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.35,
+          "low_green_cover": 0.0715,
+          "plantable_space": 0.0533
+        }
       }
     },
     {
@@ -748,7 +825,14 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "components": {
+          "aqi_worsening": 0.3883,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.273,
+          "low_green_cover": 0.065,
+          "plantable_space": 0.0498
+        }
       }
     },
     {
@@ -805,7 +889,14 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "components": {
+          "aqi_worsening": 0.4,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.2299,
+          "low_green_cover": 0.077,
+          "plantable_space": 0.0563
+        }
       }
     },
     {
@@ -870,6 +961,13 @@
           "texture_simple": "clay",
           "moisture": null,
           "soc": 224.5
+        },
+        "components": {
+          "aqi_worsening": 0.3313,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.35,
+          "low_green_cover": 0.0433,
+          "plantable_space": 0.038
         }
       }
     },
@@ -927,7 +1025,14 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "components": {
+          "aqi_worsening": 0.3712,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.2285,
+          "low_green_cover": 0.0961,
+          "plantable_space": 0.0667
+        }
       }
     },
     {
@@ -984,7 +1089,14 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "components": {
+          "aqi_worsening": 0.3712,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.231,
+          "low_green_cover": 0.0931,
+          "plantable_space": 0.065
+        }
       }
     },
     {
@@ -1041,7 +1153,14 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "components": {
+          "aqi_worsening": 0.3407,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.255,
+          "low_green_cover": 0.0937,
+          "plantable_space": 0.0654
+        }
       }
     },
     {
@@ -1098,7 +1217,14 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "components": {
+          "aqi_worsening": 0.4,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.1029,
+          "low_green_cover": 0.15,
+          "plantable_space": 0.0971
+        }
       }
     },
     {
@@ -1155,7 +1281,14 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "components": {
+          "aqi_worsening": 0.3712,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.2294,
+          "low_green_cover": 0.0801,
+          "plantable_space": 0.058
+        }
       }
     },
     {
@@ -1212,7 +1345,14 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "components": {
+          "aqi_worsening": 0.3876,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.1029,
+          "low_green_cover": 0.1499,
+          "plantable_space": 0.0959
+        }
       }
     },
     {
@@ -1269,7 +1409,14 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "components": {
+          "aqi_worsening": 0.2883,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.3132,
+          "low_green_cover": 0.0757,
+          "plantable_space": 0.0556
+        }
       }
     },
     {
@@ -1326,7 +1473,14 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "components": {
+          "aqi_worsening": 0.3712,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.2108,
+          "low_green_cover": 0.0879,
+          "plantable_space": 0.0622
+        }
       }
     },
     {
@@ -1383,7 +1537,14 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "components": {
+          "aqi_worsening": 0.4,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.197,
+          "low_green_cover": 0.0725,
+          "plantable_space": 0.0538
+        }
       }
     },
     {
@@ -1440,7 +1601,14 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "components": {
+          "aqi_worsening": 0.3712,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.1984,
+          "low_green_cover": 0.0896,
+          "plantable_space": 0.0631
+        }
       }
     },
     {
@@ -1497,7 +1665,14 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "components": {
+          "aqi_worsening": 0.3712,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.2075,
+          "low_green_cover": 0.083,
+          "plantable_space": 0.0596
+        }
       }
     },
     {
@@ -1562,6 +1737,13 @@
           "texture_simple": "clay",
           "moisture": null,
           "soc": 303.5
+        },
+        "components": {
+          "aqi_worsening": 0.4,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.1928,
+          "low_green_cover": 0.0722,
+          "plantable_space": 0.0537
         }
       }
     },
@@ -1627,6 +1809,13 @@
           "texture_simple": "clay",
           "moisture": null,
           "soc": 222.0
+        },
+        "components": {
+          "aqi_worsening": 0.3712,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.1943,
+          "low_green_cover": 0.0862,
+          "plantable_space": 0.0613
         }
       }
     },
@@ -1684,7 +1873,14 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "components": {
+          "aqi_worsening": 0.2814,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.2488,
+          "low_green_cover": 0.107,
+          "plantable_space": 0.0726
+        }
       }
     },
     {
@@ -1741,7 +1937,14 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "components": {
+          "aqi_worsening": 0.3804,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.1193,
+          "low_green_cover": 0.1265,
+          "plantable_space": 0.0832
+        }
       }
     },
     {
@@ -1798,7 +2001,14 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "components": {
+          "aqi_worsening": 0.3712,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.1766,
+          "low_green_cover": 0.0949,
+          "plantable_space": 0.066
+        }
       }
     },
     {
@@ -1855,7 +2065,14 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "components": {
+          "aqi_worsening": 0.3804,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.1029,
+          "low_green_cover": 0.1334,
+          "plantable_space": 0.0869
+        }
       }
     },
     {
@@ -1912,7 +2129,14 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "components": {
+          "aqi_worsening": 0.3079,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.2339,
+          "low_green_cover": 0.0939,
+          "plantable_space": 0.0655
+        }
       }
     },
     {
@@ -1969,7 +2193,14 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "components": {
+          "aqi_worsening": 0.2793,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.2579,
+          "low_green_cover": 0.0933,
+          "plantable_space": 0.0651
+        }
       }
     },
     {
@@ -2026,7 +2257,14 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "components": {
+          "aqi_worsening": 0.4,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.1662,
+          "low_green_cover": 0.073,
+          "plantable_space": 0.0541
+        }
       }
     },
     {
@@ -2083,7 +2321,14 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "components": {
+          "aqi_worsening": 0.339,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.2355,
+          "low_green_cover": 0.0657,
+          "plantable_space": 0.0501
+        }
       }
     },
     {
@@ -2140,7 +2385,14 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "components": {
+          "aqi_worsening": 0.3361,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.2749,
+          "low_green_cover": 0.0416,
+          "plantable_space": 0.037
+        }
       }
     },
     {
@@ -2197,7 +2449,14 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "components": {
+          "aqi_worsening": 0.3712,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.1659,
+          "low_green_cover": 0.0884,
+          "plantable_space": 0.0625
+        }
       }
     },
     {
@@ -2254,7 +2513,14 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "components": {
+          "aqi_worsening": 0.4,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.1742,
+          "low_green_cover": 0.0617,
+          "plantable_space": 0.048
+        }
       }
     },
     {
@@ -2311,7 +2577,14 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "components": {
+          "aqi_worsening": 0.3712,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.1673,
+          "low_green_cover": 0.0847,
+          "plantable_space": 0.0605
+        }
       }
     },
     {
@@ -2368,7 +2641,14 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "components": {
+          "aqi_worsening": 0.4,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.1474,
+          "low_green_cover": 0.0777,
+          "plantable_space": 0.0567
+        }
       }
     },
     {
@@ -2425,7 +2705,14 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "components": {
+          "aqi_worsening": 0.2805,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.35,
+          "low_green_cover": 0.0203,
+          "plantable_space": 0.0255
+        }
       }
     },
     {
@@ -2482,7 +2769,14 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "components": {
+          "aqi_worsening": 0.3712,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.1373,
+          "low_green_cover": 0.0973,
+          "plantable_space": 0.0673
+        }
       }
     },
     {
@@ -2539,7 +2833,14 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "components": {
+          "aqi_worsening": 0.4,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.1608,
+          "low_green_cover": 0.0626,
+          "plantable_space": 0.0485
+        }
       }
     },
     {
@@ -2596,7 +2897,14 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "components": {
+          "aqi_worsening": 0.3712,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.1577,
+          "low_green_cover": 0.0825,
+          "plantable_space": 0.0593
+        }
       }
     },
     {
@@ -2653,7 +2961,14 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "components": {
+          "aqi_worsening": 0.2942,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.2791,
+          "low_green_cover": 0.0501,
+          "plantable_space": 0.0417
+        }
       }
     },
     {
@@ -2710,7 +3025,14 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "components": {
+          "aqi_worsening": 0.3712,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.142,
+          "low_green_cover": 0.0847,
+          "plantable_space": 0.0605
+        }
       }
     },
     {
@@ -2767,7 +3089,14 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "components": {
+          "aqi_worsening": 0.3558,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.1347,
+          "low_green_cover": 0.099,
+          "plantable_space": 0.0683
+        }
       }
     },
     {
@@ -2824,7 +3153,14 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "components": {
+          "aqi_worsening": 0.37,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.1494,
+          "low_green_cover": 0.0801,
+          "plantable_space": 0.058
+        }
       }
     },
     {
@@ -2881,7 +3217,14 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "components": {
+          "aqi_worsening": 0.2805,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.3134,
+          "low_green_cover": 0.0277,
+          "plantable_space": 0.0295
+        }
       }
     },
     {
@@ -2938,7 +3281,14 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "components": {
+          "aqi_worsening": 0.3695,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.1649,
+          "low_green_cover": 0.0639,
+          "plantable_space": 0.0491
+        }
       }
     },
     {
@@ -2995,7 +3345,14 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "components": {
+          "aqi_worsening": 0.3712,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.1287,
+          "low_green_cover": 0.084,
+          "plantable_space": 0.0601
+        }
       }
     },
     {
@@ -3052,7 +3409,14 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "components": {
+          "aqi_worsening": 0.3712,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.1287,
+          "low_green_cover": 0.084,
+          "plantable_space": 0.0601
+        }
       }
     },
     {
@@ -3117,6 +3481,13 @@
           "texture_simple": "clay",
           "moisture": null,
           "soc": 269.0
+        },
+        "components": {
+          "aqi_worsening": 0.3378,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.1683,
+          "low_green_cover": 0.079,
+          "plantable_space": 0.0574
         }
       }
     },
@@ -3174,7 +3545,14 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "components": {
+          "aqi_worsening": 0.4,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.1247,
+          "low_green_cover": 0.0612,
+          "plantable_space": 0.0477
+        }
       }
     },
     {
@@ -3231,7 +3609,14 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "components": {
+          "aqi_worsening": 0.3274,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.2236,
+          "low_green_cover": 0.0425,
+          "plantable_space": 0.0375
+        }
       }
     },
     {
@@ -3288,7 +3673,14 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "components": {
+          "aqi_worsening": 0.3695,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.1244,
+          "low_green_cover": 0.0786,
+          "plantable_space": 0.0571
+        }
       }
     },
     {
@@ -3345,7 +3737,14 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "components": {
+          "aqi_worsening": 0.343,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.2117,
+          "low_green_cover": 0.0382,
+          "plantable_space": 0.0352
+        }
       }
     },
     {
@@ -3402,7 +3801,14 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "components": {
+          "aqi_worsening": 0.4,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.1041,
+          "low_green_cover": 0.0683,
+          "plantable_space": 0.0515
+        }
       }
     },
     {
@@ -3459,7 +3865,14 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "components": {
+          "aqi_worsening": 0.3253,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.1056,
+          "low_green_cover": 0.114,
+          "plantable_space": 0.0764
+        }
       }
     },
     {
@@ -3516,7 +3929,14 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "components": {
+          "aqi_worsening": 0.3253,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.1162,
+          "low_green_cover": 0.1008,
+          "plantable_space": 0.0692
+        }
       }
     },
     {
@@ -3573,7 +3993,14 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "components": {
+          "aqi_worsening": 0.3591,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.1079,
+          "low_green_cover": 0.084,
+          "plantable_space": 0.0601
+        }
       }
     },
     {
@@ -3638,6 +4065,13 @@
           "texture_simple": "clay",
           "moisture": null,
           "soc": 232.0
+        },
+        "components": {
+          "aqi_worsening": 0.2805,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.2776,
+          "low_green_cover": 0.0221,
+          "plantable_space": 0.0264
         }
       }
     },
@@ -3695,7 +4129,14 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "components": {
+          "aqi_worsening": 0.2839,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.1572,
+          "low_green_cover": 0.0973,
+          "plantable_space": 0.0673
+        }
       }
     },
     {
@@ -3752,7 +4193,14 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "components": {
+          "aqi_worsening": 0.3695,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.1025,
+          "low_green_cover": 0.0759,
+          "plantable_space": 0.0557
+        }
       }
     },
     {
@@ -3809,7 +4257,14 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "components": {
+          "aqi_worsening": 0.2763,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.1508,
+          "low_green_cover": 0.1004,
+          "plantable_space": 0.069
+        }
       }
     },
     {
@@ -3866,7 +4321,14 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "components": {
+          "aqi_worsening": 0.3004,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.2202,
+          "low_green_cover": 0.0365,
+          "plantable_space": 0.0343
+        }
       }
     },
     {
@@ -3931,6 +4393,13 @@
           "texture_simple": "clay",
           "moisture": null,
           "soc": 298.0
+        },
+        "components": {
+          "aqi_worsening": 0.2528,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.2782,
+          "low_green_cover": 0.0288,
+          "plantable_space": 0.0301
         }
       }
     },
@@ -3988,7 +4457,14 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "components": {
+          "aqi_worsening": 0.324,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.1578,
+          "low_green_cover": 0.0589,
+          "plantable_space": 0.0465
+        }
       }
     },
     {
@@ -4045,7 +4521,14 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "components": {
+          "aqi_worsening": 0.324,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.1502,
+          "low_green_cover": 0.0568,
+          "plantable_space": 0.0453
+        }
       }
     },
     {
@@ -4110,6 +4593,13 @@
           "texture_simple": "clay",
           "moisture": null,
           "soc": 250.5
+        },
+        "components": {
+          "aqi_worsening": 0.2997,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.205,
+          "low_green_cover": 0.0345,
+          "plantable_space": 0.0332
         }
       }
     },
@@ -4175,6 +4665,13 @@
           "texture_simple": "clay",
           "moisture": null,
           "soc": 336.0
+        },
+        "components": {
+          "aqi_worsening": 0.27,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.2287,
+          "low_green_cover": 0.0358,
+          "plantable_space": 0.0339
         }
       }
     },
@@ -4232,7 +4729,14 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "components": {
+          "aqi_worsening": 0.3011,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.1965,
+          "low_green_cover": 0.0357,
+          "plantable_space": 0.0339
+        }
       }
     },
     {
@@ -4297,6 +4801,13 @@
           "texture_simple": "clay",
           "moisture": null,
           "soc": 271.5
+        },
+        "components": {
+          "aqi_worsening": 0.3004,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.1907,
+          "low_green_cover": 0.0368,
+          "plantable_space": 0.0344
         }
       }
     },
@@ -4354,7 +4865,14 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "components": {
+          "aqi_worsening": 0.3407,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.0599,
+          "low_green_cover": 0.0922,
+          "plantable_space": 0.0645
+        }
       }
     },
     {
@@ -4411,7 +4929,14 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "components": {
+          "aqi_worsening": 0.324,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.1192,
+          "low_green_cover": 0.0619,
+          "plantable_space": 0.0481
+        }
       }
     },
     {
@@ -4476,6 +5001,13 @@
           "texture_simple": "clay",
           "moisture": null,
           "soc": 227.5
+        },
+        "components": {
+          "aqi_worsening": 0.2334,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.234,
+          "low_green_cover": 0.0355,
+          "plantable_space": 0.0338
         }
       }
     },
@@ -4533,7 +5065,14 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "components": {
+          "aqi_worsening": 0.324,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.1047,
+          "low_green_cover": 0.059,
+          "plantable_space": 0.0465
+        }
       }
     },
     {
@@ -4590,7 +5129,14 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "components": {
+          "aqi_worsening": 0.3159,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.1188,
+          "low_green_cover": 0.0515,
+          "plantable_space": 0.0424
+        }
       }
     },
     {
@@ -4655,6 +5201,13 @@
           "texture_simple": "clay",
           "moisture": null,
           "soc": 237.0
+        },
+        "components": {
+          "aqi_worsening": 0.2354,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.2064,
+          "low_green_cover": 0.0377,
+          "plantable_space": 0.0349
         }
       }
     },
@@ -4712,7 +5265,14 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "components": {
+          "aqi_worsening": 0.2789,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.1524,
+          "low_green_cover": 0.0443,
+          "plantable_space": 0.0385
+        }
       }
     },
     {
@@ -4769,7 +5329,14 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "components": {
+          "aqi_worsening": 0.3436,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.0811,
+          "low_green_cover": 0.0443,
+          "plantable_space": 0.0385
+        }
       }
     },
     {
@@ -4826,7 +5393,14 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "components": {
+          "aqi_worsening": 0.2441,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.2136,
+          "low_green_cover": 0.0171,
+          "plantable_space": 0.0238
+        }
       }
     },
     {
@@ -4883,7 +5457,14 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "components": {
+          "aqi_worsening": 0.2545,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.1525,
+          "low_green_cover": 0.0449,
+          "plantable_space": 0.0388
+        }
       }
     },
     {
@@ -4940,7 +5521,14 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "components": {
+          "aqi_worsening": 0.2981,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.1272,
+          "low_green_cover": 0.031,
+          "plantable_space": 0.0313
+        }
       }
     },
     {
@@ -5005,6 +5593,13 @@
           "texture_simple": "clay",
           "moisture": null,
           "soc": 291.5
+        },
+        "components": {
+          "aqi_worsening": 0.3313,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.0657,
+          "low_green_cover": 0.044,
+          "plantable_space": 0.0383
         }
       }
     },
@@ -5062,7 +5657,14 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "components": {
+          "aqi_worsening": 0.26,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.2051,
+          "low_green_cover": 0.0,
+          "plantable_space": 0.012
+        }
       }
     },
     {
@@ -5127,6 +5729,13 @@
           "texture_simple": "clay",
           "moisture": null,
           "soc": 248.0
+        },
+        "components": {
+          "aqi_worsening": 0.2122,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.2431,
+          "low_green_cover": 0.0008,
+          "plantable_space": 0.0149
         }
       }
     },
@@ -5184,7 +5793,14 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "components": {
+          "aqi_worsening": 0.2958,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.0805,
+          "low_green_cover": 0.05,
+          "plantable_space": 0.0416
+        }
       }
     },
     {
@@ -5241,7 +5857,14 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "components": {
+          "aqi_worsening": 0.324,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.0321,
+          "low_green_cover": 0.0618,
+          "plantable_space": 0.048
+        }
       }
     },
     {
@@ -5298,7 +5921,14 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "components": {
+          "aqi_worsening": 0.2336,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.1194,
+          "low_green_cover": 0.0375,
+          "plantable_space": 0.0348
+        }
       }
     },
     {
@@ -5363,6 +5993,13 @@
           "texture_simple": "clay",
           "moisture": null,
           "soc": 543.5
+        },
+        "components": {
+          "aqi_worsening": 0.2408,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.1456,
+          "low_green_cover": 0.0139,
+          "plantable_space": 0.022
         }
       }
     },
@@ -5420,7 +6057,14 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "components": {
+          "aqi_worsening": 0.1192,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.2867,
+          "low_green_cover": 0.0006,
+          "plantable_space": 0.0147
+        }
       }
     },
     {
@@ -5485,6 +6129,13 @@
           "texture_simple": "clay",
           "moisture": null,
           "soc": 362.5
+        },
+        "components": {
+          "aqi_worsening": 0.2935,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.0,
+          "low_green_cover": 0.0561,
+          "plantable_space": 0.0449
         }
       }
     },
@@ -5542,7 +6193,14 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "components": {
+          "aqi_worsening": 0.1889,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.105,
+          "low_green_cover": 0.0512,
+          "plantable_space": 0.0423
+        }
       }
     },
     {
@@ -5599,7 +6257,14 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "components": {
+          "aqi_worsening": 0.2708,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.0,
+          "low_green_cover": 0.0538,
+          "plantable_space": 0.0437
+        }
       }
     },
     {
@@ -5656,7 +6321,14 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "components": {
+          "aqi_worsening": 0.2427,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.1017,
+          "low_green_cover": 0.0002,
+          "plantable_space": 0.0145
+        }
       }
     },
     {
@@ -5721,6 +6393,13 @@
           "texture_simple": "clay",
           "moisture": null,
           "soc": 293.0
+        },
+        "components": {
+          "aqi_worsening": 0.0795,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.2134,
+          "low_green_cover": 0.0,
+          "plantable_space": 0.0013
         }
       }
     },
@@ -5786,6 +6465,13 @@
           "texture_simple": "clay",
           "moisture": null,
           "soc": 246.0
+        },
+        "components": {
+          "aqi_worsening": 0.1893,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.0824,
+          "low_green_cover": 0.0,
+          "plantable_space": 0.0125
         }
       }
     },
@@ -5843,7 +6529,14 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "components": {
+          "aqi_worsening": 0.0442,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.1271,
+          "low_green_cover": 0.0538,
+          "plantable_space": 0.0437
+        }
       }
     },
     {
@@ -5908,6 +6601,13 @@
           "texture_simple": "clay",
           "moisture": null,
           "soc": 294.5
+        },
+        "components": {
+          "aqi_worsening": 0.1038,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.0863,
+          "low_green_cover": 0.035,
+          "plantable_space": 0.0335
         }
       }
     },
@@ -5973,6 +6673,13 @@
           "texture_simple": "clay",
           "moisture": null,
           "soc": 365.0
+        },
+        "components": {
+          "aqi_worsening": 0.2122,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.0,
+          "low_green_cover": 0.0153,
+          "plantable_space": 0.0227
         }
       }
     },
@@ -6030,7 +6737,14 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "components": {
+          "aqi_worsening": 0.1766,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.0697,
+          "low_green_cover": 0.0,
+          "plantable_space": 0.0018
+        }
       }
     },
     {
@@ -6087,7 +6801,14 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "components": {
+          "aqi_worsening": 0.2122,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.0,
+          "low_green_cover": 0.0063,
+          "plantable_space": 0.0179
+        }
       }
     },
     {
@@ -6144,7 +6865,14 @@
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "components": {
+          "aqi_worsening": 0.0916,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.0,
+          "low_green_cover": 0.0,
+          "plantable_space": 0.0
+        }
       }
     },
     {
@@ -8385,5 +9113,12 @@
         "justification": ""
       }
     }
-  ]
+  ],
+  "mcda_weights": {
+    "aqi_worsening": 0.4,
+    "traffic_worsening": 0.0,
+    "ndvi_decline": 0.35,
+    "low_green_cover": 0.15,
+    "plantable_space": 0.1
+  }
 }

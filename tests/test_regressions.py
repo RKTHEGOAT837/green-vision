@@ -17,6 +17,8 @@ import gzip
 import json
 import math
 import re
+import shutil
+import subprocess
 import sys
 import tempfile
 from pathlib import Path
@@ -192,6 +194,106 @@ check("AOI refresh radius is defined", mm is not None)
 if mm:
     check("AOI refresh radius <= 250 m", int(mm.group(1)) <= 250,
           "got %s m - large values make neighbouring areas read identically" % mm.group(1))
+
+
+
+# ---------------------------------------------------------------------------
+section("10. A published score can be taken apart")
+# The Priority worklist tells a planner WHICH criterion carried each cell.
+# That claim is only worth making if the five weighted contributions actually
+# add up to the score the engine published; a decomposition that does not
+# reconcile is worse than none, because it reads as an explanation. An earlier
+# attempt to re-derive these in the browser was out by up to 0.019 of score,
+# which is enough to swap neighbouring cells.
+_geo = sorted((ROOT / "outputs").glob("*/recommendations.geojson"))
+check("shipped rankings exist to check", bool(_geo), "no outputs/*/recommendations.geojson")
+for _g in _geo:
+    _d = json.loads(_g.read_text(encoding="utf-8"))
+    _scored = [f["properties"] for f in _d.get("features", [])
+               if f.get("properties", {}).get("priority_score") is not None]
+    _city = _g.parent.name
+    _have = [q for q in _scored if q.get("components")]
+    check("%s: every scored cell carries a decomposition" % _city,
+          len(_have) == len(_scored), "%d of %d" % (len(_have), len(_scored)))
+    _worst = 0.0
+    for _q in _have:
+        _worst = max(_worst, abs(sum(_q["components"].values()) - float(_q["priority_score"])))
+    check("%s: the parts sum to the published score" % _city, _worst <= 1e-3,
+          "off by up to %.4f" % _worst)
+    # A zero-weight criterion must never be the reason a cell was chosen.
+    _drivers = set()
+    for _q in _have:
+        _drivers.add(max(_q["components"], key=lambda k: _q["components"][k]))
+    check("%s: traffic never drives a ranking" % _city,
+          "traffic_worsening" not in _drivers, str(sorted(_drivers)))
+
+
+# ---------------------------------------------------------------------------
+section("11. Nothing touches GV before GV exists")
+# `GV.rainGapNote = ...` got inserted ~1,400 lines above `const GV = ...`.
+# That is a temporal-dead-zone ReferenceError, not a hoisting nicety: it threw
+# during script execution and aborted the WHOLE block, so the map, the views
+# and the studio never initialised. The page still rendered its shell, which
+# is exactly why it looked fine.
+_html = (ROOT / "index.html").read_text(encoding="utf-8")
+_decl = re.search(r"^const GV\s*=", _html, re.M)
+check("`const GV` is declared somewhere", _decl is not None)
+if _decl:
+    _early = re.findall(r"^\s*GV\.\w+\s*=", _html[: _decl.start()], re.M)
+    check("no GV member is assigned before that line", not _early,
+          "found %r - this aborts the entire script block" % (_early[:3],))
+
+
+# ---------------------------------------------------------------------------
+section("12. A ranking is never shown over the wrong city")
+# One server holds five cities and routes /api/zones by coordinate, but the
+# page asked without a coordinate and then cached the answer for the life of
+# the tab. Panning to Delhi kept Ahmedabad's 146 cells on screen: every number
+# real, every number about somewhere else.
+check("the ranking fetch carries a coordinate",
+      'lat=" + pt[0].toFixed(5)' in _html,
+      "priTryFetch must qualify /api/zones with lat/lon")
+check("a cached ranking is tested against where we are",
+      "gvCollectionCovers(GVP.data, here)" in _html)
+check("the canopy forecast is tested the same way",
+      "gvCollectionCovers(GVG.loss, here)" in _html)
+check("an uncovered area says so instead of just drawing nothing",
+      "priNoDataNotice(true)" in _html)
+
+# And the guard itself, executed rather than grepped for.
+_node = shutil.which("node")
+if not _node:
+    print("  -- node not on PATH; skipping execution of the coverage guard")
+else:
+    _fn = re.search(r"function gvCollectionCovers\(gj, pt\)\{.*?\n\}", _html, re.S)
+    check("the guard's source can be located", _fn is not None)
+    if _fn:
+        _harness = _fn.group(0) + """
+const mk = (lat, lon) => ({features: [{geometry: {type: "Polygon", coordinates: [[
+  [lon - 0.1, lat - 0.1], [lon + 0.1, lat - 0.1], [lon + 0.1, lat + 0.1],
+  [lon - 0.1, lat + 0.1], [lon - 0.1, lat - 0.1]]]}}]});
+const AHM = mk(23.02, 72.57);
+console.log(JSON.stringify({
+  sameCity:    gvCollectionCovers(AHM, [23.02, 72.57]),
+  otherCity:   gvCollectionCovers(AHM, [28.61, 77.21]),
+  surat:       gvCollectionCovers(AHM, [21.17, 72.83]),
+  justOutside: gvCollectionCovers(AHM, [23.14, 72.57]),
+  noData:      gvCollectionCovers(null, [23.02, 72.57]),
+  noPoint:     gvCollectionCovers(AHM, null)
+}));
+"""
+        _tmp = Path(tempfile.mkdtemp()) / "guard.js"
+        _tmp.write_text(_harness, encoding="utf-8")
+        _run = subprocess.run([_node, str(_tmp)], capture_output=True, text=True)
+        check("the guard runs", _run.returncode == 0, _run.stderr[:200])
+        if _run.returncode == 0:
+            _res = json.loads(_run.stdout)
+            check("the loaded city covers its own centre", _res["sameCity"] is True)
+            check("Delhi is NOT covered by Ahmedabad's cells", _res["otherCity"] is False)
+            check("Surat, between two served cities, is not covered", _res["surat"] is False)
+            check("the rim keeps a little slack", _res["justOutside"] is True)
+            check("no data covers nothing", _res["noData"] is False)
+            check("no point covers nothing", _res["noPoint"] is False)
 
 
 # ---------------------------------------------------------------------------

@@ -194,12 +194,16 @@ class Engine:
         result = recommend(cfg, self.panel, self.model, self.memory, self.train_report)
         self.ranked = result["ranked"]
         self.recommendations = result["recommendations"]
-        # cache the trained-engine geojson for the map overlay
-        geo_path = cfg.resolve(cfg.run.outputs_dir) / "recommendations.geojson"
-        try:
-            self.zones_geojson = json.loads(geo_path.read_text(encoding="utf-8"))
-        except Exception:
-            self.zones_geojson = {"type": "FeatureCollection", "features": []}
+        # The trained-engine geojson for the map overlay, cached against the
+        # file's mtime rather than read once and held for the process's life.
+        #
+        # It used to be read once here. That made a re-run of the engine, or
+        # any tool that rewrites the file, invisible until the server was
+        # restarted - and restarting means reloading the local OSM index,
+        # which is minutes. So the map could sit there serving a ranking that
+        # no longer existed on disk, with nothing on screen to say so.
+        self._geo_path = cfg.resolve(cfg.run.outputs_dir) / "recommendations.geojson"
+        self._geo_cache: tuple[float, dict] | None = None
         self.lessons = [
             r.get("lesson", "").strip()
             for r in reversed(self.memory.records)
@@ -211,6 +215,30 @@ class Engine:
             len(self.ranked), len(self.memory), type(self.model).__name__,
             self.greenloss["count"],
         )
+
+    @property
+    def zones_geojson(self) -> dict:
+        """The ranking as written to disk, re-read when the file changes.
+
+        stat() on every request is cheap next to serving a few hundred
+        polygons, and it means the file on disk is always what the map shows.
+        A read that fails keeps the last good copy: a half-written file during
+        someone else's rewrite should not blank the map.
+        """
+        try:
+            mtime = self._geo_path.stat().st_mtime
+        except OSError:
+            return self._geo_cache[1] if self._geo_cache else {
+                "type": "FeatureCollection", "features": []}
+        if self._geo_cache and self._geo_cache[0] == mtime:
+            return self._geo_cache[1]
+        try:
+            data = json.loads(self._geo_path.read_text(encoding="utf-8"))
+        except Exception:
+            return self._geo_cache[1] if self._geo_cache else {
+                "type": "FeatureCollection", "features": []}
+        self._geo_cache = (mtime, data)
+        return data
 
     # Zone status thresholds on real NDVI (documented, not magic):
     #   GREEN_NDVI  — at/above this the cell is currently vegetated
