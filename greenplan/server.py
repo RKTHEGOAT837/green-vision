@@ -110,6 +110,40 @@ def _osm_health() -> dict:
         return {"ready": False, "note": f"index unavailable: {exc}"}
 
 
+def body_point(b: dict | None) -> tuple[float | None, float | None]:
+    """The (lat, lon) a request is about, wherever the caller put it.
+
+    /api/recommend and /api/species carry the point at the top level.
+    /api/assistant routes on its CONTEXT, and a context keeps the point one
+    level down under "aoi". Reading only the top level meant every assistant
+    call looked point-less, fell through to the default city, and answered a
+    question about Bengaluru with Ahmedabad's ranking and Ahmedabad's species.
+
+    Returns (None, None) rather than raising for anything unusable, because
+    the caller's fallback - the default city - is the right answer for a
+    genuinely location-free request and the wrong one for a malformed number.
+    Both are unroutable; neither should be a 500.
+    """
+    def one(d):
+        if not isinstance(d, dict):
+            return None, None
+        try:
+            la = float(d["lat"]) if d.get("lat") is not None else None
+            lo = float(d["lon"]) if d.get("lon") is not None else None
+        except (TypeError, ValueError):
+            return None, None
+        if la is None or lo is None:
+            return None, None
+        if not (-90.0 <= la <= 90.0 and -180.0 <= lo <= 180.0):
+            return None, None
+        return la, lo
+
+    lat, lon = one(b)
+    if lat is None:
+        lat, lon = one((b or {}).get("aoi") if isinstance(b, dict) else None)
+    return lat, lon
+
+
 class Engine:
     """Loads + trains the pipeline once, then answers per-point queries."""
 
@@ -1098,12 +1132,17 @@ def make_handler(registry: CityRegistry):
             def _eng_for(b):
                 """Engine for a POST body. The body carries lat/lon for every
                 one of these calls, so a click routes itself to the right city
-                without the page having to track which one it is looking at."""
-                try:
-                    lat = float(b.get("lat")) if b.get("lat") is not None else None
-                    lon = float(b.get("lon")) if b.get("lon") is not None else None
-                except (TypeError, ValueError):
-                    lat = lon = None
+                without the page having to track which one it is looking at.
+
+                /api/recommend and /api/species put the point at the top level.
+                /api/assistant passes its CONTEXT here instead, and a context
+                keeps the point one level down, under "aoi" - which this used
+                to miss entirely. lat and lon came back None, pick() fell
+                through to the default city, and the assistant answered a
+                question about Bengaluru with Ahmedabad's 146 cells and
+                Ahmedabad's species. Every figure real; every figure about
+                somewhere else, which is the worst way to be wrong."""
+                lat, lon = body_point(b)
                 slug = registry.pick(b.get("city"), lat, lon)
                 return registry.engine(slug) or registry.engine(registry.default_slug)
 

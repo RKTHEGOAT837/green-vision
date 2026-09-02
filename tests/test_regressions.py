@@ -296,6 +296,44 @@ console.log(JSON.stringify({
             check("no point covers nothing", _res["noPoint"] is False)
 
 
+
+# ---------------------------------------------------------------------------
+section("13. The assistant answers about the city you are looking at")
+# The server routes every POST to a city by the point in the body. It read
+# lat/lon only at the TOP level - which is where /api/recommend and
+# /api/species put them, and is not where /api/assistant puts them: that route
+# passes its CONTEXT, and a context keeps the point under "aoi". So lat/lon
+# came back None on every assistant call, pick() fell through to the default
+# city, and a question asked over Bengaluru - with Bengaluru's AQI and canopy
+# on screen - was answered with "146 H3 cells across Ahmedabad", Ahmedabad's
+# scores and Ahmedabad's species. Every figure real, every figure about
+# somewhere else.
+from greenplan.server import body_point  # noqa: E402
+
+check("a point at the top level is found",
+      body_point({"lat": 23.02, "lon": 72.57}) == (23.02, 72.57))
+check("a point inside an assistant context is found",
+      body_point({"aoi": {"lat": 12.99, "lon": 77.55, "km2": 100}}) == (12.99, 77.55),
+      "this is the leak: an unfound point routes to the default city")
+check("an explicit null at the top level falls through to the context",
+      body_point({"lat": None, "aoi": {"lat": 28.61, "lon": 77.21}}) == (28.61, 77.21))
+check("a genuinely location-free body stays unrouted",
+      body_point({}) == (None, None))
+check("no body at all is survivable", body_point(None) == (None, None))
+check("garbage coordinates do not route anywhere",
+      body_point({"lat": "abc", "lon": "x"}) == (None, None))
+check("an impossible latitude does not route anywhere",
+      body_point({"lat": 999, "lon": 0}) == (None, None),
+      "out-of-range values must not reach pick()")
+check("a malformed aoi is survivable",
+      body_point({"aoi": "notadict"}) == (None, None))
+
+# A half-given point is not a point. Routing on a lone latitude would pick a
+# city from a meridian.
+check("latitude without longitude is not a point",
+      body_point({"lat": 23.02}) == (None, None))
+
+
 # ---------------------------------------------------------------------------
 print("\n" + "=" * 62)
 print("  %d passed, %d failed" % (len(PASS), len(FAIL)))
