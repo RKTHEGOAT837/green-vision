@@ -145,7 +145,17 @@ _INTENTS: list[tuple[str, str]] = [
     ("help",      r"\b(help|what can you do|how do i use|commands?|examples?)\b"),
     ("explain",   r"\b(what'?s?|what is|what are|what does|explain|meaning of|define|"
                   r"how does|how do you)\b[^?]{0,40}\b(?:" + _GLOSSARY + r")\b"),
-    ("compare",   r"\bcompare\b|\bversus\b|\bvs\.?\b|\bbetter\b.*\bor\b"),
+    # "better ... or" catches "compare Bopal or Naranpura", but it also caught
+    # "is the air getting better or worse", which is a trend question about
+    # ONE place and was answered with "give me two places". The lookahead
+    # excludes the handful of words that make it a trend.
+    ("compare",   r"\bcompare\b|\bversus\b|\bvs\.?\b|"
+                  r"\bbetter\b(?!\s+or\s+(?:worse|worst|declining|falling))\b.*\bor\b"),
+    # Direction-of-travel, before the metric intents so it is not swallowed by
+    # a bare "air" or "canopy" match.
+    ("trend",     r"\b(getting (better|worse)|improv\w+|deteriorat\w+|declin\w+|"
+                  r"worsen\w+|trend\w*|over time|year on year|"
+                  r"better or worse|going up|going down)\b"),
     ("priority",  r"\b(priorit\w*|most urgent|worst (areas?|cells?|zones?)|where should (the )?(city|we|i) plant|top \d+ (cells?|zones?|areas?)|rank\w*|hot ?spots?)\b"),
     ("design",    r"\b(design|build|plan|create|make|lay ?out|sketch)\b.{0,30}\b(park|garden|oasis|grove|belt|plot|avenue|buffer|space|something|it)\b"),
     ("design",    r"\b(design|plan) (me |us )?(a|an|one)\b"),
@@ -479,18 +489,49 @@ def extract_goal(msg: str, lang: str = "en") -> str | None:
     return best
 
 
+# Indian numbering, and the ordinary "k". These multiply the number in front
+# of them, so they must be read BEFORE the plain-digit patterns - "1 lakh
+# trees" otherwise reads as the digit 1 with "lakh" swallowed as a species
+# name, and plants three saplings against a request for a hundred thousand.
+def extract_scaled_number(s: str) -> int | None:
+    """A count written with an Indian scale word, or a plain "k"."""
+    m = re.search(r"(\d+(?:\.\d+)?)\s*(crore|cr|karod|\u0915\u0930\u094b\u0921\u093c)\b", s)
+    if m:
+        return int(float(m.group(1)) * 10_000_000)
+    m = re.search(r"(\d+(?:\.\d+)?)\s*(lakh|lac|lakhs|\u0932\u093e\u0916|\u0ab2\u0abe\u0a96)\b", s)
+    if m:
+        return int(float(m.group(1)) * 100_000)
+    m = re.search(r"(\d+(?:\.\d+)?)\s*k\b", s)
+    if m:
+        return int(float(m.group(1)) * 1000)
+    return None
+
+
+# The studio places trees one by one on a real plot, so there is a ceiling on
+# what "place these" can mean. A request beyond it is not refused - it is
+# answered as a PROGRAMME question instead, which is what someone asking for a
+# hundred thousand trees actually wants.
+PLACEABLE_MAX = 2000
+
+
 def extract_count(msg: str) -> int | None:
     s = _normalise(msg)
+    # Scale words first: "1 lakh trees", "2.5 crore saplings", "20k trees".
+    if re.search(r"\b(?:trees?|saplings?|shrubs?|plants?)\b", s) or \
+       re.search(r"\b(?:plant|add|place|put)\b", s):
+        scaled = extract_scaled_number(s)
+        if scaled:
+            return max(1, min(50_000_000, scaled))
     # "60 trees", and also "60 neem trees" / "60 pongamia (karanj) saplings" -
     # the species name sits between the number and the noun.
     m = re.search(
         r"(\d+)\s*(?:[a-z()\-']+\s+){0,3}(?:trees?|saplings?|shrubs?|plants?)\b", s)
     if m:
-        return max(1, min(2000, int(m.group(1))))
+        return max(1, min(PLACEABLE_MAX, int(m.group(1))))
     # "plant 60 neem" - a bare count straight after the verb, no noun at all.
     m = re.search(r"\b(?:plant|add|place|put)\s+(\d+)\b", s)
     if m:
-        return max(1, min(2000, int(m.group(1))))
+        return max(1, min(PLACEABLE_MAX, int(m.group(1))))
     return None
 
 
@@ -972,6 +1013,18 @@ class Assistant:
         if not ctx.has_point:
             return self._need_point()
         count = extract_count(msg) or 40
+
+        # A hundred thousand trees is a programme, not a placement.
+        #
+        # The studio puts individual trees on a drawn plot, so "plant 1 lakh
+        # trees" was answered by trying to place 99,999 of them on one - which
+        # is not a plan, it is a hang. Someone asking at that scale wants the
+        # land it needs, the money it costs and how far down the ranking it
+        # reaches, all of which the engine can answer. So the question is
+        # answered at the scale it was asked.
+        if count > PLACEABLE_MAX:
+            return self._programme_answer(count, ctx)
+
         named = self._named_species(msg)
         goal = extract_goal(msg, self.lang) or ctx.goal
         if named:
@@ -996,6 +1049,47 @@ class Assistant:
                 {"tool": "dock.open", "args": {"tab": "studio"}},
             ],
         }
+
+    def _programme_answer(self, count: int, ctx: Ctx) -> dict[str, Any]:
+        """Land, money and reach for a planting programme of `count` trees.
+
+        Every number here is arithmetic the reader can check, over assumptions
+        that are named in the sentence rather than buried: 3 m spacing is the
+        ordinary block-plantation grid, 70% survival is what decides how many
+        go IN to leave `count` standing, and the unit cost is the same
+        indicative figure the studio uses. None of it is measured, and the
+        reply says so.
+        """
+        SPACING_M = 3.0
+        SURVIVAL = 0.70
+        COST_PER_TREE = 250.0
+
+        per_ha = 10000.0 / (SPACING_M * SPACING_M)      # 1,111 stems/ha
+        planted = int(round(count / SURVIVAL))          # to end up with `count`
+        hectares = planted / per_ha
+        cost = planted * COST_PER_TREE
+
+        # How far down the engine's own ranking that reaches, in cells.
+        cells = None
+        try:
+            n_ranked = len(self.e.ranked)
+            # A resolution-7 cell is about 5.16 km2; at the realisable share
+            # the worklist defaults to, this is the honest order of magnitude
+            # rather than a promise.
+            cells = max(1, int(round(hectares / (5.16 * 100 * 0.05))))
+            cells = min(cells, n_ranked)
+        except Exception:
+            n_ranked = None
+
+        return {"reply": self.t(
+                    "programme.body",
+                    want=f"{count:,}", planted=f"{planted:,}",
+                    ha=f"{hectares:,.0f}", cost=_money_words(cost),
+                    spacing=f"{SPACING_M:g}", survival=int(SURVIVAL * 100),
+                    each=f"{COST_PER_TREE:,.0f}",
+                    cells=("%d" % cells) if cells else "\u2014",
+                    ranked=("%d" % n_ranked) if n_ranked else "\u2014"),
+                "actions": [{"tool": "map.view", "args": {"view": "priority"}}]}
 
     # ---- money, time, judgement ------------------------------------------
 
@@ -1138,13 +1232,80 @@ class Assistant:
         # The page carries no population layer. Say so, and give the reader
         # the proxy it DOES carry rather than a fabricated headcount.
         cs = ctx.census or {}
+        b, sch = cs.get("buildings"), cs.get("schools")
+        # "0 buildings inside the perimeter" is a claim about the ground.
+        # A census that has not arrived, or that Overpass refused, is a claim
+        # about the network. Reporting the second as the first is the same
+        # falsy-zero mistake that put "predicted AQI change +0.0" on cities
+        # the model had never seen.
+        if b is None and sch is None:
+            return {"reply": self.t("people.no_layer_no_census"),
+                    "actions": [{"tool": "dock.open", "args": {"tab": "area"}}]}
         return {"reply": self.t("people.body",
-                                buildings=f"{cs.get('buildings', 0):,}",
-                                schools=cs.get("schools", 0)),
+                                buildings="—" if b is None else f"{b:,}",
+                                schools="—" if sch is None else sch),
                 "actions": [{"tool": "dock.open", "args": {"tab": "area"}}]}
 
     def _do_sources(self, msg: str, ctx: Ctx) -> dict[str, Any]:
-        return {"reply": self.t("sources.body"), "actions": []}
+        """Provenance, plus the measured error where one exists.
+
+        "How accurate is this?" used to get a provenance paragraph with two
+        figures baked into it: "146 H3 cells", which is Ahmedabad's count read
+        out over every other city, and a rainfall window of 2020-2024, which
+        stopped being true when the pipeline moved to the 1991-2020 WMO
+        normal. Both are now read from the engine that is answering.
+        """
+        # `ranked` is a pandas DataFrame, and `df or []` raises "truth value of
+        # a DataFrame is ambiguous" rather than falling back. len() on the
+        # object itself is both correct and cheaper.
+        try:
+            n_cells = len(self.e.ranked)
+        except Exception:
+            n_cells = 0
+        body = self.t("sources.body", cells=n_cells)
+        acc = None
+        try:
+            acc = self.e.health().get("accuracy")
+        except Exception:
+            acc = None
+        bt = (acc or {}).get("backtest") or {}
+        mae = bt.get("mae") or {}
+        if mae.get("aqi") is not None and mae.get("ndvi") is not None:
+            body += "\n\n" + self.t(
+                "sources.accuracy",
+                aqi=f"{mae['aqi']:.1f}", ndvi=f"{mae['ndvi']:.3f}",
+                n=bt.get("iterations", "?"), horizon=bt.get("horizon_months", "?"))
+            ch = (acc or {}).get("challenger")
+            if ch and not ch.get("adopted"):
+                body += " " + self.t("sources.challenger_rejected",
+                                     model=str(ch.get("model", "neural")).upper(),
+                                     skill=ch.get("skill_combined"))
+        return {"reply": body, "actions": []}
+
+    def _do_trend(self, msg: str, ctx: Ctx) -> dict[str, Any]:
+        """Direction of travel for this cell, from the engine's own forecast.
+
+        "Is the air getting better or worse" used to classify as a two-place
+        COMPARISON - the compare pattern matched "better ... or" - and was
+        answered "give me two places". It is a question about one place that
+        the engine can answer directly from the 42-month history it already
+        holds, so it now is.
+        """
+        if not ctx.has_point:
+            return self._need_point()
+        cell = self._cell_for(ctx) or {}
+        aqi_d = cell.get("aqi_pred_delta")
+        ndvi_t = cell.get("ndvi_trend_per_year")
+        if aqi_d is None and ndvi_t is None:
+            return {"reply": self.t("trend.no_history"), "actions": []}
+        worse, better = self.t("trend.worse"), self.t("trend.better")
+        return {"reply": self.t(
+                    "trend.body",
+                    aqi=("%+.1f" % aqi_d) if aqi_d is not None else "—",
+                    aqi_word=(worse if (aqi_d or 0) > 0 else better),
+                    ndvi=("%+.4f" % ndvi_t) if ndvi_t is not None else "—",
+                    ndvi_word=(worse if (ndvi_t or 0) < 0 else better)),
+                "actions": [{"tool": "map.view", "args": {"view": "green"}}]}
 
     # -- shared helpers -----------------------------------------------------
 

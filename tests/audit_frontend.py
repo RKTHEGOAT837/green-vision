@@ -152,6 +152,161 @@ for bi, blk in enumerate(scripts):
                         "twice (SyntaxError, kills the block): %s"
                         % (bi, ", ".join(repeated)))
 
+# --- 8. read before it exists ----------------------------------------------
+# `const` and `let` are NOT hoisted: reading one above its declaration is a
+# ReferenceError in the temporal dead zone. In a single 11,000-line script this
+# is easy to do by accident and hard to see, because it only throws when the
+# code path that reads it actually runs - GV.rainGapNote took the whole page
+# down at load, while SITE_SEARCH_R sat quiet until someone asked the studio to
+# site a plot and got "SITE_SEARCH_R is not defined".
+#
+# Only SCREAMING_CASE module constants are checked. Lower-case names are
+# overwhelmingly locals and parameters that happen to share a spelling with a
+# module constant, and flagging those buries the real finding in noise.
+
+
+def code_only(src):
+    r"""`src` with comments, string bodies and regex literals blanked,
+    positions preserved.
+
+    One linear scan. The obvious regex - alternating comment and quoted-string
+    patterns with re.S - backtracks catastrophically on a file this size and
+    had to be killed after five minutes; and because offsets must survive for
+    the position comparison below, blanking in place beats stripping anyway.
+
+    Regex literals have to be recognised, not just strings. `replace(/[\[\]']/g, "")`
+    contains an apostrophe, and a scanner that does not know it is inside a
+    regex reads that as the start of a string, swallows everything to the next
+    apostrophe, and loses whatever braces were in between - which threw the
+    brace depth off and made a read inside a function look like a top-level
+    one. A `/` starts a regex when the last significant character before it is
+    one that cannot end an expression.
+    """
+    out = list(src)
+    i, n = 0, len(src)
+    prev_sig = ""          # last significant char seen, for the regex test
+    while i < n:
+        c = src[i]
+        if c == "/" and i + 1 < n and src[i + 1] == "/":
+            while i < n and src[i] != "\n":
+                out[i] = " "
+                i += 1
+            continue
+        if c == "/" and i + 1 < n and src[i + 1] == "*":
+            out[i] = out[i + 1] = " "
+            i += 2
+            while i < n and not (src[i] == "*" and i + 1 < n and src[i + 1] == "/"):
+                if src[i] != "\n":
+                    out[i] = " "
+                i += 1
+            if i < n:
+                out[i] = " "
+                if i + 1 < n:
+                    out[i + 1] = " "
+                i += 2
+            continue
+        if c == "/" and (prev_sig == "" or prev_sig in "(,=:[!&|?{};+-*%~^<>"):
+            # A regex literal. Blank its body; a newline inside one is a
+            # syntax error in JS, so stopping at one is also a safety net
+            # against mistaking a division for a regex.
+            j = i + 1
+            while j < n and src[j] != "\n":
+                if src[j] == "\\":
+                    j += 2
+                    continue
+                if src[j] == "[":
+                    while j < n and src[j] != "]" and src[j] != "\n":
+                        if src[j] == "\\":
+                            j += 1
+                        j += 1
+                if src[j] == "/":
+                    break
+                j += 1
+            if j < n and src[j] == "/":
+                for k in range(i, j + 1):
+                    if src[k] != "\n":
+                        out[k] = " "
+                i = j + 1
+                prev_sig = "0"          # a regex is a value
+                continue
+            # not a terminated regex: fall through and treat as division
+        if c in "'\"`":
+            quote = c
+            out[i] = " "
+            i += 1
+            while i < n:
+                if src[i] == "\\":
+                    out[i] = " "
+                    if i + 1 < n and src[i + 1] != "\n":
+                        out[i + 1] = " "
+                    i += 2
+                    continue
+                if src[i] == quote:
+                    out[i] = " "
+                    i += 1
+                    break
+                if src[i] != "\n":
+                    out[i] = " "
+                i += 1
+            prev_sig = "0"
+            continue
+        if not c.isspace():
+            prev_sig = c
+        i += 1
+    return "".join(out)
+
+
+def top_level_spans(code):
+    """Byte ranges of `code` that sit at brace depth 0.
+
+    A read inside a function body is not a temporal-dead-zone error: the body
+    does not run until it is called, by which time the whole script has
+    executed and every top-level const exists. Only a read that happens WHILE
+    the script is executing - depth 0 - can hit the dead zone. Without this
+    distinction the check reports every forward reference in the file, which
+    is most of them, and buries the one that matters.
+    """
+    spans, depth, run_start = [], 0, 0
+    for i, c in enumerate(code):
+        if c == "{":
+            if depth == 0:
+                spans.append((run_start, i))
+            depth += 1
+        elif c == "}":
+            depth -= 1
+            if depth == 0:
+                run_start = i + 1
+            if depth < 0:            # defensive: unbalanced input
+                depth = 0
+    spans.append((run_start, len(code)))
+    return spans
+
+
+for bi, blk in enumerate(scripts):
+    code = code_only(blk)
+    spans = top_level_spans(code)
+    decl_at = {}
+    for m in re.finditer(r"^(?:const|let)\s+([A-Z][A-Z0-9_]{2,})\s*=", code, re.M):
+        decl_at.setdefault(m.group(1), m.start())
+    for name, at in sorted(decl_at.items(), key=lambda kv: kv[1]):
+        pat = re.compile(r"(?<![.\w$])" + re.escape(name) + r"(?![\w$])")
+        hit = None
+        for a, b in spans:
+            if a >= at:
+                break              # this span starts after the declaration
+            # Search only the part of the span that precedes the declaration:
+            # breaking on the span that CONTAINS it skipped the most likely
+            # place for the bug to be, which is a line or two above.
+            m = pat.search(code, a, min(b, at))
+            if m:
+                hit = m.start()
+                break
+        if hit is not None:
+            line = code.count("\n", 0, hit) + 1
+            problems.append("script block %d reads %s at top level (line ~%d) before "
+                            "its declaration (ReferenceError at load)"
+                            % (bi, name, line))
+
 print("=" * 70)
 print("  STATIC AUDIT: index.html  (%d lines, %d script blocks)"
       % (html.count("\n") + 1, len(scripts)))
