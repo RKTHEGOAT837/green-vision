@@ -358,6 +358,91 @@ class Engine:
             "openrouter": "openrouter-llm",
         }.get(self.cfg.model.provider, self.cfg.model.provider)
 
+    def _accuracy(self) -> dict[str, Any]:
+        """Measured forecast error, for the interface to show.
+
+        Two separate things live here and they are NOT interchangeable:
+
+        `backtest` is this city's own time-split validation, re-run every
+        start. The model predicts a month it was not shown, against the value
+        that actually occurred, `iterations` times. Its `skill` is the naive
+        baseline's normalised error minus the model's on the SAME tasks, so
+        positive means the trained model earned its place.
+
+        `challenger` is the separately-trained neural forecaster from
+        `python -m greenplan.forecast.train`. It is only ADOPTED if it shows
+        positive held-out skill, and on this data it does not - Ahmedabad's
+        MLP scores -1.41, meaning it is worse than a Theil-Sen trend with a
+        seasonal profile. Reporting that plainly is the point: a bake-off that
+        only ever announces wins is not a bake-off. The deployed forecaster is
+        the baseline, and the interface should say so rather than let a reader
+        assume a neural net is driving the map.
+
+        Anything with no measured error says so with a null instead of a
+        number.
+        """
+        tr = self.train_report or {}
+        measured_at = "this session"
+        if not tr:
+            # The engine only re-runs its backtest when there are new months,
+            # so a normal start has no fresh report - and reporting "accuracy:
+            # unknown" because nothing happened this boot would be silly. The
+            # last validation is written next to the memory it produced, so
+            # read that and SAY it is the stored one rather than passing it off
+            # as this session's.
+            try:
+                mp = self.cfg.resolve(self.cfg.training.memory_path)
+                meta = mp.with_suffix("") .with_name(mp.stem.split(".")[0] + ".meta.json")
+                if not meta.is_file():
+                    meta = mp.parent / "memory.meta.json"
+                if meta.is_file():
+                    stored = json.loads(meta.read_text(encoding="utf-8"))
+                    tr = stored.get("last_report") or {}
+                    measured_at = stored.get("trained_at") or "a previous run"
+            except Exception as exc:
+                log.debug("stored backtest unreadable: %s", exc)
+        mae = tr.get("mae") or {}
+        out: dict[str, Any] = {
+            "backtest": {
+                "iterations": tr.get("iterations"),
+                "horizon_months": tr.get("horizon"),
+                # MAE in each metric's own units. traffic is the inert
+                # placeholder at MCDA weight 0, so it is omitted rather than
+                # reported as a suspiciously perfect 0.0.
+                "mae": {k: round(float(v), 4) for k, v in mae.items()
+                        if k != "traffic" and v is not None},
+                "skill_vs_baseline": tr.get("skill_vs_baseline_second_half"),
+                "norm_error": tr.get("norm_error_overall"),
+                "memory_helped": tr.get("memory_helped"),
+                "measured_at": measured_at,
+            } if tr else None,
+            "challenger": None,
+            "deployed_forecaster": "baseline: Theil-Sen trend + detrended seasonal profile",
+        }
+        try:
+            rp = self.cfg.resolve(self.cfg.model.forecaster_dir) / "report.json"
+            if rp.is_file():
+                rep = json.loads(rp.read_text(encoding="utf-8"))
+                skill = rep.get("skill_combined")
+                out["challenger"] = {
+                    "model": rep.get("model"),
+                    "skill_combined": skill,
+                    "adopted": bool(skill is not None and skill > 0),
+                    "n_test": rep.get("n_test"),
+                    "per_metric": {
+                        k: {"test_mae": v.get("test_mae"),
+                            "baseline_mae": v.get("baseline_mae"),
+                            "skill": v.get("skill_vs_baseline")}
+                        for k, v in (rep.get("per_metric") or {}).items()
+                        if not v.get("inert_placeholder")
+                    },
+                }
+                if out["challenger"]["adopted"]:
+                    out["deployed_forecaster"] = "challenger: %s (positive held-out skill)" % rep.get("model")
+        except Exception as exc:      # a missing or malformed report is not fatal
+            log.debug("challenger report unreadable: %s", exc)
+        return out
+
     def health(self) -> dict[str, Any]:
         tr = self.train_report or {}
         return {
@@ -375,6 +460,16 @@ class Engine:
             "trained": int(len(self.memory)) > 0,
             "retrained_this_session": self.train_report is not None,
             "memory_helped": tr.get("memory_helped"),
+            # How wrong this engine actually is, measured rather than claimed.
+            #
+            # The product tells a planner where to plant on the strength of a
+            # 12-month forecast, and until now it never said how good that
+            # forecast is. "Accuracy" for a regression is an error bar, not a
+            # percentage, so this reports mean absolute error on held-out
+            # tasks in the units of each metric - AQI points, NDVI index -
+            # together with the sample size, because an error over 60 tasks
+            # and one over 6 are not the same claim.
+            "accuracy": self._accuracy(),
             "ndvi_source": self.cfg.adapters.green_cover,
             "reasoning": self._reasoning_label(),
             "reasoning_model": (

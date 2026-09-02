@@ -54,6 +54,7 @@ sys.path.insert(0, str(ROOT))
 
 from greenplan.features.h3grid import cell_center  # noqa: E402
 from greenplan.reasoning.species import SPECIES_KB  # noqa: E402
+from greenplan.config import load_config
 from greenplan.server import Engine  # noqa: E402
 
 log = logging.getLogger("build_static")
@@ -96,11 +97,26 @@ def _write(path: Path, obj) -> int:
     return len(text.encode("utf-8"))
 
 
-def build(config: str, out_dir: Path) -> None:
+def build(config: str, out_dir: Path, slug: str | None = None,
+          shared: bool = True) -> dict:
+    """Bake one city.
+
+    `slug` puts the engine files in engine/<slug>/ instead of engine/, which is
+    what makes a multi-city bundle possible: the five cities differ only in
+    those seven files, and index.html, gv-engine.js and the five i18n
+    catalogues are identical for all of them.
+
+    `shared` writes those common files. main() sets it once, for the first
+    city, so a five-city build does not copy the same 700 KB page five times
+    and then mirror it five times.
+
+    Returns what the manifest needs: the slug, the display name and the bbox
+    the page tests a point against.
+    """
     log.info("loading + training the engine (this is the slow part) …")
     eng = Engine(config)
 
-    engine_dir = out_dir / "engine"
+    engine_dir = out_dir / "engine" / slug if slug else out_dir / "engine"
     sizes: dict[str, int] = {}
 
     # --- the ranked cells, exactly as /api/zones serves them ---------------
@@ -202,6 +218,12 @@ def build(config: str, out_dir: Path) -> None:
         log.warning("could not strip /api/osm from the static build — check CFG.OVERPASS")
     else:
         log.info("  static build: /api/osm removed, public Overpass only")
+    if not shared:
+        # A per-city pass: the engine files above are all that differ.
+        total = sum(sizes.values())
+        log.info("  %-14s %8.1f KB in engine/%s/", eng.cfg.city.name, total / 1024, slug)
+        return _city_entry(eng, slug)
+
     (out_dir / "index.html").write_text(html, encoding="utf-8")
     i18n_src, i18n_dst = ROOT / "data" / "i18n", out_dir / "data" / "i18n"
     if i18n_src.is_dir():
@@ -292,18 +314,71 @@ def build(config: str, out_dir: Path) -> None:
     for k, v in sorted(sizes.items(), key=lambda kv: -kv[1]):
         log.info("  %-18s %8.1f KB", k, v / 1024)
     log.info("  %-18s %8.1f KB", "TOTAL", total / 1024)
+    return _city_entry(eng, slug)
+
+
+def _city_entry(eng, slug: str | None) -> dict:
+    """One row of engine/cities.json: enough for the page to decide, offline,
+    whether this bundle can answer for the point the reader is looking at."""
+    lon0, lat0, lon1, lat1 = eng.cfg.city.bbox
+    return {
+        "slug": slug or _slug(eng.cfg.city.name),
+        "name": eng.cfg.city.name,
+        "bbox": [lon0, lat0, lon1, lat1],
+        "lat": (lat0 + lat1) / 2.0,
+        "lon": (lon0 + lon1) / 2.0,
+        "cells": len(eng.zones_geojson.get("features", [])),
+    }
+
+
+def _slug(name: str) -> str:
+    import re as _re
+    return _re.sub(r"[^a-z0-9]+", "-", (name or "").lower()).strip("-") or "city"
 
 
 def main() -> None:
     ap = argparse.ArgumentParser(description="Bake the engine to static JSON")
     ap.add_argument("--config", default="config/city.yaml")
     ap.add_argument("--out", default="dist")
+    ap.add_argument("--cities", nargs="*", metavar="CONFIG",
+                    help="bake several cities into one bundle, each under "
+                         "engine/<slug>/, plus an engine/cities.json manifest "
+                         "the page routes on. Without it a single city is "
+                         "baked into engine/, which is the old layout and what "
+                         "an existing deploy expects.")
     args = ap.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
     out = Path(args.out)
     if not out.is_absolute():
         out = ROOT / out
-    build(args.config, out)
+
+    if not args.cities:
+        build(args.config, out)
+        return
+
+    # Multi-city. The shared files (index.html, gv-engine.js, i18n, the docs/
+    # mirror) are written once, on the LAST pass, so the per-city passes stay
+    # cheap and the mirror happens after everything it mirrors exists.
+    entries = []
+    cfgs = list(args.cities)
+    for i, cfg in enumerate(cfgs):
+        slug = _slug(load_config(ROOT / cfg if not Path(cfg).is_absolute() else cfg).city.name)
+        entries.append(build(cfg, out, slug=slug, shared=(i == len(cfgs) - 1)))
+
+    manifest = {"cities": sorted(entries, key=lambda e: e["name"])}
+    _write(out / "engine" / "cities.json", manifest)
+    log.info("baked %d cities: %s", len(entries),
+             ", ".join("%s (%d cells)" % (e["name"], e["cells"]) for e in manifest["cities"]))
+
+    # The mirror ran during the shared pass, before cities.json existed.
+    docs = ROOT / "docs"
+    if docs.is_dir():
+        import shutil as _sh
+        _sh.copy2(out / "engine" / "cities.json", docs / "engine" / "cities.json")
+        for e in entries:
+            src, dst = out / "engine" / e["slug"], docs / "engine" / e["slug"]
+            _sh.copytree(src, dst, dirs_exist_ok=True)
+        log.info("  mirrored %d city folders + cities.json into docs/", len(entries))
 
 
 if __name__ == "__main__":

@@ -443,10 +443,64 @@ window.gvEngineGet = async function (path, ms) {
   if (live) return live;
   const stat = GV_STATIC_ENGINE[path];
   if (!stat) return null;
-  const baked = await getJSON(stat, {}, ms || 8000);
+  const baked = await getJSON(await gvStaticPath(stat), {}, ms || 8000);
   if (baked) window.__gvEngineStatic = true;
   return baked;
 };
+
+/* Which baked city to read, when there is no Python engine to ask.
+
+   A static build used to be one city, so engine/zones.geojson could only ever
+   mean that city, and a bundle carrying five of them had no way to say which.
+   scripts/build_static.py --cities now writes engine/<slug>/ per city plus an
+   engine/cities.json manifest, and this picks the entry whose bbox contains
+   the reader - the same routing the live server does by coordinate, done
+   offline against a file.
+
+   This is what makes the Android build honest: the phone has no server, five
+   cities are in the APK, and tapping in Chennai has to read Chennai. Falling
+   back to whichever city happened to be baked first would be the same
+   cross-city leak fixed on the served path, just shipped in an app.
+
+   No manifest means an old single-city bundle: use the flat path, unchanged. */
+let _gvStaticCities = null;          // null = not asked yet, [] = asked, none
+
+async function gvStaticCityList(){
+  if(_gvStaticCities !== null) return _gvStaticCities;
+  const j = await getJSON("engine/cities.json", {}, 6000);
+  _gvStaticCities = (j && Array.isArray(j.cities)) ? j.cities : [];
+  return _gvStaticCities;
+}
+
+async function gvStaticPath(flat){
+  const list = await gvStaticCityList();
+  if(!list.length) return flat;                     // single-city bundle
+  const pt = gvHerePoint();
+  const rel = flat.replace(/^engine\//, "");
+  let pick = null;
+  if(pt){
+    for(const c of list){
+      const b = c.bbox;                             // [lon0, lat0, lon1, lat1]
+      if(!b || b.length !== 4) continue;
+      if(pt[1] >= b[0] && pt[1] <= b[2] && pt[0] >= b[1] && pt[0] <= b[3]){ pick = c; break; }
+    }
+    if(!pick){
+      // Outside every baked city. Take the nearest so the reader sees a real
+      // ranking rather than a blank view - and gvCollectionCovers() upstream
+      // still refuses to DRAW it over a place it does not describe, so this
+      // cannot become "Ahmedabad's cells over Surat". It only decides which
+      // file to offer; the coverage test decides whether it is used.
+      let best = Infinity;
+      for(const c of list){
+        const d = Math.hypot(c.lat - pt[0], c.lon - pt[1]);
+        if(d < best){ best = d; pick = c; }
+      }
+    }
+  }
+  if(!pick) pick = list[0];
+  return "engine/" + pick.slug + "/" + rel;
+}
+window.gvStaticPath = gvStaticPath;
 const gvEngineGet = window.gvEngineGet;
 
 const CFG = {
@@ -819,8 +873,8 @@ window.currentViewName = () => currentView;
    ===================================================================== */
 
 const GVG = window.GVG = {
-  raster: null, hexes: null, legend: null,
-  showCanopy: true, showForecast: true,
+  raster: null, hexes: null, legend: null, labels: null,
+  showCanopy: true, showForecast: true, showLabels: true,
   stats: null, gen: 0, busy: false, loss: null, lossTried: false, moveHooked: false
 };
 
@@ -937,6 +991,7 @@ function greenClearRaster() {
 }
 function greenClearHexes() {
   if (GVG.hexes) { map.removeLayer(GVG.hexes); GVG.hexes = null; }
+  if (GVG.labels) { map.removeLayer(GVG.labels); GVG.labels = null; }
 }
 
 /* ---------- the engine's forecast layer ---------- */
@@ -992,6 +1047,8 @@ function greenDrawHexes() {
     }
   }).addTo(map);
   if (GVG.hexes.bringToBack) GVG.hexes.bringToBack();
+  greenDrawLabels();
+  if (window.GVW && GVG.loss) GVW.autoOpen("green");
 }
 
 function greenCellReport(p) {
@@ -1034,6 +1091,89 @@ function greenCellReport(p) {
 }
 
 /* ---------- legend ---------- */
+
+/* The canopy forecast as an area, not a tally of hexagons.
+
+   "34 cells losing cover" is a number a planner cannot act on: cells are an
+   analysis artefact, not a unit of anything they own. The actionable version
+   is how much canopy is actually at risk and how fast it is going, because
+   that is what decides whether this is a maintenance problem or a capital
+   one. Both come straight out of the cells already on screen.
+
+   NDVI is an index, not a canopy fraction, so this reports VEGETATED AREA at
+   the engine's own green threshold rather than pretending to convert an index
+   into a percentage cover. The wording says so. */
+function greenSummary(){
+  const feats = (GVG.loss && GVG.loss.features) || [];
+  if(!feats.length) return null;
+  const th = (GVG.loss.thresholds || {});
+  let atRiskKm2 = 0, atRisk = 0, worst = 0, sumTrend = 0, nTrend = 0;
+  for(const f of feats){
+    const pr = f.properties;
+    if(pr.status !== "yellow") continue;
+    atRisk++;
+    const km2 = gvwAreaKm2(f.geometry && f.geometry.coordinates && f.geometry.coordinates[0]);
+    if(km2 != null) atRiskKm2 += km2;
+    const d = pr.ndvi_pred_delta;
+    if(d != null && isFinite(d)){ worst = Math.min(worst, d); }
+    const t = pr.ndvi_slope_per_year;
+    if(t != null && isFinite(t)){ sumTrend += t; nTrend++; }
+  }
+  const c = GVG.loss.count || {};
+  return {
+    atRisk: atRisk, atRiskKm2: atRiskKm2,
+    bare: c.red || 0, holding: c.green || 0, total: feats.length,
+    worstDelta: worst, meanTrend: nTrend ? sumTrend / nTrend : null,
+    greenNdvi: th.green_ndvi, lossDelta: th.loss_delta
+  };
+}
+
+function greenSummaryHTML(){
+  const su = greenSummary();
+  if(!su) return "";
+  return '<div class="gl-sum">' +
+    '<div class="gl-sum-h">Cover at risk</div>' +
+    '<div class="gl-sum-row"><b>' + su.atRiskKm2.toFixed(0) + "</b> km\u00b2 vegetated today, " +
+      "forecast to decline</div>" +
+    '<div class="gl-sum-row">across <b>' + su.atRisk + "</b> cells</div>" +
+    (su.meanTrend != null
+      ? '<div class="gl-sum-why">Losing NDVI at ' + su.meanTrend.toFixed(4) +
+        "/yr on average \u2014 the steepest is " + su.worstDelta.toFixed(3) +
+        " over the horizon</div>"
+      : "") +
+    '<div class="gl-sum-fine">Vegetated at the engine\u2019s own threshold ' +
+      "(NDVI \u2265 " + su.greenNdvi + "), not a canopy percentage. Holding on to " +
+      "this is cheaper than replacing it.</div>" +
+  "</div>";
+}
+
+/* Label the at-risk cells with how fast they are going. Amber says "this one";
+   the number says "this much", which is what decides the order of work. */
+GVG.labels = null;
+
+function greenDrawLabels(){
+  if(GVG.labels){ map.removeLayer(GVG.labels); GVG.labels = null; }
+  if(!GVG.showLabels || !GVG.showForecast || !GVG.loss) return;
+  const marks = [];
+  for(const f of GVG.loss.features){
+    const pr = f.properties;
+    if(pr.status !== "yellow") continue;
+    const ring = f.geometry && f.geometry.coordinates && f.geometry.coordinates[0];
+    if(!ring) continue;
+    let x = 0, y = 0;
+    for(const q of ring){ x += q[0]; y += q[1]; }
+    const d = pr.ndvi_pred_delta;
+    marks.push(L.marker([y / ring.length, x / ring.length], {
+      interactive: false, keyboard: false,
+      icon: L.divIcon({
+        className: "pri-badge-wrap",
+        html: '<span class="grn-badge">' + (d == null ? "?" : d.toFixed(2)) + "</span>",
+        iconSize: [44, 20], iconAnchor: [22, 10]
+      })
+    }));
+  }
+  if(marks.length) GVG.labels = L.layerGroup(marks).addTo(map);
+}
 
 function greenLegend() {
   if (GVG.legend) { GVG.legend.remove(); GVG.legend = null; }
@@ -1078,6 +1218,9 @@ function greenLegend() {
         "</div>" +
         '<label class="gl-tog"><input type="checkbox" id="glForecast"' +
           (GVG.showForecast ? " checked" : "") + "> Show forecast</label>" +
+        '<label class="gl-tog"><input type="checkbox" id="glLabels"' +
+          (GVG.showLabels ? " checked" : "") + "> Show the rate of loss</label>" +
+        greenSummaryHTML() +
         '<div class="gl-fine">Amber = green today, predicted to decline. ' +
         'Click a hexagon for its history.</div>'
       : '<div class="gl-fine">Canopy here is a visible-band greenness index from ' +
@@ -1107,8 +1250,11 @@ function greenLegend() {
   if (f) f.onchange = () => {
     GVG.showForecast = f.checked;
     greenDrawHexes();
+    greenDrawLabels();
     if (GVG.showCanopy) drawGreen();   // raster opacity depends on this toggle
   };
+  const gl = el.querySelector("#glLabels");
+  if (gl) gl.onchange = () => { GVG.showLabels = gl.checked; greenDrawLabels(); };
 }
 
 /* ---------- lifecycle ---------- */
@@ -8056,8 +8202,15 @@ function builderSave() {
    ===================================================================== */
 
 const GVP = window.GVP = {
-  layer: null, data: null, legend: null, active: false
+  layer: null, data: null, legend: null, active: false,
+  // Default ON for both: a planner opening this view should see the shortlist
+  // and be able to name the cells in it, not have to discover two checkboxes.
+  topOnly: true, showLabels: true
 };
+
+/* How many cells the map, the badges and the worklist treat as "the
+   programme". One number, so the three cannot disagree with each other. */
+const GVW_TOP_N = 20;
 
 /* Where to look when the page is served rather than opened.
 
@@ -8090,8 +8243,22 @@ function priColor(score){
 
 function priStyle(f){
   const s = f.properties.priority_score;
-  return { color:"#fff", weight:1.5, opacity:.9,
-           fillColor:priColor(s), fillOpacity:.62 };
+  // Unscored cells are not "low priority", they are unknown. Drawing them in
+  // the cool end of the ramp said the opposite, so they get a plain grey
+  // hatch-free fill that belongs to no part of the scale.
+  if(s == null){
+    return { color:"#94a3b8", weight:1, opacity:.5, dashArray:"3 4",
+             fillColor:"#94a3b8", fillOpacity:.10 };
+  }
+  // "Top N only" fades the rest rather than removing it: a planner still needs
+  // to see that the shortlist sits inside a bigger city, and a hexagon that
+  // vanishes reads as "no data here" - which is a different claim entirely.
+  const inTop = !GVP.topOnly || f.properties.rank <= GVW_TOP_N;
+  return { color: inTop ? "#fff" : "rgba(255,255,255,.25)",
+           weight: inTop ? 1.5 : 0.6,
+           opacity: inTop ? .9 : .35,
+           fillColor: priColor(s),
+           fillOpacity: inTop ? .68 : .13 };
 }
 
 function fmtDelta(v, digits){
@@ -8216,8 +8383,96 @@ function priRender(gj){
   }).addTo(map);
 
   try { map.fitBounds(GVP.layer.getBounds(), {padding:[40,40]}); } catch(e){}
+  priDrawLabels();
   priLegend(true);
+  GVW.autoOpen("priority");
   toast(gj.features.length + " ranked cells from the engine");
+}
+
+/* What the ranking says, in numbers, before anyone clicks anything.
+
+   The view used to open as 146 coloured hexagons and a colour ramp. A colour
+   ramp tells a planner which cell is worse than which; it does not tell them
+   how much land is in play, how many trees that is, what it would cost, or
+   which of the four criteria is actually driving the top of the list. Those
+   are the first four questions anyone with a budget asks, and all four are
+   already computable from data on screen. So they are on screen. */
+function priSummary(){
+  const feats = (GVP.data && GVP.data.features) || [];
+  const scored = feats.filter(function(f){ return f.properties.priority_score != null; });
+  if(!scored.length) return null;
+
+  const a = (window.GVW && GVW.assume) || GVW_DEFAULTS;
+  const perHa = 10000 / (a.spacing_m * a.spacing_m);
+  const survival = Math.max(1, a.survival_pct) / 100;
+  const top = scored.slice().sort(function(x, y){
+    return x.properties.rank - y.properties.rank; }).slice(0, GVW_TOP_N);
+
+  let ha = 0, quantified = 0;
+  const drivers = {};
+  for(const f of top){
+    const pr = f.properties;
+    const ring = f.geometry && f.geometry.coordinates && f.geometry.coordinates[0];
+    const km2 = gvwAreaKm2(ring);
+    if(km2 != null && pr.plantable_space != null){
+      ha += km2 * 100 * pr.plantable_space * (a.realisable_pct / 100);
+      quantified++;
+    }
+    const c = pr.components;
+    if(c){
+      let bk = null, bv = -Infinity;
+      for(const k in c) if(c[k] > bv){ bv = c[k]; bk = k; }
+      if(bk) drivers[bk] = (drivers[bk] || 0) + 1;
+    }
+  }
+  const trees = Math.round(ha * perHa / survival);
+  const order = Object.keys(drivers).sort(function(x, y){ return drivers[y] - drivers[x]; });
+  return {
+    ranked: scored.length, total: feats.length, n: top.length, quantified: quantified,
+    ha: ha, trees: trees, cost: trees * a.cost_per_tree,
+    drivers: order.map(function(k){
+      return { label: GVW_COMP_LABEL[k] || k, n: drivers[k] }; })
+  };
+}
+
+/* Numbered badges on the highest-ranked cells.
+
+   Reading a rank off a colour ramp is guesswork - #1 and #6 are the same red.
+   A planner pointing at a map in a meeting needs to be able to say "that one
+   is number three", so the number is on it. Only the cells in the programme
+   are badged: 146 of these would be a mess, and the ones past the budget are
+   not what the conversation is about.
+
+   Purely a label. It carries the engine's own rank and changes no score. */
+GVP.labels = null;
+
+function priDrawLabels(){
+  if(GVP.labels){ map.removeLayer(GVP.labels); GVP.labels = null; }
+  if(!GVP.showLabels) return;
+  const feats = (GVP.data && GVP.data.features) || [];
+  const top = feats.filter(function(f){ return f.properties.priority_score != null; })
+    .sort(function(x, y){ return x.properties.rank - y.properties.rank; })
+    .slice(0, GVW_TOP_N);
+  if(!top.length) return;
+  const marks = [];
+  for(const f of top){
+    const ring = f.geometry && f.geometry.coordinates && f.geometry.coordinates[0];
+    if(!ring) continue;
+    let x = 0, y = 0;
+    for(const q of ring){ x += q[0]; y += q[1]; }
+    const pr = f.properties;
+    marks.push(L.marker([y / ring.length, x / ring.length], {
+      interactive: false,        // clicks belong to the hexagon underneath
+      keyboard: false,
+      icon: L.divIcon({
+        className: "pri-badge-wrap",
+        html: '<span class="pri-badge" style="background:' + priColor(pr.priority_score) + '">' +
+              pr.rank + "</span>",
+        iconSize: [26, 26], iconAnchor: [13, 13]
+      })
+    }));
+  }
+  GVP.labels = L.layerGroup(marks).addTo(map);
 }
 
 function priLegend(show){
@@ -8243,6 +8498,11 @@ function priLegend(show){
     '<div style="margin-top:8px;padding-top:7px;border-top:1px solid var(--line);font-weight:600;' +
     'color:var(--ink-soft);font-size:10.5px;max-width:150px;line-height:1.45">' +
     "Click a cell for the engine's reasoning</div>" +
+    priSummaryHTML() +
+    '<label class="gl-tog"><input type="checkbox" id="priTopOnly"' +
+      (GVP.topOnly ? " checked" : "") + "> Show only the top " + GVW_TOP_N + "</label>" +
+    '<label class="gl-tog"><input type="checkbox" id="priLabels"' +
+      (GVP.showLabels ? " checked" : "") + "> Number them on the map</label>" +
     // The colours say where. The worklist is where a planner turns that into
     // an area, a quantity, a cost and a list they can hand over.
     '<button class="gvw-open" id="priWork">Open planting programme</button>';
@@ -8250,6 +8510,31 @@ function priLegend(show){
   GVP.legend = el;
   const pw = el.querySelector("#priWork");
   if(pw) pw.onclick = function(){ GVW.toggle("priority"); };
+  const to = el.querySelector("#priTopOnly");
+  if(to) to.onchange = function(){
+    GVP.topOnly = to.checked;
+    priRender(GVP.data);            // restyle; the ranking is untouched
+  };
+  const lb = el.querySelector("#priLabels");
+  if(lb) lb.onchange = function(){ GVP.showLabels = lb.checked; priDrawLabels(); };
+}
+
+/* The headline block. Every figure here is either the engine's or arithmetic
+   on the assumptions the worklist exposes, and it says which. */
+function priSummaryHTML(){
+  const su = priSummary();
+  if(!su) return "";
+  const drv = su.drivers.slice(0, 2).map(function(d){
+    return d.label.toLowerCase() + " in " + d.n; }).join(", ");
+  return '<div class="gl-sum">' +
+    '<div class="gl-sum-h">Top ' + su.n + " of " + su.ranked + " ranked cells</div>" +
+    '<div class="gl-sum-row"><b>' + gvwNum(su.ha, 0) + "</b> ha plantable</div>" +
+    '<div class="gl-sum-row"><b>' + gvwNum(su.trees) + "</b> trees</div>" +
+    '<div class="gl-sum-row"><b>' + gvwRupees(su.cost) + "</b> indicative</div>" +
+    (drv ? '<div class="gl-sum-why">Driven by ' + drv + " of them</div>" : "") +
+    '<div class="gl-sum-fine">Area, trees and cost are modelled on assumptions ' +
+      "you set in the programme below \u2014 not measurements.</div>" +
+  "</div>";
 }
 
 /* ---------- loading ---------- */
@@ -8301,7 +8586,7 @@ async function priTryFetch(){
     // Carry the point. The server routes /api/zones by coordinate across the
     // cities it holds; asking without one gets whichever city it booted with,
     // which is right exactly once and wrong every time the reader moves.
-    let path = raw.charAt(0) === "/" ? gvEngineUrl(raw) : raw;
+    let path = raw.charAt(0) === "/" ? gvEngineUrl(raw) : await gvStaticPath(raw);
     const pt = gvHerePoint();
     if(pt && raw.charAt(0) === "/"){
       path += (path.indexOf("?") < 0 ? "?" : "&") +
@@ -8390,9 +8675,17 @@ async function priNoDataNotice(show){
   document.getElementById("map").appendChild(el);
   GVP.noData = el;
 
-  const j = await gvEngineGet("/api/cities", 6000);
+  let j = await gvEngineGet("/api/cities", 6000);
+  if(!j || !j.cities){
+    // No Python to ask - a static deploy, or the Android build, where there
+    // is no server at all. The baked bundle carries the same list, and this
+    // notice is the one place a reader most needs it: they are standing
+    // somewhere the app cannot answer for and deserve to be told where it can.
+    j = await getJSON("engine/cities.json", {}, 6000);
+  }
   if(!GVP.noData) return;                       // reader moved on already
-  const list = (j && j.cities || []).filter(c => c.ready);
+  // `ready` is a live-server field; a baked entry is ready by definition.
+  const list = (j && j.cities || []).filter(c => c.ready !== false);
   const box = GVP.noData.querySelector(".nd-list");
   if(!list.length){ box.textContent = "Could not reach the engine to ask which cities it serves."; return; }
   box.innerHTML = "<b>It runs here:</b>" + list.map(c =>
@@ -9039,7 +9332,7 @@ function gvwBuild() {
     if (b) {
       if (b.dataset.a === "csv") gvwExportCSV();
       else if (b.dataset.a === "geo") gvwExportGeoJSON();
-      else GVW.close();
+      else GVW.close(true);
       return;
     }
     if (e.target.matches('input[type="checkbox"][data-z]')) return;   // handled on change
@@ -9108,9 +9401,26 @@ function gvwAssumeUI() {
     "</div>";
 }
 
-GVW.close = function () {
+GVW.close = function (byUser) {
   GVW.open = false;
   if (GVW.node) { GVW.node.remove(); GVW.node = null; }
+  // Closing it by hand is a preference, and it sticks for the session. Closing
+  // it because the view changed is housekeeping and must not be mistaken for
+  // one, or the sheet would never come back.
+  if (byUser === true) GVW.dismissed = true;
+};
+
+/* Open the worklist when a view is entered, unless the reader has closed it.
+
+   It used to sit behind a button in the legend, which meant the view still
+   OPENED as a field of coloured hexagons - and a colour ramp on its own is
+   the thing this whole section exists to stop being. The numbers a planner
+   came for should be the first thing on screen, not the reward for finding a
+   button. */
+GVW.autoOpen = function (mode) {
+  if (GVW.dismissed) return;
+  if (GVW.open && GVW.mode === mode) return;
+  GVW.show(mode);
 };
 
 GVW.show = function (mode) {
@@ -9216,6 +9526,18 @@ GVW.toggle = function (mode) {
     "font-family:'Sora';font-weight:700;font-size:12.5px;padding:8px 12px;border-radius:11px;" +
     "cursor:pointer;}" +
   ".gvw-open:hover{filter:brightness(1.08);}" +
+  ".pri-badge-wrap{background:none;border:0;}" +
+  ".grn-badge{display:block;text-align:center;padding:2px 0;border-radius:6px;' +     'background:rgba(15,20,18,.82);color:#f5c46a;font:800 10.5px \'Sora\',sans-serif;' +     'border:1px solid rgba(245,196,106,.5);}" +
+  ".pri-badge{display:flex;align-items:center;justify-content:center;width:26px;height:26px;" +
+    "border-radius:50%;color:#fff;font:800 11.5px 'Sora',sans-serif;border:2px solid rgba(255,255,255,.9);" +
+    "box-shadow:0 2px 7px rgba(0,0,0,.4);}" +
+  ".gl-sum{margin:9px 0 4px;padding:10px 0 2px;border-top:1px solid var(--line);}" +
+  ".gl-sum-h{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;" +
+    "color:var(--ink-soft);margin-bottom:6px;}" +
+  ".gl-sum-row{font-size:12px;color:var(--ink-soft);line-height:1.65;}" +
+  ".gl-sum-row b{font-family:'Sora';font-size:14px;font-weight:800;color:var(--ink);}" +
+  ".gl-sum-why{font-size:11.5px;color:var(--ink-soft);margin-top:5px;font-weight:600;}" +
+  ".gl-sum-fine{font-size:10.5px;color:var(--ink-soft);opacity:.85;line-height:1.5;margin-top:6px;}" +
   ".gv-nodata{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:1100;width:min(420px,88vw);padding:20px 22px;border-radius:18px;text-align:left;}" +
   ".gv-nodata .nd-h{font-family:'Sora';font-size:17px;font-weight:800;margin-bottom:7px;}" +
   ".gv-nodata p{font-size:12.5px;color:var(--ink-soft);line-height:1.6;margin:0 0 13px;}" +
