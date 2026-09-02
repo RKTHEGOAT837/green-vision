@@ -108,9 +108,10 @@ button{font-family:inherit;cursor:pointer;color:inherit;}
   #panel.open.rail{transform:translateX(calc(100% - 40px));}
 }
 .ph{padding:16px 18px 12px;border-bottom:1px solid var(--line);position:relative;}
+.ph .gv-minbtn{right:52px;}
 .ph .close{position:absolute;top:14px;right:14px;width:32px;height:32px;border-radius:10px;border:0;background:var(--bg2);display:flex;align-items:center;justify-content:center;}
-.ph .eyebrow{font-size:10.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--brand-dk);padding-right:38px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.ph h2{margin:3px 40px 2px 0;font-size:20px;line-height:1.15;letter-spacing:-.02em;}
+.ph .eyebrow{font-size:10.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--brand-dk);padding-right:78px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.ph h2{margin:3px 80px 2px 0;font-size:20px;line-height:1.15;letter-spacing:-.02em;}
 .ph .sub{font-size:12px;color:var(--ink-soft);font-weight:600;}
 .pbody{flex:1;overflow-y:auto;padding:14px 16px 30px;}
 .pbody::-webkit-scrollbar{width:8px;} .pbody::-webkit-scrollbar-thumb{background:var(--line);border-radius:8px;}
@@ -845,7 +846,79 @@ function lon2x(lon,z){return Math.floor((lon+180)/360*Math.pow(2,z));}
 function lat2y(lat,z){const r=lat*Math.PI/180;return Math.floor((1-Math.log(Math.tan(r)+1/Math.cos(r))/Math.PI)/2*Math.pow(2,z));}
 function x2lon(x,z){return x/Math.pow(2,z)*360-180;}
 function y2lat(y,z){const n=Math.PI-2*Math.PI*y/Math.pow(2,z);return 180/Math.PI*Math.atan(0.5*(Math.exp(n)-Math.exp(-n)));}
-function loadTile(z,x,y){return new Promise(res=>{const i=new Image();i.crossOrigin="anonymous";let d=false;const f=v=>{if(!d){d=true;res(v);}};i.onload=()=>f(i);i.onerror=()=>f(null);setTimeout(()=>f(null),9000);i.src=CFG.ESRI.replace("{z}",z).replace("{x}",x).replace("{y}",y);});}
+/* Imagery tiles, bounded and cached.
+
+   Four things in this page read raw tiles: the green raster (up to 30 at
+   once), the point report's 3x3 sample, the AOI canopy read, and the site
+   finder. Each of them pushed its whole batch at the browser simultaneously,
+   and all four pull from the SAME host as the basemap. A browser opens about
+   six connections per host, so those requests do not run in parallel - they
+   queue, behind each other and in front of the basemap.
+
+   Measured in Chrome on a cold load: individual Esri tile requests reporting
+   218 SECONDS, because the number is time-since-queued, not time-in-flight.
+   The map appeared broken and the tab stopped responding to anything that
+   needed the page to finish loading. The app was starving its own basemap.
+
+   So the limit lives here, in the one function all four go through, rather
+   than in four separate call sites that would drift apart:
+
+   IN-FLIGHT CAP of 5 leaves a connection free for the basemap, which is the
+   thing the reader is actually looking at. Callers still push as many jobs as
+   they like; they simply run five at a time.
+
+   A CACHE, because these callers ask for the same tiles repeatedly - the
+   green view re-renders on every pan, and the AOI read and the site finder
+   overlap almost completely. A cached tile is an Image that is already
+   decoded, so drawImage on it is free.
+
+   The 9 s timeout is per attempt and unchanged: a tile that does not arrive
+   is drawn as a gap, which is honest, rather than holding the render open. */
+const TILE_MAX_INFLIGHT = 5;
+const TILE_CACHE_MAX = 300;
+const _tileCache = new Map();
+let _tileInflight = 0;
+const _tileQueue = [];
+
+function _tilePump(){
+  while (_tileInflight < TILE_MAX_INFLIGHT && _tileQueue.length) {
+    const job = _tileQueue.shift();
+    _tileInflight++;
+    job().finally(() => { _tileInflight--; _tilePump(); });
+  }
+}
+
+function loadTile(z, x, y){
+  const key = z + "/" + x + "/" + y;
+  const hit = _tileCache.get(key);
+  if (hit !== undefined) {
+    // Refresh recency: a Map preserves insertion order, so delete-and-set is
+    // the cheapest LRU there is.
+    _tileCache.delete(key); _tileCache.set(key, hit);
+    return Promise.resolve(hit);
+  }
+  return new Promise(res => {
+    _tileQueue.push(() => new Promise(done => {
+      const i = new Image();
+      i.crossOrigin = "anonymous";
+      let settled = false;
+      const finish = v => {
+        if (settled) return;
+        settled = true;
+        if (_tileCache.size >= TILE_CACHE_MAX) {
+          _tileCache.delete(_tileCache.keys().next().value);
+        }
+        _tileCache.set(key, v);
+        res(v); done();
+      };
+      i.onload = () => finish(i);
+      i.onerror = () => finish(null);
+      setTimeout(() => finish(null), 9000);
+      i.src = CFG.ESRI.replace("{z}", z).replace("{x}", x).replace("{y}", y);
+    }));
+    _tilePump();
+  });
+}
 function vegScore(r,g,b){const denom=(g+r-b)||1;const vari=(g-r)/denom;return (2*g-r-b)>22 && g>r+6 && g>b+4 ? clamp((vari+.1)/.5,0,1):0;}
 Object.assign(window,{lon2x,lat2y,x2lon,y2lat,loadTile,vegScore});
 
@@ -856,10 +929,18 @@ function pinIcon(){return L.divIcon({className:"",iconSize:[30,40],iconAnchor:[1
 function initMap(){
   map=L.map("map",{preferCanvas:true,center:CFG.START,zoom:CFG.START_Z,zoomControl:false,attributionControl:true,zoomSnap:.5});
   window.map=map;
-  esriLayer=L.tileLayer(CFG.ESRI,{maxZoom:19,crossOrigin:true,attribution:"Imagery © Esri, Maxar, Earthstar"});
+  esriLayer=L.tileLayer(CFG.ESRI,{maxZoom:19,crossOrigin:true,
+    /* keepBuffer 1 rather than Leaflet's 2 halves the ring of
+       off-screen tiles it holds; updateWhenZooming false stops it
+       requesting a fresh set on every frame of a zoom animation.
+       Both are pure request-volume savings on a host that is the
+       measured bottleneck. */
+    keepBuffer:1, updateWhenZooming:false, updateWhenIdle:true,
+    attribution:"Imagery © Esri, Maxar, Earthstar"});
   esriLayer.on("tileerror",e=>{if(e.tile&&!e.tile._fb){e.tile._fb=1;const c=e.coords;e.tile.src=CFG.GOOG_SAT.replace("{x}",c.x).replace("{y}",c.y).replace("{z}",c.z);}});
   esriLayer.addTo(map);
   osmLayer=L.tileLayer(CFG.MAP_TILE,{maxZoom:19,crossOrigin:true,
+    keepBuffer:1, updateWhenZooming:false, updateWhenIdle:true,
     attribution:"Esri, HERE, Garmin, © OpenStreetMap contributors"});
   /* Same per-tile fallback the satellite layer uses: one retry onto the OSM
      server, marked so a tile is never retried forever. A base layer that
@@ -2107,10 +2188,30 @@ window.addEventListener("DOMContentLoaded",()=>{
      rail expands it; the X only ever collapses. */
   const _panel = $("#panel");
   $("#pClose").onclick = () => {
+    _panel.classList.remove("rail");
+    _panel.classList.remove("open");
+    if (window.gvwFitSoon) gvwFitSoon();
+  };
+
+  /* Collapse to a rail, next to the close. Keeps the panel mounted with its
+     title readable sideways, which matters because the readings behind it are
+     several network calls to rebuild. */
+  const _min = document.createElement("button");
+  _min.className = "close gv-minbtn";
+  _min.type = "button";
+  _min.title = "Collapse to a strip";
+  _min.setAttribute("aria-label", "Collapse the report");
+  _min.innerHTML = '<svg viewBox="0 0 24 24" width="16" fill="none" stroke="currentColor" ' +
+                   'stroke-width="2.4"><path d="M9 6l6 6-6 6"/></svg>';
+  _min.onclick = e => {
+    e.stopPropagation();
+    // A floated panel has no edge to rail against, so there it just closes.
+    if (_panel.classList.contains("gvl-moved")) { _panel.classList.remove("open"); return; }
     _panel.classList.add("rail");
     if (window.gvwFitSoon) gvwFitSoon();
-    if (window.GVACC && GVACC.node) GVACC.node.classList.remove("open"), GVACC.open = false;
   };
+  const _phh = _panel.querySelector(".ph");
+  if (_phh) _phh.appendChild(_min);
   const _rail = document.createElement("button");
   _rail.className = "railtab";
   _rail.type = "button";
@@ -2218,7 +2319,14 @@ window.addEventListener("DOMContentLoaded",()=>{
 .gv-dockclose{
   margin-left:auto; flex:none; width:32px; height:32px; border:0; border-radius:10px;
   background:var(--bg2); display:flex; align-items:center; justify-content:center;
+  cursor:pointer; color:var(--ink-soft); transition:color .14s, background .14s;
 }
+.gv-dockclose:hover{ color:var(--ink); background:var(--line); }
+/* The header now holds two of these. Only the first takes the auto margin,
+   or flex pushes them to opposite ends of the row. */
+.gv-dockh .gv-dockclose ~ .gv-dockclose{ margin-left:6px; }
+#gvLayoutReset{ opacity:.72; }
+#gvLayoutReset:hover{ opacity:1; color:var(--brand-solid); }
 
 .gv-tabs{ display:flex; gap:2px; padding:8px 10px; border-bottom:1px solid var(--line); overflow-x:auto; scrollbar-width:none; }
 .gv-tabs::-webkit-scrollbar{ display:none; }
@@ -5940,6 +6048,12 @@ function buildShell() {
           <h3 id="gvDockTitle">GreenVision Studio</h3>
           <div class="gv-docksub" id="gvDockSub"></div>
         </div>
+        <button class="gv-dockclose" id="gvDockRail" title="Collapse to a strip" aria-label="Collapse panel">
+          <svg viewBox="0 0 24 24" width="16" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M15 6l-6 6 6 6"/></svg>
+        </button>
+        <button class="gv-dockclose" id="gvLayoutReset" title="Reset every panel to its default size and place" aria-label="Reset layout">
+          <svg viewBox="0 0 24 24" width="16" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 12a9 9 0 1 0 3-6.7M3 4v5h5"/></svg>
+        </button>
         <button class="gv-dockclose" id="gvDockClose" aria-label="Close panel">
           <svg viewBox="0 0 24 24" width="16" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M6 6l12 12M18 6L6 18"/></svg>
         </button>
@@ -5962,8 +6076,35 @@ function buildShell() {
 
   $("#gvAuthBtn").onclick = openAuth;
   $("#gvDockClose").onclick = closeDock;
+  const lr = $("#gvLayoutReset");
+  if (lr) lr.onclick = e => { e.stopPropagation(); GVLAY.resetAll(); };
+  const dr = $("#gvDockRail");
+  if (dr) dr.onclick = e => { e.stopPropagation(); railDock(); };
   gvlSidebarResize($("#gvDock"), "left", "--gv-dock-w", "dock");
   gvlSidebarResize($("#panel"), "right", "--gv-panel-w", "panel");
+  // ...and let them leave their edge entirely. Dragging by the header floats
+  // the panel; double-clicking the header puts it back against the side it
+  // came from. Both sidebars, the report, the legends, the worklist and the
+  // assistant are the same mechanism, so there is one thing to learn.
+  gvlMakeMovable($("#gvDock"), { key: "dockPos", handle: ".gv-dockh",
+                                 resize: "both", minW: 180, minH: 220 });
+  gvlMakeMovable($("#panel"), { key: "panelPos", handle: ".ph",
+                                resize: "both", minW: 180, minH: 220 });
+  // The assistant is built later than this, so bind it when it appears rather
+  // than here, where the element does not exist yet.
+  const bindAssistant = () => {
+    const gvaP = $("#gvaPanel");
+    if (gvaP && !gvaP.__gvlBound) {
+      gvlMakeMovable(gvaP, { key: "assistant", handle: ".gva-h",
+                             resize: "both", minW: 240, minH: 220 });
+      return true;
+    }
+    return !!(gvaP && gvaP.__gvlBound);
+  };
+  if (!bindAssistant()) {
+    let tries = 0;
+    const t = setInterval(() => { if (bindAssistant() || ++tries > 40) clearInterval(t); }, 250);
+  }
   $("#gvDock").addEventListener("click", e => {
     const d = $("#gvDock");
     if (!d.classList.contains("rail")) return;
@@ -6029,18 +6170,22 @@ function _openDock(tab) {
   else if (tab === "history") drawHistory();
   else if (tab === "gallery") drawGallery();
 }
-function closeDock() {
-  // Rail rather than remove. The dock holds the 100 km2 area readings, which
-  // cost several network calls to assemble; discarding them to see the map
-  // and then paying for them again is a bad trade for the reader.
+/* Collapse the dock to a rail. The X beside this closes it outright; this
+   keeps it mounted, because the 100 km2 readings behind it are several
+   network calls to reassemble. */
+function railDock() {
   const d0 = $("#gvDock");
-  if (d0 && d0.classList.contains("on") && !d0.classList.contains("rail")) {
-    d0.classList.add("rail");
-    if (window.GVP && GVP.legend) priLegend(true);
-    if (window.gvwFitSoon) gvwFitSoon();
-    stopDraw(); clearTraffic();
-    return;
-  }
+  if (!d0 || !d0.classList.contains("on")) return;
+  if (d0.classList.contains("gvl-moved")) { closeDock(); return; }
+  d0.classList.add("rail");
+  if (window.GVP && GVP.legend) priLegend(true);
+  if (window.gvwFitSoon) gvwFitSoon();
+  stopDraw(); clearTraffic();
+}
+
+function closeDock() {
+  const d0 = $("#gvDock");
+  if (d0) d0.classList.remove("rail");
   document.body.classList.remove("gv-dock-on");
   // Leave a way back in. Without this the panel was a one-way door: every
   // tab behind it became unreachable until the next map click.
@@ -10255,7 +10400,7 @@ function gvlSidebarResize(el, side, varName, key){
   el.appendChild(grip);
 
   const stored = gvlLoad(key);
-  if(stored && stored.w && stored.w >= 260 && stored.w <= innerWidth * 0.7){
+  if(stored && stored.w && stored.w >= 180 && stored.w <= innerWidth * 0.8){
     document.documentElement.style.setProperty(varName, stored.w + "px");
   }
 
@@ -10265,7 +10410,7 @@ function gvlSidebarResize(el, side, varName, key){
     document.body.style.userSelect = "none";
     function move(ev){
       const d = (ev.clientX - x0) * (side === "left" ? 1 : -1);
-      const w = Math.max(260, Math.min(w0 + d, Math.round(innerWidth * 0.7)));
+      const w = Math.max(180, Math.min(w0 + d, Math.round(innerWidth * 0.8)));
       document.documentElement.style.setProperty(varName, w + "px");
       if(window.gvwFit) gvwFit();
     }
@@ -10298,7 +10443,8 @@ function gvlSidebarResize(el, side, varName, key){
 }
 
 GVLAY.resetAll = function(){
-  ["priLegend", "greenLegend", "worklist", "dock", "panel"].forEach(function(k){
+  ["priLegend", "greenLegend", "worklist", "dock", "panel",
+   "dockPos", "panelPos", "assistant"].forEach(function(k){
     gvlSave(k, null);
   });
   document.querySelectorAll(".gvl-movable").forEach(function(el){
@@ -10318,20 +10464,21 @@ GVLAY.resetAll = function(){
   css.textContent =
   ".gvl-handle{cursor:grab;touch-action:none;}" +
   ".gvl-dragging{cursor:grabbing!important;user-select:none;box-shadow:0 26px 60px rgba(0,0,0,.42)!important;transition:none!important;}" +
-  ".gvl-moved{transition:none!important;}" +
+  ".gvl-moved{transition:none!important;transform:none!important;border-radius:16px;box-shadow:0 22px 54px rgba(0,0,0,.34);}" +
+  ".gvl-moved#gvDock,.gvl-moved#panel{bottom:auto!important;height:min(78vh,720px);border-left:1px solid var(--glass-brd);border-right:1px solid var(--glass-brd);overflow:hidden;}" +
   ".gvl-dragging *{user-select:none;}" +
   ".gvl-movable{position:relative;}" +
   // The grips. Deliberately visible on hover rather than always: a permanent
   // handle on every panel is visual noise for the majority who never resize.
-  ".gvl-grip{position:absolute;z-index:20;opacity:0;transition:opacity .15s;touch-action:none;}" +
-  ".gvl-movable:hover .gvl-grip{opacity:.55;}" +
+  ".gvl-grip{position:absolute;z-index:30;opacity:.30;transition:opacity .15s,background .15s;touch-action:none;}" +
+  ".gvl-movable:hover .gvl-grip{opacity:.7;}" +
   ".gvl-grip:hover{opacity:1!important;}" +
-  ".gvl-grip-both{right:2px;bottom:2px;width:16px;height:16px;cursor:nwse-resize;" +
+  ".gvl-grip-both{right:2px;bottom:2px;width:20px;height:20px;cursor:nwse-resize;" +
     "background:linear-gradient(135deg,transparent 46%,var(--ink-soft) 46%,var(--ink-soft) 54%,transparent 54%," +
     "transparent 71%,var(--ink-soft) 71%,var(--ink-soft) 79%,transparent 79%);}" +
-  ".gvl-grip-width{top:0;bottom:0;width:7px;cursor:ew-resize;background:var(--brand-solid);}" +
-  ".gvl-grip-height{left:0;right:0;height:7px;cursor:ns-resize;background:var(--brand-solid);}" +
-  ".gvl-grip-width.gvl-right{right:-3px;} .gvl-grip-width.gvl-left{left:-3px;}" +
+  ".gvl-grip-width{top:0;bottom:0;width:12px;cursor:ew-resize;background:linear-gradient(90deg,transparent 35%,var(--brand-solid) 35%,var(--brand-solid) 65%,transparent 65%);}" +
+  ".gvl-grip-height{left:0;right:0;height:12px;cursor:ns-resize;background:linear-gradient(180deg,transparent 35%,var(--brand-solid) 35%,var(--brand-solid) 65%,transparent 65%);}" +
+  ".gvl-grip-width.gvl-right{right:-6px;} .gvl-grip-width.gvl-left{left:-6px;}" +
   ".gvl-grip-height.gvl-top{top:-3px;}" +
   "@media (pointer:coarse){.gvl-grip{opacity:.5;} .gvl-grip-both{width:22px;height:22px;}}";
   document.head.appendChild(css);
