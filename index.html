@@ -5896,7 +5896,10 @@ function openSavedDesign(id) {
   if (!d) { toast("That design is no longer saved"); return; }
   GV.design = JSON.parse(JSON.stringify(d));
   const a = d.aoi || (d.plot ? { lat: d.plot.ring[0][0], lon: d.plot.ring[0][1], km2: 100 } : null);
-  if (a) { GV.aoi = makeAOI(a.lat, a.lon); GV._gen++; GV.ctx = null; drawAOI(GV.aoi, false); }
+  if (a) { GV.aoi = makeAOI(a.lat, a.lon); GV._gen++; GV.ctx = null; drawAOI(GV.aoi, false);
+           // Everything the reader will want next starts here, not when
+           // they open the tab that needs it.
+           if (window.warmAOI) warmAOI(); }
   openDock("studio");
   if (d.plot && window.map) window.map.fitBounds(L.polygon(d.plot.ring).getBounds().pad(0.3));
   toast("Reopened \u201C" + (d.name || "Untitled") + "\u201D");
@@ -6064,6 +6067,67 @@ function spread(st, unit) {
   const range = st.max - st.min;
   return `<b>${st.mean}${unit || ""}</b>${range > 0 ? `<em>${st.min}\u2013${st.max} across the area</em>` : ""}`;
 }
+
+/* ---------- warm everything the moment a place is picked ----------------
+
+   The app used to load each panel when its tab was opened. Click a place and
+   the point report appears; open Area and wait for the 100 km2 read; open
+   Traffic and wait again; open Studio and wait a third time for the obstacle
+   fetch before it can even site a plot. Three waits the reader pays for one
+   at a time, each of which could have started the moment they chose the
+   place.
+
+   So it starts now. One generation counter guards all of it: a second click
+   supersedes the first, and every result checks the generation it was born
+   under before it writes anything, so a slow answer for the previous place
+   cannot land on the current one.
+
+   Deliberately fire-and-forget, and deliberately not awaited by anything on
+   the click path. The point report must not get slower because the traffic
+   model is also loading; every one of these has its own panel that already
+   knows how to show a loading state, and warming only changes WHEN the work
+   starts, never what the reader is shown while it runs.
+
+   Failures are swallowed on purpose. A warm-up that throws is a warm-up that
+   did not help; it must never turn into an error the reader sees, because
+   they did not ask for this work yet. The panel they eventually open will
+   retry and report properly. */
+GV.warm = { gen: 0 };
+
+function warmAOI() {
+  if (!GV.aoi) return;
+  const gen = ++GV.warm.gen;
+  const aoi = GV.aoi;
+  const quiet = (label, fn) => {
+    try {
+      Promise.resolve(fn()).catch(e => console.debug("warm " + label + ":", e));
+    } catch (e) { console.debug("warm " + label + ":", e); }
+  };
+
+  // 1. The 100 km2 read behind the Area tab and the right-hand panel. This is
+  //    the slow one - the OSM census dominates it - so it goes first.
+  quiet("area", () => drawAreaPanel());
+
+  // 2. The traffic model. Same Overpass path, so the request serialiser will
+  //    queue it behind the census rather than competing with it; the win is
+  //    that it is queued NOW instead of when the tab is clicked.
+  quiet("traffic", async () => {
+    if (GV.traffic.data && GV.traffic.aoiKey === aoiKey(aoi)) return;
+    const d = await loadTraffic(aoi);
+    if (gen !== GV.warm.gen) return;          // superseded by a newer place
+    GV.traffic.data = d;
+    GV.traffic.aoiKey = aoiKey(aoi);
+    if (dockTab === "traffic") drawTrafficPanel();
+  });
+
+  // 3. What the studio must not build on. Without this the first "design
+  //    something here" pays for the obstacle fetch before it can place
+  //    anything, which is the longest single wait in the product.
+  quiet("sites", () => fetchObstacles(aoi.lat, aoi.lon));
+}
+window.warmAOI = warmAOI;
+
+function aoiKey(a) { return a ? round(a.lat, 4) + "/" + round(a.lon, 4) : ""; }
 
 async function drawAreaPanel() {
   if (!GV.aoi) {
@@ -6244,6 +6308,13 @@ function hookHost() {
         // what the reader is looking at. The site data is not needed until
         // they ask for a design, which is never in the next two seconds.
         setTimeout(() => fetchObstacles(lat, lon).catch(() => {}), 2000);
+        // Traffic too. It was the one panel with no warm-up at all: the road
+        // network and signals were fetched when the tab was opened, so a
+        // reader who wanted congestion paid the whole Overpass latency then,
+        // having already waited it out once for the census. It shares the
+        // same serialised queue, so this cannot starve the census - it only
+        // moves the start of the work from tab-open to place-picked.
+        if (window.warmAOI) setTimeout(() => warmAOI(), 2500);
         openDock(dockTab || "area");
       }
       // Suppress the host's click handler while drawing in the Studio.
@@ -10806,6 +10877,41 @@ async function aProbe() {
   aRenderStatus();
 }
 
+/* Probe again, for a while, instead of deciding at second three.
+
+   aProbe ran exactly once at startup with a 2.5 s timeout per candidate. The
+   server it is looking for spends its first twenty seconds loading a local
+   OpenStreetMap index, so a page opened at the same moment as the server -
+   which is what the desktop launcher does - probed, found nothing, and marked
+   itself offline for the rest of the session. Everything downstream then took
+   the fallback path: the assistant said it was offline, the ranking came from
+   a baked export, and the feature census went to the public Overpass instance
+   and got throttled, all while a working engine sat on the next port.
+
+   Retries stop at the first success and stop entirely after the last delay.
+   This is a startup race, not a health monitor - an engine that goes away
+   later is a different problem, and the panels that need it already report
+   its absence when they ask. */
+const ENGINE_PROBE_RETRIES_MS = [3000, 8000, 20000, 45000];
+
+async function aProbeUntilFound() {
+  await aProbe();
+  for (const wait of ENGINE_PROBE_RETRIES_MS) {
+    if (GVA.online) return;
+    await new Promise(r => setTimeout(r, wait));
+    await aProbe();
+    if (GVA.online) {
+      // Anything that already gave up on the engine can now have it. The
+      // ranking is the one that matters: it is drawn from a baked export
+      // until this point, and the live engine may have a newer one.
+      if (window.GVP && GVP.active) { GVP.data = null; GVP.setActive(true); }
+      if (window.GVACC) GVACC.cache = {};
+      return;
+    }
+  }
+}
+window.aProbeUntilFound = aProbeUntilFound;
+
 /* =====================================================================
    16. LANGUAGE — the whole interface, not just the labels
    =====================================================================
@@ -11048,7 +11154,7 @@ async function initLang() {
   else renderLangBtn();
 }
 
-function gvBootUI(){ aBuild(); aProbe(); initLang(); }
+function gvBootUI(){ aBuild(); aProbeUntilFound(); initLang(); }
 if (document.readyState === "loading")
   document.addEventListener("DOMContentLoaded", gvBootUI);
 else gvBootUI();
