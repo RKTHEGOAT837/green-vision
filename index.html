@@ -4642,6 +4642,9 @@ function computeCost(d, ctx) {
   return {
     lines, cats, direct, contingency, design, gst, grand,
     per_m2: area ? grand / area : 0,
+    // ATTRIBUTABLE, not the project divided by the tree count - see above.
+    // The interface used to label this "per tree, all in", which reads as
+    // exactly the division this deliberately avoids.
     per_tree: nTrees ? treeAttrib / nTrees : 0,
     annual_maint: maintAnnual,
     water_kl_3yr: round(waterL / 1000),
@@ -5073,7 +5076,7 @@ function drawCostPanel() {
     <div class="gv-total">
       <span class="gv-total-lab">Estimated cost to build</span>
       <div class="gv-total-amt">${inr(c.grand)}</div>
-      <div class="gv-total-sub">${inrFull(c.grand)} \u00B7 ${inrFull(round(c.per_m2))}/m&sup2;${c.nTrees ? " \u00B7 " + inrFull(round(c.per_tree)) + " per tree, all in" : ""}</div>
+      <div class="gv-total-sub">${inrFull(c.grand)} \u00B7 ${inrFull(round(c.per_m2))}/m&sup2;${c.nTrees ? " \u00B7 " + inrFull(round(c.per_tree)) + " per tree planted" : ""}</div>
     </div>
 
     <div class="gv-catbars">
