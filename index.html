@@ -8619,6 +8619,38 @@ function gvwSeedPicked(rows) {
       .forEach(function (r) { GVW.picked.add(r.zone); });
 }
 
+/* Fit the programme to a budget.
+
+   This is how a capital programme is actually built: not "here are the worst
+   cells" but "I have this much money, how far down the list does it reach".
+   So it walks the engine's ranking from the top and takes cells while the
+   money lasts.
+
+   Strictly in rank order, and it stops at the first cell it cannot afford
+   rather than skipping on to a cheaper one further down. Skipping would fill
+   the budget more completely and would quietly reorder the engine's priorities
+   by price - cheap cells jumping ahead of urgent ones. If a planner wants that
+   trade they can make it themselves, one tick box at a time, and see what they
+   are giving up. Cells with no plantable estimate cost nothing to add and
+   nothing is claimed for them, so they are left out of a budgeted programme
+   entirely.
+
+   Returns how far it reached so the interface can say it. */
+function gvwFitToBudget(rupees){
+  const rows = gvwRows()
+    .filter(function(r){ return r.score != null && r.cost != null; })
+    .sort(function(x, y){ return x.rank - y.rank; });
+  GVW.picked = new Set();
+  let spent = 0, reached = 0;
+  for(const r of rows){
+    if(spent + r.cost > rupees) break;
+    GVW.picked.add(r.zone);
+    spent += r.cost;
+    reached = r.rank;
+  }
+  return { n: GVW.picked.size, spent: spent, reached: reached, of: rows.length };
+}
+
 /* ---------- formatting ---------- */
 function gvwNum(v, d) {
   if (v == null || !isFinite(v)) return "—";
@@ -8973,6 +9005,36 @@ function gvwBuild() {
       gvwRender();
       return;
     }
+    if (e.target.closest("#gvwFitBtn")) {
+      const box = GVW.node.querySelector("#gvwBudget");
+      const cr = parseFloat(box && box.value);
+      const note = GVW.node.querySelector(".gvw-budget-note");
+      if (!isFinite(cr) || cr <= 0) {
+        if (note) note.textContent = "Enter a budget in crore first.";
+        return;
+      }
+      const got = gvwFitToBudget(cr * 1e7);
+      gvwRender();
+      const n2 = GVW.node.querySelector(".gvw-budget-note");
+      if (n2) {
+        // Say what the money did NOT reach as well as what it did. A budget
+        // that covers 12 of 132 cells is the finding, not a footnote.
+        n2.textContent = got.n
+          ? got.n + " cells, down to rank #" + got.reached + " of " + got.of +
+            " \u00b7 " + gvwRupees(got.spent) + " committed"
+          : "That budget does not cover the top-ranked cell (" +
+            gvwRupees((gvwRows().filter(function(r){ return r.cost != null; })
+              .sort(function(x, y){ return x.rank - y.rank; })[0] || {}).cost) + ").";
+      }
+      return;
+    }
+    if (e.target.closest("#gvwTopBtn")) {
+      GVW.picked = null;                 // reseeds from the engine's top N
+      gvwRender();
+      const n3 = GVW.node.querySelector(".gvw-budget-note");
+      if (n3) n3.textContent = "";
+      return;
+    }
     const b = e.target.closest("button[data-a]");
     if (b) {
       if (b.dataset.a === "csv") gvwExportCSV();
@@ -9036,7 +9098,14 @@ function gvwAssumeUI() {
     f("survival_pct", "Expected survival", "%") +
     f("cost_per_tree", "Cost per tree", "₹", 10) +
     '<div class="gvw-derived">= ' + planted.toLocaleString() + " stems/ha planted, " +
-    Math.round(planted * a.survival_pct / 100).toLocaleString() + " surviving</div>";
+    Math.round(planted * a.survival_pct / 100).toLocaleString() + " surviving</div>" +
+    '<div class="gvw-budget">' +
+      '<label class="gvw-in"><span>Fit to a budget</span>' +
+      '<input id="gvwBudget" type="number" min="0" step="1" placeholder="e.g. 25"><i>cr</i></label>' +
+      '<button class="gvw-btn" id="gvwFitBtn">Fit</button>' +
+      '<button class="gvw-btn" id="gvwTopBtn">Top 20</button>' +
+      '<span class="gvw-budget-note"></span>' +
+    "</div>";
 }
 
 GVW.close = function () {
@@ -9114,6 +9183,9 @@ GVW.toggle = function (mode) {
   ".gvw-in i{position:absolute;right:9px;bottom:7px;font-style:normal;font-size:11px;" +
     "color:var(--ink-soft);}" +
   ".gvw-derived{font-size:11.5px;color:var(--ink-soft);font-weight:600;padding-bottom:6px;}" +
+  ".gvw-budget{flex:1 1 100%;display:flex;flex-wrap:wrap;gap:9px;align-items:flex-end;padding-top:9px;margin-top:3px;border-top:1px dashed var(--line);}" +
+  ".gvw-budget .gvw-btn{padding:6px 14px;}" +
+  ".gvw-budget-note{font-size:11.5px;color:var(--ink-soft);font-weight:600;padding-bottom:7px;flex:1 1 auto;}" +
   ".gvw-table-wrap{overflow:auto;flex:1;}" +
   ".gvw-t{border-collapse:separate;border-spacing:0;width:100%;}" +
   ".gvw-t th{position:sticky;top:0;z-index:2;background:var(--card-solid);text-align:left;" +
