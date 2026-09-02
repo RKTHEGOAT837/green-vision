@@ -131,6 +131,27 @@ for target, entries in by_target.items():
                              "transform; the later (%s) always wins when both apply"
                              % (sa, sb, sb))
 
+# --- 7. one namespace, one owner -------------------------------------------
+# This is a single 11,000-line file with ~20 module namespaces, so two sections
+# can reach for the same short name years apart. A repeated top-level `const`
+# in ONE script block is a hard SyntaxError: the whole block stops parsing and
+# every feature in the app dies at once, which looks nothing like a naming
+# problem when you meet it. (GVL was taken by localisation; a layout module
+# claimed it and took the entire page down.)
+#
+# Per block, deliberately. Separate <script> elements are separate scopes, so
+# the same name in block 0 and block 1 is legal - checking the concatenation
+# reported $ , clamp and round as collisions in a file that parses perfectly.
+for bi, blk in enumerate(scripts):
+    decls = {}
+    for m in re.finditer(r"^(?:const|let)\s+([A-Za-z_$][\w$]*)\s*=", blk, re.M):
+        decls.setdefault(m.group(1), []).append(m.start())
+    repeated = sorted(n for n, at in decls.items() if len(at) > 1)
+    if repeated:
+        problems.append("script block %d declares the same top-level const/let "
+                        "twice (SyntaxError, kills the block): %s"
+                        % (bi, ", ".join(repeated)))
+
 print("=" * 70)
 print("  STATIC AUDIT: index.html  (%d lines, %d script blocks)"
       % (html.count("\n") + 1, len(scripts)))

@@ -86,7 +86,7 @@ button{font-family:inherit;cursor:pointer;color:inherit;}
 .viewbtn:not(.active):hover{color:var(--ink);background:var(--bg2);}
 #mapctrl{position:absolute;right:14px;top:50%;transform:translateY(-50%);z-index:1000;display:flex;flex-direction:column;gap:8px;}
 #mapctrl .iconbtn{width:42px;height:42px;border-radius:13px;}
-#panel{position:fixed;top:0;right:0;bottom:0;width:min(400px,34vw,94vw);z-index:1200;
+#panel{position:fixed;top:0;right:0;bottom:0;width:min(var(--gv-panel-w,400px),94vw);z-index:1200;
   transform:translateX(102%);
   transition:transform .34s cubic-bezier(.22,1,.36,1);display:flex;flex-direction:column;border-left:1px solid var(--glass-brd);}
 #panel.open{transform:translateX(0);}
@@ -155,6 +155,16 @@ button{font-family:inherit;cursor:pointer;color:inherit;}
 
 
 
+.gl-drag{display:flex;align-items:center;justify-content:space-between;gap:8px;
+  margin:-2px -2px 8px;padding:2px 2px 7px;border-bottom:1px solid var(--line);cursor:grab;}
+.gl-drag span{font:800 9.5px 'Sora',sans-serif;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--ink-soft);}
+.gl-min{border:0;background:transparent;color:var(--ink-soft);font-size:15px;line-height:1;
+  width:20px;height:20px;border-radius:6px;cursor:pointer;}
+.gl-min:hover{background:var(--bg2);color:var(--ink);}
+.gl-collapsed > *:not(.gl-drag){display:none!important;}
+.gl-collapsed{width:auto!important;height:auto!important;min-width:0!important;}
+.gl-collapsed .gl-drag{margin-bottom:0;border-bottom:0;padding-bottom:0;}
 /* --- reopen handle for the left panel ---------------------------------- */
 #gvDockOpen{position:absolute;left:0;top:50%;transform:translateY(-50%) translateX(-100%);
   z-index:1150;display:flex;flex-direction:column;align-items:center;gap:7px;
@@ -801,7 +811,20 @@ async function overpassFetch(query, ms, opts) {
       for (const ep of eps) {
         const budget = Math.min(ms || 90000, Math.max(0, left()));
         if (budget <= 0) break;
-        const j = await getJSON(ep, overpassReq(query), budget);
+        /* Resolve the local endpoint against the ENGINE's origin, not the
+           page's.
+
+           "/api/osm" was fetched as a relative URL, so it only ever worked
+           when greenplan.server was also the web server. Serve index.html
+           from anything else - a static host, a different port, Pages behind
+           a tunnel - and it 404s, the loop falls through to the public
+           Overpass instance, and the census gets throttled while a local
+           index holding a million features for this exact city sits unused
+           three ports away. The page already discovers the engine origin for
+           /api/zones and /api/health; this is the one call that was not
+           using it. */
+        const url = ep.charAt(0) === "/" ? gvEngineUrl(ep) : ep;
+        const j = await getJSON(url, overpassReq(query), budget);
         _opLast = Date.now();
         // An empty array is a throttle or a mirror without your region's
         // data — never proof that nothing is there. See CFG.OVERPASS.
@@ -1260,8 +1283,19 @@ function greenLegend() {
       '<button class="gvw-open" id="grnWork">Export CSV</button>');
   }
 
+  el.insertAdjacentHTML("afterbegin",
+    '<div class="gl-drag" title="Drag to move \u00b7 double-click to reset">' +
+      '<span>Canopy</span>' +
+      '<button class="gl-min" title="Collapse">\u2212</button>' +
+    "</div>");
   document.getElementById("map").appendChild(el);
   GVG.legend = el;
+  gvlMakeMovable(el, { key: "greenLegend", handle: ".gl-drag", resize: "both", minW: 210 });
+  const gmn = el.querySelector(".gl-min");
+  if(gmn) gmn.onclick = function(){
+    el.classList.toggle("gl-collapsed");
+    gmn.textContent = el.classList.contains("gl-collapsed") ? "+" : "\u2212";
+  };
 
   const gw = el.querySelector("#grnWork");
   if (gw) gw.onclick = () => greenExportCSV();
@@ -1809,8 +1843,11 @@ function acDist(lat, lon) {
             Math.cos(c.lat * Math.PI / 180) * Math.cos(lat * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
   const km = 2 * R * Math.asin(Math.sqrt(a));
   if (km < 1) return Math.round(km * 1000) + " m";
-  if (km < 1000) return Math.round(km) + " km";
-  return Math.round(km / 1000) + "k km";
+  // "1k km" for anything past 1,000 threw away the digit that mattered:
+  // Bengaluru and Kolkata are both roughly "1k km" from Ahmedabad and a
+  // reader searching across India could not tell them apart. Earth tops out
+  // at 20,000 km, so the full number is never long.
+  return Math.round(km).toLocaleString("en-IN") + " km";
 }
 
 /* Nominatim ranks by its own relevance, which for a bare "bopal" can put a
@@ -2136,7 +2173,7 @@ window.addEventListener("DOMContentLoaded",()=>{
 /* ---------- dock ---------- */
 #gvDock{
   position:absolute; top:0; left:0; bottom:0; z-index:1250;
-  width:min(var(--gv-dock-w),38vw,96vw);
+  width:min(var(--gv-dock-w),96vw);
   transform:translateX(-102%);
   transition:transform .34s cubic-bezier(.22,1,.36,1);
   display:flex; flex-direction:column;
@@ -5844,6 +5881,8 @@ function buildShell() {
 
   $("#gvAuthBtn").onclick = openAuth;
   $("#gvDockClose").onclick = closeDock;
+  gvlSidebarResize($("#gvDock"), "left", "--gv-dock-w", "dock");
+  gvlSidebarResize($("#panel"), "right", "--gv-panel-w", "panel");
   $("#gvDock").addEventListener("click", e => {
     const d = $("#gvDock");
     if (!d.classList.contains("rail")) return;
@@ -6018,7 +6057,7 @@ function renderArea(ctx) {
       <div class="gv-m"><span>Temperature</span>${spread(wa.temp, "\u00B0C")}${prov(wa.temp ? "measured" : "absent")}</div>
       <div class="gv-m"><span>Rainfall</span>${cl ? `<b>${fmt(cl.rain_mm_yr)} mm/yr</b><em>1991\u20132020, the WMO standard normal</em>` : `<b>\u2014</b>`}${prov(cl ? "modelled" : "absent", "Open-Meteo ERA5 over 1991\u20132020, the WMO standard normal period. Verified against the IMD published normal for Ahmedabad: 757 mm/yr modelled vs 750 mm/yr published \u2014 a 1% difference. The 5-year window used here previously read 45% high.")}</div>
       <div class="gv-m"><span>Days over 40\u00B0C</span>${cl ? `<b>${cl.hot_days_yr}/yr</b><em>peak ${cl.max_temp}\u00B0C \u00B7 1991\u20132020</em>` : `<b>\u2014</b>`}${prov(cl ? "modelled" : "absent", "Open-Meteo ERA5 archive")}</div>
-      <div class="gv-m"><span>Bare, plantable ground</span>${veg ? `<b>${round(veg.bare_frac * 100)}%</b><em>of the area</em>` : `<b>\u2014</b>`}${prov(veg ? "modelled" : "absent")}</div>
+      <div class="gv-m"><span>Not vegetated</span>${veg ? `<b>${round(veg.bare_frac * 100)}%</b><em>roofs and roads included \u2014 not a plantable area</em>` : `<b>\u2014</b>`}${prov(veg ? "modelled" : "absent", "One minus the greenness index read from the visible bands of the basemap tiles. It is everything that does not read as vegetation, which in a built-up ward is mostly roof and carriageway. It is NOT an estimate of plantable ground: only a site survey establishes that, and the planting programme asks you for a realisable share rather than assuming one.")}</div>
     </div>
 
     ${census ? `
@@ -8631,8 +8670,19 @@ function priLegend(show){
     // The colours say where. The worklist is where a planner turns that into
     // an area, a quantity, a cost and a list they can hand over.
     '<button class="gvw-open" id="priWork">Open planting programme</button>';
+  el.insertAdjacentHTML("afterbegin",
+    '<div class="gl-drag" title="Drag to move · double-click to reset">' +
+      '<span>Planting priority</span>' +
+      '<button class="gl-min" title="Collapse">\u2212</button>' +
+    "</div>");
   document.getElementById("map").appendChild(el);
   GVP.legend = el;
+  gvlMakeMovable(el, { key: "priLegend", handle: ".gl-drag", resize: "both", minW: 210 });
+  const mn = el.querySelector(".gl-min");
+  if(mn) mn.onclick = function(){
+    el.classList.toggle("gl-collapsed");
+    mn.textContent = el.classList.contains("gl-collapsed") ? "+" : "\u2212";
+  };
   const pw = el.querySelector("#priWork");
   if(pw) pw.onclick = function(){ GVW.toggle("priority"); };
   const to = el.querySelector("#priTopOnly");
@@ -9496,6 +9546,8 @@ function gvwBuild() {
   });
 
   document.body.appendChild(el);
+  gvlMakeMovable(el, { key: "worklist", handle: ".gvw-bar", resize: "height",
+                       minH: 200, grow: "up" });
   return el;
 }
 
@@ -9834,6 +9886,312 @@ GVACC.refresh = function(){ GVACC.cache = {}; GVACC.render(); };
   ".acc-un b{color:var(--ink);}" +
   ".acc-none{font-size:11.5px;color:var(--ink-soft);line-height:1.6;}" +
   "";
+  document.head.appendChild(css);
+})();
+
+/* =====================================================================
+   17. LAYOUT CONTROL — move it, resize it, put it back
+   =====================================================================
+   Every surface in this app had a position I chose and the reader could
+   not argue with: the legend sat bottom-left, the report was 400 px wide
+   on the right, the worklist spanned the bottom. On a 1280 laptop with
+   three of them open that is most of the map gone, and no amount of
+   picking better defaults fixes it, because the right answer depends on
+   what the reader is doing and on a screen I cannot see.
+
+   So the defaults stay, and they stop being final:
+
+     DRAG a panel by its header to put it anywhere.
+     RESIZE it from its edge or corner.
+     DOUBLE-CLICK the header to send it back to where it started.
+
+   Positions persist per surface, so a planner who arranges the app for
+   their monitor gets that arrangement back tomorrow.
+
+   Two rules the implementation follows, both learned from getting them
+   wrong first:
+
+   A dragged panel is CLAMPED so at least 60 px of its header stays on
+   screen. Free dragging lets a panel be lost off the edge with no way
+   back except clearing storage, which is a worse bug than the crowding
+   this feature exists to fix.
+
+   A stored position is VALIDATED against the current window before it is
+   applied. A layout arranged on a 2560 px monitor, restored on a 1280 px
+   laptop, would otherwise place half the panels off-screen — so anything
+   that no longer fits is dropped back to its default rather than
+   restored faithfully into the void.
+   ===================================================================== */
+
+const GVLAY = window.GVLAY = { stores: {}, dragging: null };
+
+const GVLAY_MIN_VISIBLE = 60;      // px of a panel that must stay reachable
+
+function gvlLoad(key){
+  try {
+    const raw = localStorage.getItem("gv.layout." + key);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) { return null; }
+}
+
+function gvlSave(key, val){
+  try {
+    if(val === null) localStorage.removeItem("gv.layout." + key);
+    else localStorage.setItem("gv.layout." + key, JSON.stringify(val));
+  } catch (e) { /* private window: the layout is simply not remembered */ }
+}
+
+/* Is a stored geometry still usable on THIS window? */
+function gvlFits(g){
+  if(!g) return false;
+  if(g.w != null && (g.w < 180 || g.w > innerWidth)) return false;
+  if(g.h != null && (g.h < 120 || g.h > innerHeight)) return false;
+  if(g.left != null && (g.left > innerWidth - GVLAY_MIN_VISIBLE || g.left + (g.w || 200) < GVLAY_MIN_VISIBLE)) return false;
+  if(g.top != null && (g.top > innerHeight - GVLAY_MIN_VISIBLE || g.top < -8)) return false;
+  return true;
+}
+
+/* Make `el` draggable by `handle` and, optionally, resizable.
+
+   opts.key     storage key; omit to make the change session-only
+   opts.handle  the grab area (defaults to el)
+   opts.resize  "both" | "width" | "height" | none
+   opts.onChange called after any geometry change (so a map can invalidate) */
+function gvlMakeMovable(el, opts){
+  opts = opts || {};
+  if(!el || el.__gvlBound) return;
+  el.__gvlBound = true;
+  const key = opts.key;
+  const handle = opts.handle ? (typeof opts.handle === "string" ? el.querySelector(opts.handle) : opts.handle) : el;
+  if(!handle) return;
+
+  handle.classList.add("gvl-handle");
+  el.classList.add("gvl-movable");
+
+  const changed = () => { if(opts.onChange) try { opts.onChange(); } catch(e){} };
+
+  function applyGeom(g){
+    if(!g) return;
+    if(g.left != null){
+      el.style.position = "fixed";
+      el.style.left = g.left + "px";
+      el.style.top = g.top + "px";
+      el.style.right = "auto";
+      el.style.bottom = "auto";
+      el.style.transform = "none";     // a moved panel is no longer slid in
+      el.classList.add("gvl-moved");
+    }
+    if(g.w != null) el.style.width = g.w + "px";
+    if(g.h != null) el.style.height = g.h + "px";
+  }
+
+  // Restore, but only if it still makes sense here.
+  if(key){
+    const g = gvlLoad(key);
+    if(g && gvlFits(g)) applyGeom(g);
+    else if(g) gvlSave(key, null);     // stale layout from another screen
+  }
+
+  function record(){
+    if(!key) return;
+    const r = el.getBoundingClientRect();
+    gvlSave(key, {
+      left: el.classList.contains("gvl-moved") ? Math.round(r.left) : null,
+      top:  el.classList.contains("gvl-moved") ? Math.round(r.top)  : null,
+      w: el.style.width ? Math.round(r.width) : null,
+      h: el.style.height ? Math.round(r.height) : null
+    });
+  }
+
+  /* ---- drag ---- */
+  handle.addEventListener("pointerdown", function(e){
+    // Never steal a click from something interactive inside the header.
+    if(e.target.closest("button, input, select, textarea, a, label, .gvl-grip")) return;
+    if(e.button !== 0) return;
+    const r = el.getBoundingClientRect();
+    const dx = e.clientX - r.left, dy = e.clientY - r.top;
+    const w = r.width, h = r.height;
+    GVLAY.dragging = el;
+    el.classList.add("gvl-dragging");
+
+    function move(ev){
+      let L = ev.clientX - dx, T = ev.clientY - dy;
+      // Keep a grabbable strip on screen, always.
+      L = Math.max(GVLAY_MIN_VISIBLE - w, Math.min(L, innerWidth - GVLAY_MIN_VISIBLE));
+      T = Math.max(0, Math.min(T, innerHeight - GVLAY_MIN_VISIBLE));
+      el.style.position = "fixed";
+      el.style.left = L + "px"; el.style.top = T + "px";
+      el.style.right = "auto"; el.style.bottom = "auto";
+      el.style.transform = "none";
+      el.style.width = w + "px";
+      el.classList.add("gvl-moved");
+    }
+    function up(ev){
+      handle.removeEventListener("pointermove", move);
+      handle.removeEventListener("pointerup", up);
+      try { handle.releasePointerCapture(ev.pointerId); } catch(_){}
+      el.classList.remove("gvl-dragging");
+      GVLAY.dragging = null;
+      record(); changed();
+    }
+    handle.addEventListener("pointermove", move);
+    handle.addEventListener("pointerup", up);
+    try { handle.setPointerCapture(e.pointerId); } catch (_) {}
+    e.preventDefault();
+  });
+
+  /* ---- double-click the header to put it back ---- */
+  handle.addEventListener("dblclick", function(e){
+    if(e.target.closest("button, input, select, textarea, a, label")) return;
+    el.classList.remove("gvl-moved");
+    el.style.position = ""; el.style.left = ""; el.style.top = "";
+    el.style.right = ""; el.style.bottom = ""; el.style.transform = "";
+    el.style.width = ""; el.style.height = "";
+    if(key) gvlSave(key, null);
+    changed();
+    if(window.toast) toast("Panel reset to its default place");
+  });
+
+  /* ---- resize ---- */
+  if(opts.resize){
+    const grip = document.createElement("div");
+    grip.className = "gvl-grip gvl-grip-" + opts.resize;
+    grip.title = "Drag to resize";
+    el.appendChild(grip);
+    grip.addEventListener("pointerdown", function(e){
+      if(e.button !== 0) return;
+      const r = el.getBoundingClientRect();
+      const x0 = e.clientX, y0 = e.clientY, w0 = r.width, h0 = r.height;
+      // Which way does dragging right make it bigger? A panel pinned to the
+      // right edge grows when the grip moves LEFT.
+      const rightPinned = opts.grow === "left";
+      function move(ev){
+        if(opts.resize === "both" || opts.resize === "width"){
+          const d = (ev.clientX - x0) * (rightPinned ? -1 : 1);
+          el.style.width = Math.max(opts.minW || 240,
+                            Math.min(w0 + d, innerWidth - 40)) + "px";
+        }
+        if(opts.resize === "both" || opts.resize === "height"){
+          el.style.height = Math.max(opts.minH || 160,
+                             Math.min(h0 + (ev.clientY - y0), innerHeight - 40)) + "px";
+          el.style.maxHeight = "none";
+        }
+        changed();
+      }
+      function up(ev){
+        grip.removeEventListener("pointermove", move);
+        grip.removeEventListener("pointerup", up);
+        try { grip.releasePointerCapture(ev.pointerId); } catch(_){}
+        record(); changed();
+      }
+      grip.addEventListener("pointermove", move);
+      grip.addEventListener("pointerup", up);
+      try { grip.setPointerCapture(e.pointerId); } catch (_) {}
+      e.preventDefault(); e.stopPropagation();
+    });
+    grip.addEventListener("dblclick", function(e){
+      e.stopPropagation();
+      el.style.width = ""; el.style.height = ""; el.style.maxHeight = "";
+      record(); changed();
+    });
+  }
+}
+window.gvlMakeMovable = gvlMakeMovable;
+
+/* Put every surface back where it started. */
+/* A drag edge on the two docked sidebars.
+
+   They are pinned to opposite edges of the window, so their widths are CSS
+   custom properties rather than inline styles - the rail transforms are
+   written in percentages of that width and would fight an inline width. */
+function gvlSidebarResize(el, side, varName, key){
+  if(!el || el.__gvlEdge) return;
+  el.__gvlEdge = true;
+  const grip = document.createElement("div");
+  grip.className = "gvl-grip gvl-grip-width " + (side === "left" ? "gvl-right" : "gvl-left");
+  grip.title = "Drag to resize \u00b7 double-click to reset";
+  el.appendChild(grip);
+
+  const stored = gvlLoad(key);
+  if(stored && stored.w && stored.w >= 260 && stored.w <= innerWidth * 0.7){
+    document.documentElement.style.setProperty(varName, stored.w + "px");
+  }
+
+  grip.addEventListener("pointerdown", function(e){
+    if(e.button !== 0) return;
+    const w0 = el.getBoundingClientRect().width, x0 = e.clientX;
+    document.body.style.userSelect = "none";
+    function move(ev){
+      const d = (ev.clientX - x0) * (side === "left" ? 1 : -1);
+      const w = Math.max(260, Math.min(w0 + d, Math.round(innerWidth * 0.7)));
+      document.documentElement.style.setProperty(varName, w + "px");
+      if(window.gvwFit) gvwFit();
+    }
+    function up(ev){
+      grip.removeEventListener("pointermove", move);
+      grip.removeEventListener("pointerup", up);
+      try { grip.releasePointerCapture(ev.pointerId); } catch(_){}
+      document.body.style.userSelect = "";
+      gvlSave(key, { w: Math.round(el.getBoundingClientRect().width) });
+      if(window.map) map.invalidateSize();
+      if(window.gvwFitSoon) gvwFitSoon();
+    }
+    grip.addEventListener("pointermove", move);
+    grip.addEventListener("pointerup", up);
+        // Capture is an optimisation, not a requirement: it keeps the
+        // drag alive if the pointer leaves the grip. It throws for a
+        // pointer the element does not own, and calling it BEFORE the
+        // move listeners were attached meant one throw aborted the
+        // whole drag silently - the grip looked alive and did nothing.
+    try { grip.setPointerCapture(e.pointerId); } catch (_) {}
+    e.preventDefault();
+  });
+  grip.addEventListener("dblclick", function(e){
+    e.stopPropagation();
+    document.documentElement.style.removeProperty(varName);
+    gvlSave(key, null);
+    if(window.map) map.invalidateSize();
+    if(window.gvwFitSoon) gvwFitSoon();
+  });
+}
+
+GVLAY.resetAll = function(){
+  ["priLegend", "greenLegend", "worklist", "dock", "panel"].forEach(function(k){
+    gvlSave(k, null);
+  });
+  document.querySelectorAll(".gvl-movable").forEach(function(el){
+    el.classList.remove("gvl-moved");
+    el.style.position = ""; el.style.left = ""; el.style.top = "";
+    el.style.right = ""; el.style.bottom = ""; el.style.transform = "";
+    el.style.width = ""; el.style.height = ""; el.style.maxHeight = "";
+  });
+  document.documentElement.style.removeProperty("--gv-dock-w");
+  document.documentElement.style.removeProperty("--gv-panel-w");
+  if(window.map) setTimeout(function(){ map.invalidateSize(); }, 60);
+  if(window.toast) toast("Layout reset");
+};
+
+(function(){
+  const css = document.createElement("style");
+  css.textContent =
+  ".gvl-handle{cursor:grab;touch-action:none;}" +
+  ".gvl-dragging{cursor:grabbing!important;user-select:none;box-shadow:0 26px 60px rgba(0,0,0,.42)!important;transition:none!important;}" +
+  ".gvl-moved{transition:none!important;}" +
+  ".gvl-dragging *{user-select:none;}" +
+  ".gvl-movable{position:relative;}" +
+  // The grips. Deliberately visible on hover rather than always: a permanent
+  // handle on every panel is visual noise for the majority who never resize.
+  ".gvl-grip{position:absolute;z-index:20;opacity:0;transition:opacity .15s;touch-action:none;}" +
+  ".gvl-movable:hover .gvl-grip{opacity:.55;}" +
+  ".gvl-grip:hover{opacity:1!important;}" +
+  ".gvl-grip-both{right:2px;bottom:2px;width:16px;height:16px;cursor:nwse-resize;" +
+    "background:linear-gradient(135deg,transparent 46%,var(--ink-soft) 46%,var(--ink-soft) 54%,transparent 54%," +
+    "transparent 71%,var(--ink-soft) 71%,var(--ink-soft) 79%,transparent 79%);}" +
+  ".gvl-grip-width{top:0;bottom:0;width:7px;cursor:ew-resize;background:var(--brand-solid);}" +
+  ".gvl-grip-height{left:0;right:0;height:7px;cursor:ns-resize;background:var(--brand-solid);}" +
+  ".gvl-grip-width.gvl-right{right:-3px;} .gvl-grip-width.gvl-left{left:-3px;}" +
+  ".gvl-grip-height.gvl-top{top:-3px;}" +
+  "@media (pointer:coarse){.gvl-grip{opacity:.5;} .gvl-grip-both{width:22px;height:22px;}}";
   document.head.appendChild(css);
 })();
 
