@@ -1,5 +1,12 @@
 {
   "type": "FeatureCollection",
+  "mcda_weights": {
+    "aqi_worsening": 0.4,
+    "traffic_worsening": 0.0,
+    "ndvi_decline": 0.35,
+    "low_green_cover": 0.15,
+    "plantable_space": 0.1
+  },
   "features": [
     {
       "type": "Feature",
@@ -62,7 +69,7 @@
         ],
         "justification": "Priority score 0.912: predicted AQI change -0.4, NDVI trend -0.0091/yr with canopy at 0.22 and plantable-space 0.63. Species chosen for pollution tolerance and fit to available space.",
         "components": {
-          "aqi_worsening": 0.378,
+          "aqi_worsening": 0.3779,
           "traffic_worsening": 0.0,
           "ndvi_decline": 0.3271,
           "low_green_cover": 0.1441,
@@ -268,6 +275,13 @@
           "Neem"
         ],
         "justification": "Priority score 0.838: predicted AQI change -20.2, NDVI trend -0.0125/yr with canopy at 0.32 and plantable-space 0.46. Species chosen for pollution tolerance and fit to available space. Soil pH 7.8 (alkaline), loam \u2014 species filtered for soil fit.",
+        "components": {
+          "aqi_worsening": 0.3489,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.35,
+          "low_green_cover": 0.0927,
+          "plantable_space": 0.0461
+        },
         "soil": {
           "ph": 7.75,
           "ph_class": "alkaline",
@@ -275,13 +289,6 @@
           "texture_simple": "loamy",
           "moisture": null,
           "soc": 69.5
-        },
-        "components": {
-          "aqi_worsening": 0.3489,
-          "traffic_worsening": 0.0,
-          "ndvi_decline": 0.35,
-          "low_green_cover": 0.0927,
-          "plantable_space": 0.0461
         }
       }
     },
@@ -414,6 +421,13 @@
           "Banyan"
         ],
         "justification": "Priority score 0.827: predicted AQI change +6.2, NDVI trend -0.0031/yr with canopy at 0.22 and plantable-space 0.64. Species chosen for pollution tolerance and fit to available space. Soil pH 7.7 (alkaline), loam \u2014 species filtered for soil fit.",
+        "components": {
+          "aqi_worsening": 0.3875,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.2289,
+          "low_green_cover": 0.1461,
+          "plantable_space": 0.064
+        },
         "soil": {
           "ph": 7.7,
           "ph_class": "alkaline",
@@ -421,13 +435,6 @@
           "texture_simple": "loamy",
           "moisture": null,
           "soc": 74.0
-        },
-        "components": {
-          "aqi_worsening": 0.3876,
-          "traffic_worsening": 0.0,
-          "ndvi_decline": 0.2289,
-          "low_green_cover": 0.1461,
-          "plantable_space": 0.064
         }
       }
     },
@@ -492,7 +499,7 @@
         ],
         "justification": "Priority score 0.813: predicted AQI change +6.2, NDVI trend -0.0024/yr with canopy at 0.22 and plantable-space 0.64. Species chosen for pollution tolerance and fit to available space.",
         "components": {
-          "aqi_worsening": 0.3876,
+          "aqi_worsening": 0.3875,
           "traffic_worsening": 0.0,
           "ndvi_decline": 0.2173,
           "low_green_cover": 0.1449,
@@ -560,6 +567,13 @@
           "Putranjiva"
         ],
         "justification": "Priority score 0.810: predicted AQI change +14.7, NDVI trend -0.0071/yr with canopy at 0.36 and plantable-space 0.40. Species chosen for pollution tolerance and fit to available space. Soil pH 8.1 (alkaline), loam \u2014 species filtered for soil fit.",
+        "components": {
+          "aqi_worsening": 0.4,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.2943,
+          "low_green_cover": 0.0757,
+          "plantable_space": 0.0403
+        },
         "soil": {
           "ph": 8.1,
           "ph_class": "alkaline",
@@ -567,13 +581,6 @@
           "texture_simple": "loamy",
           "moisture": null,
           "soc": 87.5
-        },
-        "components": {
-          "aqi_worsening": 0.4,
-          "traffic_worsening": 0.0,
-          "ndvi_decline": 0.2943,
-          "low_green_cover": 0.0757,
-          "plantable_space": 0.0403
         }
       }
     },
@@ -770,6 +777,13 @@
         "n_sites": 0,
         "species": [],
         "justification": "",
+        "components": {
+          "aqi_worsening": 0.3801,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.1986,
+          "low_green_cover": 0.15,
+          "plantable_space": 0.0692
+        },
         "soil": {
           "ph": 7.75,
           "ph_class": "alkaline",
@@ -777,13 +791,6 @@
           "texture_simple": "loamy",
           "moisture": null,
           "soc": 76.5
-        },
-        "components": {
-          "aqi_worsening": 0.3801,
-          "traffic_worsening": 0.0,
-          "ndvi_decline": 0.1986,
-          "low_green_cover": 0.15,
-          "plantable_space": 0.0692
         }
       }
     },
@@ -842,6 +849,13 @@
         "n_sites": 0,
         "species": [],
         "justification": "",
+        "components": {
+          "aqi_worsening": 0.3489,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.2975,
+          "low_green_cover": 0.1015,
+          "plantable_space": 0.049
+        },
         "soil": {
           "ph": 7.65,
           "ph_class": "alkaline",
@@ -849,13 +863,6 @@
           "texture_simple": "loamy",
           "moisture": null,
           "soc": 87.5
-        },
-        "components": {
-          "aqi_worsening": 0.3489,
-          "traffic_worsening": 0.0,
-          "ndvi_decline": 0.2975,
-          "low_green_cover": 0.1015,
-          "plantable_space": 0.049
         }
       }
     },
@@ -915,7 +922,7 @@
         "species": [],
         "justification": "",
         "components": {
-          "aqi_worsening": 0.3876,
+          "aqi_worsening": 0.3875,
           "traffic_worsening": 0.0,
           "ndvi_decline": 0.1834,
           "low_green_cover": 0.146,
@@ -979,7 +986,7 @@
         "species": [],
         "justification": "",
         "components": {
-          "aqi_worsening": 0.3638,
+          "aqi_worsening": 0.3637,
           "traffic_worsening": 0.0,
           "ndvi_decline": 0.2041,
           "low_green_cover": 0.1399,
@@ -1234,6 +1241,13 @@
         "n_sites": 0,
         "species": [],
         "justification": "",
+        "components": {
+          "aqi_worsening": 0.3463,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.2634,
+          "low_green_cover": 0.0964,
+          "plantable_space": 0.0473
+        },
         "soil": {
           "ph": 7.75,
           "ph_class": "alkaline",
@@ -1241,13 +1255,6 @@
           "texture_simple": "loamy",
           "moisture": null,
           "soc": 79.5
-        },
-        "components": {
-          "aqi_worsening": 0.3462,
-          "traffic_worsening": 0.0,
-          "ndvi_decline": 0.2634,
-          "low_green_cover": 0.0964,
-          "plantable_space": 0.0473
         }
       }
     },
@@ -1565,7 +1572,7 @@
         "components": {
           "aqi_worsening": 0.3701,
           "traffic_worsening": 0.0,
-          "ndvi_decline": 0.1825,
+          "ndvi_decline": 0.1824,
           "low_green_cover": 0.1143,
           "plantable_space": 0.0533
         }
@@ -1629,7 +1636,7 @@
         "components": {
           "aqi_worsening": 0.3741,
           "traffic_worsening": 0.0,
-          "ndvi_decline": 0.1734,
+          "ndvi_decline": 0.1733,
           "low_green_cover": 0.115,
           "plantable_space": 0.0535
         }
@@ -1818,6 +1825,13 @@
         "n_sites": 0,
         "species": [],
         "justification": "",
+        "components": {
+          "aqi_worsening": 0.3259,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.3222,
+          "low_green_cover": 0.0367,
+          "plantable_space": 0.0272
+        },
         "soil": {
           "ph": 7.55,
           "ph_class": "alkaline",
@@ -1825,13 +1839,6 @@
           "texture_simple": "loamy",
           "moisture": null,
           "soc": 102.0
-        },
-        "components": {
-          "aqi_worsening": 0.3259,
-          "traffic_worsening": 0.0,
-          "ndvi_decline": 0.3221,
-          "low_green_cover": 0.0367,
-          "plantable_space": 0.0273
         }
       }
     },
@@ -1954,6 +1961,13 @@
         "n_sites": 0,
         "species": [],
         "justification": "",
+        "components": {
+          "aqi_worsening": 0.3321,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.2654,
+          "low_green_cover": 0.0665,
+          "plantable_space": 0.0372
+        },
         "soil": {
           "ph": 7.75,
           "ph_class": "alkaline",
@@ -1961,13 +1975,6 @@
           "texture_simple": "loamy",
           "moisture": null,
           "soc": 92.5
-        },
-        "components": {
-          "aqi_worsening": 0.3321,
-          "traffic_worsening": 0.0,
-          "ndvi_decline": 0.2654,
-          "low_green_cover": 0.0665,
-          "plantable_space": 0.0372
         }
       }
     },
@@ -2029,7 +2036,7 @@
         "components": {
           "aqi_worsening": 0.3727,
           "traffic_worsening": 0.0,
-          "ndvi_decline": 0.0992,
+          "ndvi_decline": 0.0991,
           "low_green_cover": 0.15,
           "plantable_space": 0.0687
         }
@@ -2474,6 +2481,13 @@
         "n_sites": 0,
         "species": [],
         "justification": "",
+        "components": {
+          "aqi_worsening": 0.3741,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.1268,
+          "low_green_cover": 0.1099,
+          "plantable_space": 0.0518
+        },
         "soil": {
           "ph": 7.5,
           "ph_class": "neutral",
@@ -2481,13 +2495,6 @@
           "texture_simple": "loamy",
           "moisture": null,
           "soc": 86.5
-        },
-        "components": {
-          "aqi_worsening": 0.3741,
-          "traffic_worsening": 0.0,
-          "ndvi_decline": 0.1268,
-          "low_green_cover": 0.1099,
-          "plantable_space": 0.0518
         }
       }
     },
@@ -2613,7 +2620,7 @@
         "components": {
           "aqi_worsening": 0.3489,
           "traffic_worsening": 0.0,
-          "ndvi_decline": 0.1479,
+          "ndvi_decline": 0.148,
           "low_green_cover": 0.0963,
           "plantable_space": 0.0472
         }
@@ -2674,6 +2681,13 @@
         "n_sites": 0,
         "species": [],
         "justification": "",
+        "components": {
+          "aqi_worsening": 0.323,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.2738,
+          "low_green_cover": 0.0094,
+          "plantable_space": 0.018
+        },
         "soil": {
           "ph": 7.45,
           "ph_class": "neutral",
@@ -2681,13 +2695,6 @@
           "texture_simple": "sandy",
           "moisture": null,
           "soc": 96.5
-        },
-        "components": {
-          "aqi_worsening": 0.323,
-          "traffic_worsening": 0.0,
-          "ndvi_decline": 0.2738,
-          "low_green_cover": 0.0093,
-          "plantable_space": 0.0181
         }
       }
     },
@@ -2746,6 +2753,13 @@
         "n_sites": 0,
         "species": [],
         "justification": "",
+        "components": {
+          "aqi_worsening": 0.3276,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.246,
+          "low_green_cover": 0.0264,
+          "plantable_space": 0.0238
+        },
         "soil": {
           "ph": 7.35,
           "ph_class": "neutral",
@@ -2753,13 +2767,6 @@
           "texture_simple": "sandy",
           "moisture": null,
           "soc": 86.5
-        },
-        "components": {
-          "aqi_worsening": 0.3276,
-          "traffic_worsening": 0.0,
-          "ndvi_decline": 0.2459,
-          "low_green_cover": 0.0264,
-          "plantable_space": 0.0238
         }
       }
     },
@@ -3267,7 +3274,7 @@
         "species": [],
         "justification": "",
         "components": {
-          "aqi_worsening": 0.3136,
+          "aqi_worsening": 0.3137,
           "traffic_worsening": 0.0,
           "ndvi_decline": 0.1236,
           "low_green_cover": 0.0987,
@@ -3330,6 +3337,13 @@
         "n_sites": 0,
         "species": [],
         "justification": "",
+        "components": {
+          "aqi_worsening": 0.3266,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.1818,
+          "low_green_cover": 0.0447,
+          "plantable_space": 0.0299
+        },
         "soil": {
           "ph": 7.7,
           "ph_class": "alkaline",
@@ -3337,13 +3351,6 @@
           "texture_simple": "loamy",
           "moisture": null,
           "soc": 91.0
-        },
-        "components": {
-          "aqi_worsening": 0.3266,
-          "traffic_worsening": 0.0,
-          "ndvi_decline": 0.1818,
-          "low_green_cover": 0.0447,
-          "plantable_space": 0.0299
         }
       }
     },
@@ -3722,6 +3729,13 @@
         "n_sites": 0,
         "species": [],
         "justification": "",
+        "components": {
+          "aqi_worsening": 0.3879,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.0523,
+          "low_green_cover": 0.0788,
+          "plantable_space": 0.0414
+        },
         "soil": {
           "ph": 7.65,
           "ph_class": "alkaline",
@@ -3729,13 +3743,6 @@
           "texture_simple": "sandy",
           "moisture": null,
           "soc": 92.5
-        },
-        "components": {
-          "aqi_worsening": 0.3879,
-          "traffic_worsening": 0.0,
-          "ndvi_decline": 0.0523,
-          "low_green_cover": 0.0788,
-          "plantable_space": 0.0414
         }
       }
     },
@@ -4050,6 +4057,13 @@
         "n_sites": 0,
         "species": [],
         "justification": "",
+        "components": {
+          "aqi_worsening": 0.3959,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.0,
+          "low_green_cover": 0.0762,
+          "plantable_space": 0.0405
+        },
         "soil": {
           "ph": 7.55,
           "ph_class": "alkaline",
@@ -4057,13 +4071,6 @@
           "texture_simple": "loamy",
           "moisture": null,
           "soc": 97.0
-        },
-        "components": {
-          "aqi_worsening": 0.3959,
-          "traffic_worsening": 0.0,
-          "ndvi_decline": 0.0,
-          "low_green_cover": 0.0762,
-          "plantable_space": 0.0405
         }
       }
     },
@@ -4186,6 +4193,13 @@
         "n_sites": 0,
         "species": [],
         "justification": "",
+        "components": {
+          "aqi_worsening": 0.3759,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.0,
+          "low_green_cover": 0.0865,
+          "plantable_space": 0.044
+        },
         "soil": {
           "ph": 7.65,
           "ph_class": "alkaline",
@@ -4193,13 +4207,6 @@
           "texture_simple": "loamy",
           "moisture": null,
           "soc": 80.0
-        },
-        "components": {
-          "aqi_worsening": 0.3759,
-          "traffic_worsening": 0.0,
-          "ndvi_decline": 0.0,
-          "low_green_cover": 0.0865,
-          "plantable_space": 0.044
         }
       }
     },
@@ -4258,6 +4265,13 @@
         "n_sites": 0,
         "species": [],
         "justification": "",
+        "components": {
+          "aqi_worsening": 0.3697,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.0,
+          "low_green_cover": 0.0891,
+          "plantable_space": 0.0448
+        },
         "soil": {
           "ph": 7.75,
           "ph_class": "alkaline",
@@ -4265,13 +4279,6 @@
           "texture_simple": "sandy",
           "moisture": null,
           "soc": 65.0
-        },
-        "components": {
-          "aqi_worsening": 0.3697,
-          "traffic_worsening": 0.0,
-          "ndvi_decline": 0.0,
-          "low_green_cover": 0.0891,
-          "plantable_space": 0.0448
         }
       }
     },
@@ -4330,6 +4337,13 @@
         "n_sites": 0,
         "species": [],
         "justification": "",
+        "components": {
+          "aqi_worsening": 0.3531,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.0467,
+          "low_green_cover": 0.0645,
+          "plantable_space": 0.0366
+        },
         "soil": {
           "ph": 7.6,
           "ph_class": "alkaline",
@@ -4337,13 +4351,6 @@
           "texture_simple": "sandy",
           "moisture": null,
           "soc": 94.5
-        },
-        "components": {
-          "aqi_worsening": 0.3532,
-          "traffic_worsening": 0.0,
-          "ndvi_decline": 0.0467,
-          "low_green_cover": 0.0645,
-          "plantable_space": 0.0366
         }
       }
     },
@@ -4402,6 +4409,13 @@
         "n_sites": 0,
         "species": [],
         "justification": "",
+        "components": {
+          "aqi_worsening": 0.0763,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.35,
+          "low_green_cover": 0.0398,
+          "plantable_space": 0.0283
+        },
         "soil": {
           "ph": 7.65,
           "ph_class": "alkaline",
@@ -4409,13 +4423,6 @@
           "texture_simple": "loamy",
           "moisture": null,
           "soc": 99.0
-        },
-        "components": {
-          "aqi_worsening": 0.0763,
-          "traffic_worsening": 0.0,
-          "ndvi_decline": 0.35,
-          "low_green_cover": 0.0398,
-          "plantable_space": 0.0283
         }
       }
     },
@@ -4474,6 +4481,13 @@
         "n_sites": 0,
         "species": [],
         "justification": "",
+        "components": {
+          "aqi_worsening": 0.0763,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.35,
+          "low_green_cover": 0.0384,
+          "plantable_space": 0.0278
+        },
         "soil": {
           "ph": 7.65,
           "ph_class": "alkaline",
@@ -4481,13 +4495,6 @@
           "texture_simple": "loamy",
           "moisture": null,
           "soc": 83.0
-        },
-        "components": {
-          "aqi_worsening": 0.0763,
-          "traffic_worsening": 0.0,
-          "ndvi_decline": 0.35,
-          "low_green_cover": 0.0384,
-          "plantable_space": 0.0278
         }
       }
     },
@@ -4610,6 +4617,13 @@
         "n_sites": 0,
         "species": [],
         "justification": "",
+        "components": {
+          "aqi_worsening": 0.3268,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.0952,
+          "low_green_cover": 0.0399,
+          "plantable_space": 0.0283
+        },
         "soil": {
           "ph": 7.75,
           "ph_class": "alkaline",
@@ -4617,13 +4631,6 @@
           "texture_simple": "sandy",
           "moisture": null,
           "soc": 85.5
-        },
-        "components": {
-          "aqi_worsening": 0.3268,
-          "traffic_worsening": 0.0,
-          "ndvi_decline": 0.0952,
-          "low_green_cover": 0.0399,
-          "plantable_space": 0.0283
         }
       }
     },
@@ -4683,7 +4690,7 @@
         "species": [],
         "justification": "",
         "components": {
-          "aqi_worsening": 0.0996,
+          "aqi_worsening": 0.0995,
           "traffic_worsening": 0.0,
           "ndvi_decline": 0.1997,
           "low_green_cover": 0.1274,
@@ -4814,7 +4821,7 @@
           "aqi_worsening": 0.0943,
           "traffic_worsening": 0.0,
           "ndvi_decline": 0.2339,
-          "low_green_cover": 0.0906,
+          "low_green_cover": 0.0905,
           "plantable_space": 0.0453
         }
       }
@@ -4938,6 +4945,13 @@
         "n_sites": 0,
         "species": [],
         "justification": "",
+        "components": {
+          "aqi_worsening": 0.0659,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.305,
+          "low_green_cover": 0.0324,
+          "plantable_space": 0.0258
+        },
         "soil": {
           "ph": 7.7,
           "ph_class": "alkaline",
@@ -4945,13 +4959,6 @@
           "texture_simple": "sandy",
           "moisture": null,
           "soc": 90.0
-        },
-        "components": {
-          "aqi_worsening": 0.0659,
-          "traffic_worsening": 0.0,
-          "ndvi_decline": 0.305,
-          "low_green_cover": 0.0324,
-          "plantable_space": 0.0258
         }
       }
     },
@@ -5010,6 +5017,13 @@
         "n_sites": 0,
         "species": [],
         "justification": "",
+        "components": {
+          "aqi_worsening": 0.0781,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.1744,
+          "low_green_cover": 0.1209,
+          "plantable_space": 0.0555
+        },
         "soil": {
           "ph": 7.75,
           "ph_class": "alkaline",
@@ -5017,13 +5031,6 @@
           "texture_simple": "sandy",
           "moisture": null,
           "soc": 71.5
-        },
-        "components": {
-          "aqi_worsening": 0.0781,
-          "traffic_worsening": 0.0,
-          "ndvi_decline": 0.1744,
-          "low_green_cover": 0.1209,
-          "plantable_space": 0.0555
         }
       }
     },
@@ -5146,6 +5153,13 @@
         "n_sites": 0,
         "species": [],
         "justification": "",
+        "components": {
+          "aqi_worsening": 0.068,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.3389,
+          "low_green_cover": 0.0,
+          "plantable_space": 0.014
+        },
         "soil": {
           "ph": 7.65,
           "ph_class": "alkaline",
@@ -5153,13 +5167,6 @@
           "texture_simple": "loamy",
           "moisture": null,
           "soc": 100.5
-        },
-        "components": {
-          "aqi_worsening": 0.068,
-          "traffic_worsening": 0.0,
-          "ndvi_decline": 0.3388,
-          "low_green_cover": 0.0,
-          "plantable_space": 0.014
         }
       }
     },
@@ -5218,6 +5225,13 @@
         "n_sites": 0,
         "species": [],
         "justification": "",
+        "components": {
+          "aqi_worsening": 0.0755,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.2629,
+          "low_green_cover": 0.048,
+          "plantable_space": 0.031
+        },
         "soil": {
           "ph": 7.55,
           "ph_class": "alkaline",
@@ -5225,13 +5239,6 @@
           "texture_simple": "loamy",
           "moisture": null,
           "soc": 93.0
-        },
-        "components": {
-          "aqi_worsening": 0.0755,
-          "traffic_worsening": 0.0,
-          "ndvi_decline": 0.263,
-          "low_green_cover": 0.048,
-          "plantable_space": 0.031
         }
       }
     },
@@ -5290,6 +5297,13 @@
         "n_sites": 0,
         "species": [],
         "justification": "",
+        "components": {
+          "aqi_worsening": 0.0868,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.201,
+          "low_green_cover": 0.0827,
+          "plantable_space": 0.0427
+        },
         "soil": {
           "ph": 7.95,
           "ph_class": "alkaline",
@@ -5297,13 +5311,6 @@
           "texture_simple": "loamy",
           "moisture": null,
           "soc": 68.5
-        },
-        "components": {
-          "aqi_worsening": 0.0868,
-          "traffic_worsening": 0.0,
-          "ndvi_decline": 0.201,
-          "low_green_cover": 0.0827,
-          "plantable_space": 0.0427
         }
       }
     },
@@ -5362,6 +5369,13 @@
         "n_sites": 0,
         "species": [],
         "justification": "",
+        "components": {
+          "aqi_worsening": 0.1073,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.2404,
+          "low_green_cover": 0.037,
+          "plantable_space": 0.0273
+        },
         "soil": {
           "ph": 7.55,
           "ph_class": "alkaline",
@@ -5369,13 +5383,6 @@
           "texture_simple": "loamy",
           "moisture": null,
           "soc": 77.0
-        },
-        "components": {
-          "aqi_worsening": 0.1073,
-          "traffic_worsening": 0.0,
-          "ndvi_decline": 0.2404,
-          "low_green_cover": 0.037,
-          "plantable_space": 0.0273
         }
       }
     },
@@ -5434,6 +5441,13 @@
         "n_sites": 0,
         "species": [],
         "justification": "",
+        "components": {
+          "aqi_worsening": 0.3164,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.0811,
+          "low_green_cover": 0.0,
+          "plantable_space": 0.0128
+        },
         "soil": {
           "ph": 7.55,
           "ph_class": "alkaline",
@@ -5441,13 +5455,6 @@
           "texture_simple": "loamy",
           "moisture": null,
           "soc": 87.0
-        },
-        "components": {
-          "aqi_worsening": 0.3164,
-          "traffic_worsening": 0.0,
-          "ndvi_decline": 0.0812,
-          "low_green_cover": 0.0,
-          "plantable_space": 0.0128
         }
       }
     },
@@ -5506,6 +5513,13 @@
         "n_sites": 0,
         "species": [],
         "justification": "",
+        "components": {
+          "aqi_worsening": 0.0868,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.2132,
+          "low_green_cover": 0.0707,
+          "plantable_space": 0.0387
+        },
         "soil": {
           "ph": 7.6,
           "ph_class": "alkaline",
@@ -5513,13 +5527,6 @@
           "texture_simple": "loamy",
           "moisture": null,
           "soc": 99.5
-        },
-        "components": {
-          "aqi_worsening": 0.0868,
-          "traffic_worsening": 0.0,
-          "ndvi_decline": 0.2132,
-          "low_green_cover": 0.0707,
-          "plantable_space": 0.0387
         }
       }
     },
@@ -5583,7 +5590,7 @@
           "traffic_worsening": 0.0,
           "ndvi_decline": 0.0,
           "low_green_cover": 0.0576,
-          "plantable_space": 0.0343
+          "plantable_space": 0.0342
         }
       }
     },
@@ -5647,7 +5654,7 @@
           "traffic_worsening": 0.0,
           "ndvi_decline": 0.236,
           "low_green_cover": 0.0525,
-          "plantable_space": 0.0326
+          "plantable_space": 0.0325
         }
       }
     },
@@ -5706,6 +5713,13 @@
         "n_sites": 0,
         "species": [],
         "justification": "",
+        "components": {
+          "aqi_worsening": 0.3222,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.0144,
+          "low_green_cover": 0.0271,
+          "plantable_space": 0.024
+        },
         "soil": {
           "ph": 7.75,
           "ph_class": "alkaline",
@@ -5713,13 +5727,6 @@
           "texture_simple": "loamy",
           "moisture": null,
           "soc": 68.0
-        },
-        "components": {
-          "aqi_worsening": 0.3222,
-          "traffic_worsening": 0.0,
-          "ndvi_decline": 0.0143,
-          "low_green_cover": 0.0271,
-          "plantable_space": 0.024
         }
       }
     },
@@ -5778,6 +5785,13 @@
         "n_sites": 0,
         "species": [],
         "justification": "",
+        "components": {
+          "aqi_worsening": 0.0611,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.2638,
+          "low_green_cover": 0.0328,
+          "plantable_space": 0.0259
+        },
         "soil": {
           "ph": 7.55,
           "ph_class": "alkaline",
@@ -5785,13 +5799,6 @@
           "texture_simple": "loamy",
           "moisture": null,
           "soc": 93.0
-        },
-        "components": {
-          "aqi_worsening": 0.061,
-          "traffic_worsening": 0.0,
-          "ndvi_decline": 0.2638,
-          "low_green_cover": 0.0328,
-          "plantable_space": 0.0259
         }
       }
     },
@@ -5981,7 +5988,7 @@
         "components": {
           "aqi_worsening": 0.0868,
           "traffic_worsening": 0.0,
-          "ndvi_decline": 0.1671,
+          "ndvi_decline": 0.167,
           "low_green_cover": 0.0686,
           "plantable_space": 0.0379
         }
@@ -6042,6 +6049,13 @@
         "n_sites": 0,
         "species": [],
         "justification": "",
+        "components": {
+          "aqi_worsening": 0.1648,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.0137,
+          "low_green_cover": 0.1248,
+          "plantable_space": 0.0568
+        },
         "soil": {
           "ph": 7.7,
           "ph_class": "alkaline",
@@ -6049,13 +6063,6 @@
           "texture_simple": "loamy",
           "moisture": null,
           "soc": 80.5
-        },
-        "components": {
-          "aqi_worsening": 0.1648,
-          "traffic_worsening": 0.0,
-          "ndvi_decline": 0.0138,
-          "low_green_cover": 0.1248,
-          "plantable_space": 0.0568
         }
       }
     },
@@ -6114,6 +6121,13 @@
         "n_sites": 0,
         "species": [],
         "justification": "",
+        "components": {
+          "aqi_worsening": 0.0763,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.2004,
+          "low_green_cover": 0.0486,
+          "plantable_space": 0.0312
+        },
         "soil": {
           "ph": 7.65,
           "ph_class": "alkaline",
@@ -6121,13 +6135,6 @@
           "texture_simple": "loamy",
           "moisture": null,
           "soc": 74.0
-        },
-        "components": {
-          "aqi_worsening": 0.0763,
-          "traffic_worsening": 0.0,
-          "ndvi_decline": 0.2004,
-          "low_green_cover": 0.0486,
-          "plantable_space": 0.0312
         }
       }
     },
@@ -6186,6 +6193,13 @@
         "n_sites": 0,
         "species": [],
         "justification": "",
+        "components": {
+          "aqi_worsening": 0.3234,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.0007,
+          "low_green_cover": 0.0123,
+          "plantable_space": 0.019
+        },
         "soil": {
           "ph": 7.6,
           "ph_class": "alkaline",
@@ -6193,13 +6207,6 @@
           "texture_simple": "loamy",
           "moisture": null,
           "soc": 95.0
-        },
-        "components": {
-          "aqi_worsening": 0.3234,
-          "traffic_worsening": 0.0,
-          "ndvi_decline": 0.0007,
-          "low_green_cover": 0.0123,
-          "plantable_space": 0.019
         }
       }
     },
@@ -6259,7 +6266,7 @@
         "species": [],
         "justification": "",
         "components": {
-          "aqi_worsening": 0.0892,
+          "aqi_worsening": 0.0891,
           "traffic_worsening": 0.0,
           "ndvi_decline": 0.161,
           "low_green_cover": 0.0672,
@@ -6322,6 +6329,13 @@
         "n_sites": 0,
         "species": [],
         "justification": "",
+        "components": {
+          "aqi_worsening": 0.0763,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.2604,
+          "low_green_cover": 0.0,
+          "plantable_space": 0.0132
+        },
         "soil": {
           "ph": 7.65,
           "ph_class": "alkaline",
@@ -6329,13 +6343,6 @@
           "texture_simple": "sandy",
           "moisture": null,
           "soc": 77.0
-        },
-        "components": {
-          "aqi_worsening": 0.0763,
-          "traffic_worsening": 0.0,
-          "ndvi_decline": 0.2604,
-          "low_green_cover": 0.0,
-          "plantable_space": 0.0132
         }
       }
     },
@@ -6394,6 +6401,13 @@
         "n_sites": 0,
         "species": [],
         "justification": "",
+        "components": {
+          "aqi_worsening": 0.0763,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.2229,
+          "low_green_cover": 0.0251,
+          "plantable_space": 0.0233
+        },
         "soil": {
           "ph": 7.7,
           "ph_class": "alkaline",
@@ -6401,13 +6415,6 @@
           "texture_simple": "sandy",
           "moisture": null,
           "soc": 66.5
-        },
-        "components": {
-          "aqi_worsening": 0.0763,
-          "traffic_worsening": 0.0,
-          "ndvi_decline": 0.2228,
-          "low_green_cover": 0.0251,
-          "plantable_space": 0.0233
         }
       }
     },
@@ -6466,6 +6473,13 @@
         "n_sites": 0,
         "species": [],
         "justification": "",
+        "components": {
+          "aqi_worsening": 0.0763,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.2435,
+          "low_green_cover": 0.0,
+          "plantable_space": 0.0112
+        },
         "soil": {
           "ph": 7.45,
           "ph_class": "neutral",
@@ -6473,13 +6487,6 @@
           "texture_simple": "sandy",
           "moisture": null,
           "soc": 84.5
-        },
-        "components": {
-          "aqi_worsening": 0.0763,
-          "traffic_worsening": 0.0,
-          "ndvi_decline": 0.2435,
-          "low_green_cover": 0.0,
-          "plantable_space": 0.0112
         }
       }
     },
@@ -6538,6 +6545,13 @@
         "n_sites": 0,
         "species": [],
         "justification": "",
+        "components": {
+          "aqi_worsening": 0.0891,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.109,
+          "low_green_cover": 0.0682,
+          "plantable_space": 0.0378
+        },
         "soil": {
           "ph": 7.65,
           "ph_class": "alkaline",
@@ -6545,13 +6559,6 @@
           "texture_simple": "loamy",
           "moisture": null,
           "soc": 73.0
-        },
-        "components": {
-          "aqi_worsening": 0.0892,
-          "traffic_worsening": 0.0,
-          "ndvi_decline": 0.109,
-          "low_green_cover": 0.0682,
-          "plantable_space": 0.0378
         }
       }
     },
@@ -6610,6 +6617,13 @@
         "n_sites": 0,
         "species": [],
         "justification": "",
+        "components": {
+          "aqi_worsening": 0.1143,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.1076,
+          "low_green_cover": 0.0474,
+          "plantable_space": 0.0308
+        },
         "soil": {
           "ph": 7.45,
           "ph_class": "neutral",
@@ -6617,13 +6631,6 @@
           "texture_simple": "sandy",
           "moisture": null,
           "soc": 85.0
-        },
-        "components": {
-          "aqi_worsening": 0.1144,
-          "traffic_worsening": 0.0,
-          "ndvi_decline": 0.1076,
-          "low_green_cover": 0.0474,
-          "plantable_space": 0.0308
         }
       }
     },
@@ -6746,6 +6753,13 @@
         "n_sites": 0,
         "species": [],
         "justification": "",
+        "components": {
+          "aqi_worsening": 0.1086,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.0628,
+          "low_green_cover": 0.0683,
+          "plantable_space": 0.0378
+        },
         "soil": {
           "ph": 7.6,
           "ph_class": "alkaline",
@@ -6753,13 +6767,6 @@
           "texture_simple": "loamy",
           "moisture": null,
           "soc": 90.5
-        },
-        "components": {
-          "aqi_worsening": 0.1086,
-          "traffic_worsening": 0.0,
-          "ndvi_decline": 0.0628,
-          "low_green_cover": 0.0683,
-          "plantable_space": 0.0378
         }
       }
     },
@@ -6821,7 +6828,7 @@
         "components": {
           "aqi_worsening": 0.0937,
           "traffic_worsening": 0.0,
-          "ndvi_decline": 0.1094,
+          "ndvi_decline": 0.1095,
           "low_green_cover": 0.044,
           "plantable_space": 0.0297
         }
@@ -6886,7 +6893,7 @@
           "aqi_worsening": 0.0868,
           "traffic_worsening": 0.0,
           "ndvi_decline": 0.0769,
-          "low_green_cover": 0.0694,
+          "low_green_cover": 0.0695,
           "plantable_space": 0.0382
         }
       }
@@ -6946,6 +6953,13 @@
         "n_sites": 0,
         "species": [],
         "justification": "",
+        "components": {
+          "aqi_worsening": 0.0868,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.0342,
+          "low_green_cover": 0.1012,
+          "plantable_space": 0.0489
+        },
         "soil": {
           "ph": 7.7,
           "ph_class": "alkaline",
@@ -6953,13 +6967,6 @@
           "texture_simple": "sandy",
           "moisture": null,
           "soc": 72.5
-        },
-        "components": {
-          "aqi_worsening": 0.0868,
-          "traffic_worsening": 0.0,
-          "ndvi_decline": 0.0342,
-          "low_green_cover": 0.1012,
-          "plantable_space": 0.0489
         }
       }
     },
@@ -7018,6 +7025,13 @@
         "n_sites": 0,
         "species": [],
         "justification": "",
+        "components": {
+          "aqi_worsening": 0.0763,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.1621,
+          "low_green_cover": 0.0019,
+          "plantable_space": 0.0155
+        },
         "soil": {
           "ph": 7.65,
           "ph_class": "alkaline",
@@ -7025,13 +7039,6 @@
           "texture_simple": "loamy",
           "moisture": null,
           "soc": 81.5
-        },
-        "components": {
-          "aqi_worsening": 0.0763,
-          "traffic_worsening": 0.0,
-          "ndvi_decline": 0.1621,
-          "low_green_cover": 0.0019,
-          "plantable_space": 0.0156
         }
       }
     },
@@ -7090,6 +7097,13 @@
         "n_sites": 0,
         "species": [],
         "justification": "",
+        "components": {
+          "aqi_worsening": 0.0763,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.0828,
+          "low_green_cover": 0.0571,
+          "plantable_space": 0.0341
+        },
         "soil": {
           "ph": 7.75,
           "ph_class": "alkaline",
@@ -7097,13 +7111,6 @@
           "texture_simple": "loamy",
           "moisture": null,
           "soc": 82.0
-        },
-        "components": {
-          "aqi_worsening": 0.0763,
-          "traffic_worsening": 0.0,
-          "ndvi_decline": 0.0828,
-          "low_green_cover": 0.0571,
-          "plantable_space": 0.0341
         }
       }
     },
@@ -7162,6 +7169,13 @@
         "n_sites": 0,
         "species": [],
         "justification": "",
+        "components": {
+          "aqi_worsening": 0.0763,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.1473,
+          "low_green_cover": 0.0073,
+          "plantable_space": 0.0173
+        },
         "soil": {
           "ph": 7.65,
           "ph_class": "alkaline",
@@ -7169,13 +7183,6 @@
           "texture_simple": "loamy",
           "moisture": null,
           "soc": 75.5
-        },
-        "components": {
-          "aqi_worsening": 0.0763,
-          "traffic_worsening": 0.0,
-          "ndvi_decline": 0.1473,
-          "low_green_cover": 0.0073,
-          "plantable_space": 0.0174
         }
       }
     },
@@ -7234,6 +7241,13 @@
         "n_sites": 0,
         "species": [],
         "justification": "",
+        "components": {
+          "aqi_worsening": 0.0758,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.0513,
+          "low_green_cover": 0.0613,
+          "plantable_space": 0.0355
+        },
         "soil": {
           "ph": 7.55,
           "ph_class": "alkaline",
@@ -7241,13 +7255,6 @@
           "texture_simple": "loamy",
           "moisture": null,
           "soc": 94.0
-        },
-        "components": {
-          "aqi_worsening": 0.0758,
-          "traffic_worsening": 0.0,
-          "ndvi_decline": 0.0513,
-          "low_green_cover": 0.0613,
-          "plantable_space": 0.0355
         }
       }
     },
@@ -7306,6 +7313,13 @@
         "n_sites": 0,
         "species": [],
         "justification": "",
+        "components": {
+          "aqi_worsening": 0.1689,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.0,
+          "low_green_cover": 0.0218,
+          "plantable_space": 0.0222
+        },
         "soil": {
           "ph": 7.8,
           "ph_class": "alkaline",
@@ -7313,13 +7327,6 @@
           "texture_simple": "loamy",
           "moisture": null,
           "soc": 100.5
-        },
-        "components": {
-          "aqi_worsening": 0.1689,
-          "traffic_worsening": 0.0,
-          "ndvi_decline": 0.0,
-          "low_green_cover": 0.0218,
-          "plantable_space": 0.0222
         }
       }
     },
@@ -7378,6 +7385,13 @@
         "n_sites": 0,
         "species": [],
         "justification": "",
+        "components": {
+          "aqi_worsening": 0.0763,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.0753,
+          "low_green_cover": 0.0315,
+          "plantable_space": 0.0255
+        },
         "soil": {
           "ph": 7.7,
           "ph_class": "alkaline",
@@ -7385,13 +7399,6 @@
           "texture_simple": "loamy",
           "moisture": null,
           "soc": 85.0
-        },
-        "components": {
-          "aqi_worsening": 0.0763,
-          "traffic_worsening": 0.0,
-          "ndvi_decline": 0.0753,
-          "low_green_cover": 0.0315,
-          "plantable_space": 0.0255
         }
       }
     },
@@ -7450,6 +7457,13 @@
         "n_sites": 0,
         "species": [],
         "justification": "",
+        "components": {
+          "aqi_worsening": 0.0763,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.1202,
+          "low_green_cover": 0.0,
+          "plantable_space": 0.0098
+        },
         "soil": {
           "ph": 7.65,
           "ph_class": "alkaline",
@@ -7457,13 +7471,6 @@
           "texture_simple": "loamy",
           "moisture": null,
           "soc": 95.5
-        },
-        "components": {
-          "aqi_worsening": 0.0763,
-          "traffic_worsening": 0.0,
-          "ndvi_decline": 0.1202,
-          "low_green_cover": 0.0,
-          "plantable_space": 0.0098
         }
       }
     },
@@ -7522,6 +7529,13 @@
         "n_sites": 0,
         "species": [],
         "justification": "",
+        "components": {
+          "aqi_worsening": 0.0763,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.0567,
+          "low_green_cover": 0.0436,
+          "plantable_space": 0.0295
+        },
         "soil": {
           "ph": 7.65,
           "ph_class": "alkaline",
@@ -7529,13 +7543,6 @@
           "texture_simple": "loamy",
           "moisture": null,
           "soc": 85.5
-        },
-        "components": {
-          "aqi_worsening": 0.0763,
-          "traffic_worsening": 0.0,
-          "ndvi_decline": 0.0567,
-          "low_green_cover": 0.0436,
-          "plantable_space": 0.0295
         }
       }
     },
@@ -7594,6 +7601,13 @@
         "n_sites": 0,
         "species": [],
         "justification": "",
+        "components": {
+          "aqi_worsening": 0.0763,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.0727,
+          "low_green_cover": 0.0135,
+          "plantable_space": 0.0194
+        },
         "soil": {
           "ph": 7.7,
           "ph_class": "alkaline",
@@ -7601,13 +7615,6 @@
           "texture_simple": "loamy",
           "moisture": null,
           "soc": 72.0
-        },
-        "components": {
-          "aqi_worsening": 0.0763,
-          "traffic_worsening": 0.0,
-          "ndvi_decline": 0.0727,
-          "low_green_cover": 0.0135,
-          "plantable_space": 0.0194
         }
       }
     },
@@ -7666,6 +7673,13 @@
         "n_sites": 0,
         "species": [],
         "justification": "",
+        "components": {
+          "aqi_worsening": 0.0763,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.0,
+          "low_green_cover": 0.0,
+          "plantable_space": 0.0137
+        },
         "soil": {
           "ph": 7.6,
           "ph_class": "alkaline",
@@ -7673,13 +7687,6 @@
           "texture_simple": "loamy",
           "moisture": null,
           "soc": 98.0
-        },
-        "components": {
-          "aqi_worsening": 0.0763,
-          "traffic_worsening": 0.0,
-          "ndvi_decline": 0.0,
-          "low_green_cover": 0.0,
-          "plantable_space": 0.0137
         }
       }
     },
@@ -7738,6 +7745,11 @@
         "n_sites": 0,
         "species": [],
         "justification": "",
+        "components": {
+          "aqi_worsening": 0.0,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.1768
+        },
         "soil": {
           "ph": 7.75,
           "ph_class": "alkaline",
@@ -7803,6 +7815,11 @@
         "n_sites": 0,
         "species": [],
         "justification": "",
+        "components": {
+          "aqi_worsening": 0.0,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.1768
+        },
         "soil": {
           "ph": 7.65,
           "ph_class": "alkaline",
@@ -7868,6 +7885,11 @@
         "n_sites": 0,
         "species": [],
         "justification": "",
+        "components": {
+          "aqi_worsening": 0.0,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.1768
+        },
         "soil": {
           "ph": 7.55,
           "ph_class": "alkaline",
@@ -7933,6 +7955,11 @@
         "n_sites": 0,
         "species": [],
         "justification": "",
+        "components": {
+          "aqi_worsening": 0.0,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.1768
+        },
         "soil": {
           "ph": 7.7,
           "ph_class": "alkaline",
@@ -7998,6 +8025,11 @@
         "n_sites": 0,
         "species": [],
         "justification": "",
+        "components": {
+          "aqi_worsening": 0.0,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.1768
+        },
         "soil": {
           "ph": 7.7,
           "ph_class": "alkaline",
@@ -8063,6 +8095,11 @@
         "n_sites": 0,
         "species": [],
         "justification": "",
+        "components": {
+          "aqi_worsening": 0.0,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.1768
+        },
         "soil": {
           "ph": 7.65,
           "ph_class": "alkaline",
@@ -8128,6 +8165,11 @@
         "n_sites": 0,
         "species": [],
         "justification": "",
+        "components": {
+          "aqi_worsening": 0.0,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.1768
+        },
         "soil": {
           "ph": 7.65,
           "ph_class": "alkaline",
@@ -8193,6 +8235,11 @@
         "n_sites": 0,
         "species": [],
         "justification": "",
+        "components": {
+          "aqi_worsening": 0.0,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.1768
+        },
         "soil": {
           "ph": 7.6,
           "ph_class": "alkaline",
@@ -8258,6 +8305,11 @@
         "n_sites": 0,
         "species": [],
         "justification": "",
+        "components": {
+          "aqi_worsening": 0.4,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.1768
+        },
         "soil": {
           "ph": 7.75,
           "ph_class": "alkaline",
@@ -8322,7 +8374,12 @@
         "plantable_source": null,
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "components": {
+          "aqi_worsening": 0.4,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.1768
+        }
       }
     },
     {
@@ -8380,6 +8437,11 @@
         "n_sites": 0,
         "species": [],
         "justification": "",
+        "components": {
+          "aqi_worsening": 0.4,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.1768
+        },
         "soil": {
           "ph": 7.8,
           "ph_class": "alkaline",
@@ -8444,7 +8506,12 @@
         "plantable_source": null,
         "n_sites": 0,
         "species": [],
-        "justification": ""
+        "justification": "",
+        "components": {
+          "aqi_worsening": 0.4,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.1768
+        }
       }
     },
     {
@@ -8502,6 +8569,11 @@
         "n_sites": 0,
         "species": [],
         "justification": "",
+        "components": {
+          "aqi_worsening": 0.4,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.1768
+        },
         "soil": {
           "ph": 7.85,
           "ph_class": "alkaline",
@@ -8567,6 +8639,11 @@
         "n_sites": 0,
         "species": [],
         "justification": "",
+        "components": {
+          "aqi_worsening": 0.4,
+          "traffic_worsening": 0.0,
+          "ndvi_decline": 0.1768
+        },
         "soil": {
           "ph": 7.8,
           "ph_class": "alkaline",
@@ -8577,12 +8654,5 @@
         }
       }
     }
-  ],
-  "mcda_weights": {
-    "aqi_worsening": 0.4,
-    "traffic_worsening": 0.0,
-    "ndvi_decline": 0.35,
-    "low_green_cover": 0.15,
-    "plantable_space": 0.1
-  }
+  ]
 }

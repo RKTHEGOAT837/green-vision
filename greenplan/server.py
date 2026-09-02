@@ -79,11 +79,7 @@ def _osm_health() -> dict:
     will load on the first map query, which is the truth."""
     try:
         base = Path(__file__).resolve().parent.parent / "data" / "osm"
-        # index.all.jsonl.gz covers every served city; index.jsonl.gz is the
-        # older single-zone build. Prefer the wider one when it exists.
-        path = base / "index.all.jsonl.gz"
-        if not path.is_file():
-            path = base / "index.jsonl.gz"
+        path = osm_index_path(base)
         if osmlocal._INSTANCE is None:
             if not path.is_file():
                 return {"ready": False, "loaded": False,
@@ -108,6 +104,34 @@ def _osm_health() -> dict:
                         "network. Points outside the bbox fall back to public Overpass."}
     except Exception as exc:
         return {"ready": False, "note": f"index unavailable: {exc}"}
+
+
+# Which local OSM index to use, in order of preference. Three separate call
+# sites used to carry their own copy of this list, which is three places to
+# forget when a new build appears - and forgetting in the warm-up but not the
+# health endpoint would have the server report one index and load another.
+#
+#   index.slim   the bounded build: only what lies within 25 km of a served
+#                city, coordinates at 5 decimals (~1.1 m) and geometry
+#                simplified at 2 m. 75 MB, loads in ~20 s.
+#   index.all    the same three Geofabrik zones with nothing dropped: 17.4M
+#                features, 1,019 MB, ~746 s to load. The loader discarded
+#                14.7M of those every single start, because they were nowhere
+#                near a city this server serves.
+#   index        the older single-zone build, kept so an existing install
+#                does not lose its map features on upgrade.
+OSM_INDEX_NAMES = ("index.slim.jsonl.gz", "index.all.jsonl.gz", "index.jsonl.gz")
+
+
+def osm_index_path(base: Path | None = None) -> Path:
+    """The best available index. Returns the preferred NAME even when nothing
+    is on disk, so callers can report which file they were looking for."""
+    base = base or (Path(__file__).resolve().parent.parent / "data" / "osm")
+    for name in OSM_INDEX_NAMES:
+        p = base / name
+        if p.is_file():
+            return p
+    return base / OSM_INDEX_NAMES[0]
 
 
 def body_point(b: dict | None) -> tuple[float | None, float | None]:
@@ -1114,9 +1138,7 @@ def make_handler(registry: CityRegistry):
                         from urllib.parse import unquote_plus
                         ql = unquote_plus(raw[5:])
                     root = Path(__file__).resolve().parent.parent
-                    _idx = root / "data" / "osm" / "index.all.jsonl.gz"
-                    if not _idx.is_file():
-                        _idx = root / "data" / "osm" / "index.jsonl.gz"
+                    _idx = osm_index_path(root / "data" / "osm")
                     res = osmlocal.get(_idx,
                                        focus=_CITY_FOCUS[0],
                                        radius_km=_CITY_FOCUS[1]).query(ql)
@@ -1218,10 +1240,7 @@ def main() -> None:
     # covered", and that already falls through to the public instance.
     def _warm_osm():
         try:
-            base = root / "data" / "osm"
-            idx = base / "index.all.jsonl.gz"
-            if not idx.is_file():
-                idx = base / "index.jsonl.gz"
+            idx = osm_index_path(root / "data" / "osm")
             if not idx.is_file():
                 return
             t = _time.time()
