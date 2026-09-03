@@ -3971,8 +3971,14 @@ async function renderTraffic() {
 
   if (!GV.traffic.data || GV.traffic.data.aoi !== GV.aoi) {
     GV.traffic.data = await loadTraffic(GV.aoi);
-    GV.traffic.bn = GV.traffic.data ? findBottlenecks(GV.traffic.data) : [];
-    if (GV.CFG.TOMTOM_KEY && GV.traffic.bn) await attachLiveFlow(GV.traffic.bn);
+  }
+  // Derive the bottlenecks from whatever data we now hold, however it got
+  // here - fetched just now, or warmed when the place was picked. Deriving
+  // this inside the fetch branch meant pre-warmed data produced no list at
+  // all, and the panel threw on it.
+  if (GV.traffic.data && !GV.traffic.bn) {
+    GV.traffic.bn = findBottlenecks(GV.traffic.data);
+    if (GV.CFG.TOMTOM_KEY && GV.traffic.bn.length) await attachLiveFlow(GV.traffic.bn);
   }
   if (!GV.traffic.data) {
     /* A button labelled "Try again" put the retry on the reader, when the
@@ -4045,8 +4051,10 @@ function paintTraffic() {
     }).addTo(GV.traffic.layer);
   }
 
-  // Bottleneck pins.
-  for (const b of GV.traffic.bn) {
+  // Bottleneck pins. `|| []` because a caller can legitimately paint before
+  // the list is derived, and a missing list means "none to draw yet", not a
+  // crash that takes the whole panel down.
+  for (const b of (GV.traffic.bn || [])) {
     const c = (GV.traffic.mode === "now" && b.live != null && isSameHour(hour)) ? b.live : congestionAt(b.base, hour, day);
     const m = L.marker([b.lat, b.lon], { icon: bottleneckMarker(b, c), riseOnHover: true }).addTo(GV.traffic.layer);
     m.bindTooltip(
@@ -6261,6 +6269,10 @@ function warmAOI() {
     const d = await loadTraffic(aoi);
     if (gen !== GV.warm.gen) return;          // superseded by a newer place
     GV.traffic.data = d;
+    // Derive everything the panel needs here too. A warm-up that leaves half
+    // the state for the panel to finish creates a code path that ONLY runs
+    // when warmed, and that is where this went wrong the first time.
+    GV.traffic.bn = d ? findBottlenecks(d) : [];
     GV.traffic.aoiKey = aoiKey(aoi);
     if (dockTab === "traffic") drawTrafficPanel();
   });
@@ -6435,6 +6447,8 @@ function hookHost() {
         GV.aoi = makeAOI(lat, lon);
         GV.ctx = null;
         GV.traffic.data = null;
+        GV.traffic.bn = null;      // derived from the data; stale without it
+        GV.traffic.aoiKey = null;
         if (GV.traffic.layer && window.map) { window.map.removeLayer(GV.traffic.layer); GV.traffic.layer = null; }
         drawAOI(GV.aoi, !dockTab || dockTab === "area");
         /* Start fetching what is already built here, now, in the background.

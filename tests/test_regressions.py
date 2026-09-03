@@ -152,6 +152,50 @@ check("each loaded disc is still covered",
       idx2.covers(23.02, 72.57))
 
 
+# Fixed-value node kinds must be answered by their KIND, not by a field the
+# record does not carry.
+#
+# [highway=traffic_signals] resolves to the index kind "signal", whose records
+# store no `hw` field - the kind IS the value. The matcher built a per-record
+# predicate on `hw` anyway, every record failed it, and the query returned an
+# EMPTY SET rather than refusing. The traffic panel then printed "0 signals"
+# over a city with 85 of them in the loaded index, and a reader had no way to
+# tell "none here" from "I cannot answer that". Same fault for level crossings
+# (`rv`) and motorway junctions (`hw`).
+sig_recs = []
+for i in range(12):
+    sig_recs.append({"k": "signal", "t": "n", "lat": 23.02 + i * 0.0003, "lon": 72.57, "nm": None})
+for i in range(5):
+    sig_recs.append({"k": "crossing", "t": "n", "lat": 23.021 + i * 0.0003, "lon": 72.571})
+for i in range(3):
+    sig_recs.append({"k": "ramp", "t": "n", "lat": 23.022 + i * 0.0003, "lon": 72.572, "nm": "X"})
+sig_recs.append({"k": "tree", "t": "n", "lat": 23.0205, "lon": 72.5705})
+
+d2 = Path(tempfile.mkdtemp()) / "fixed.jsonl.gz"
+with gzip.open(d2, "wt", encoding="utf-8") as fh:
+    for r in sig_recs:
+        fh.write(json.dumps(r) + "\n")
+idx3 = osmlocal.LocalOSM(d2, focus=[(23.02, 72.57)], radius_km=25)
+
+def _count(q):
+    r = idx3.query(q)
+    return None if r is None else len(r.get("elements", []))
+
+check("traffic signals are found, not silently zero",
+      _count('[out:json];node(around:3000,23.02,72.57)[highway=traffic_signals];out geom;') == 12,
+      "got %r for 12 indexed signals" %
+      _count('[out:json];node(around:3000,23.02,72.57)[highway=traffic_signals];out geom;'))
+check("level crossings are found",
+      _count('[out:json];node(around:3000,23.02,72.57)[railway=level_crossing];out geom;') == 5)
+check("motorway junctions are found",
+      _count('[out:json];node(around:3000,23.02,72.57)[highway=motorway_junction];out geom;') == 3)
+check("a signals query does not return the trees as well",
+      _count('[out:json];node(around:3000,23.02,72.57)[highway=traffic_signals];out geom;') == 12)
+check("trees still resolve on their own key",
+      _count('[out:json];node(around:3000,23.02,72.57)[natural=tree];out geom;') == 1)
+
+
+
 # ---------------------------------------------------------------------------
 section("6. Path traversal")
 root = ROOT.resolve()

@@ -311,18 +311,50 @@ class LocalOSM:
                     # every pitch and pool on the site.
                     if val and not re.search(rv, val, re.I):
                         continue
-                    out.append((kind, cls._value_pred(key, op, val)))
+                    # A fixed-value kind needs NO per-record test: the index
+                    # label already is the answer. Building one anyway asked
+                    # each record for a field it does not carry - signals and
+                    # motorway junctions have no `hw`, level crossings have no
+                    # `rv` - so every record failed and the query returned an
+                    # empty set. The traffic panel then printed "0 signals"
+                    # over a city with 85 in the loaded index.
+                    #
+                    # A false zero is worse here than a refusal: the panel had
+                    # no way to tell "none exist" from "I cannot answer", and
+                    # showed the first.
+                    if kind in cls._FIXED_VALUE:
+                        out.append((kind, None))
+                    else:
+                        out.append((kind, cls._value_pred(key, op, val)))
                     continue
 
                 if not val:
                     out.append((kind, None))                # [building], [highway]
                     continue
 
+                # Fixed-value kinds are settled by the KIND, before any
+                # per-record field is considered.
+                #
+                # This test used to sit behind `if field is None`, so it was
+                # only reachable for keys absent from _VALUE_FIELD. Three of
+                # the six fixed-value kinds are keyed on "highway" or
+                # "railway", which ARE in that table - so signals, motorway
+                # junctions and level crossings took the per-record path
+                # instead, looked for an `hw`/`rv` field those records do not
+                # carry, matched nothing, and returned an empty result.
+                #
+                # Empty, not refused: the traffic panel printed "0 signals"
+                # for a city with 85 of them in the loaded index. A false zero
+                # presented as a measurement is the exact failure this whole
+                # module is built to avoid, and it survived because a count of
+                # zero looks like an answer.
+                fixed = cls._FIXED_VALUE.get(kind)
+                if fixed is not None:
+                    if not val or re.search(val, fixed, re.I):
+                        out.append((kind, None))
+                    continue
                 field = cls._VALUE_FIELD.get(key)
                 if field is None:
-                    fixed = cls._FIXED_VALUE.get(kind)
-                    if fixed is not None and re.search(val, fixed, re.I):
-                        out.append((kind, None))
                     continue
                 pred = cls._value_pred(key, op, val)
                 if pred is False:                            # unparseable pattern
