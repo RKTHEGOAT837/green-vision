@@ -148,7 +148,21 @@
     "Design a 1 hectare park": "1 हेक्टेयर का पार्क डिज़ाइन करें",
     "Compare Bopal and Naranpura": "बोपल और नारणपुरा की तुलना करें",
     "What is NDVI?": "NDVI क्या है?",
-    "I read the live map and the engine's trained history, and I can operate the studio for you. Every number I give you comes from one of those two — if neither has it, I will say so rather than invent it.": "मैं सजीव नक्शा और इंजन का प्रशिक्षित इतिहास पढ़ता हूँ, और आपके लिए स्टूडियो चला सकता हूँ। मैं जो भी आँकड़ा देता हूँ वह इन्हीं दो में से आता है — अगर किसी के पास नहीं है, तो मैं यह कह दूँगा, गढ़ूँगा नहीं।"
+    "I read the live map and the engine's trained history, and I can operate the studio for you. Every number I give you comes from one of those two — if neither has it, I will say so rather than invent it.": "मैं सजीव नक्शा और इंजन का प्रशिक्षित इतिहास पढ़ता हूँ, और आपके लिए स्टूडियो चला सकता हूँ। मैं जो भी आँकड़ा देता हूँ वह इन्हीं दो में से आता है — अगर किसी के पास नहीं है, तो मैं यह कह दूँगा, गढ़ूँगा नहीं।",
+    "Search for a place, address, or coordinates": "स्थान, पता या निर्देशांक खोजें",
+    "Close the report panel": "रिपोर्ट पैनल बंद करें",
+    "Collapse to a strip": "पट्टी में समेटें",
+    "Collapse the report": "रिपोर्ट समेटें",
+    "Collapse panel": "पैनल समेटें",
+    "Expand the report": "रिपोर्ट फैलाएँ",
+    "Drag to resize": "आकार बदलने के लिए खींचें",
+    "Drag to resize · double-click to reset": "आकार बदलने के लिए खींचें · रीसेट करने के लिए डबल-क्लिक करें",
+    "Drag to move · double-click to reset": "हिलाने के लिए खींचें · रीसेट करने के लिए डबल-क्लिक करें",
+    "Reset every panel to its default size and place": "हर पैनल को उसके मूल आकार और स्थान पर लौटाएँ",
+    "Reset layout": "लेआउट रीसेट करें",
+    "Open the panel": "पैनल खोलें",
+    "Close panel": "पैनल बंद करें",
+    "Open the assistant": "सहायक खोलें"
   },
   "species": {
     "Neem": "नीम",

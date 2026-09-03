@@ -148,7 +148,21 @@
     "Design a 1 hectare park": "1 हेक्टरचे उद्यान डिझाइन करा",
     "Compare Bopal and Naranpura": "बोपल आणि नारणपुराची तुलना करा",
     "What is NDVI?": "NDVI म्हणजे काय?",
-    "I read the live map and the engine's trained history, and I can operate the studio for you. Every number I give you comes from one of those two — if neither has it, I will say so rather than invent it.": "मी थेट नकाशा आणि इंजिनचा प्रशिक्षित इतिहास वाचतो, आणि तुमच्यासाठी स्टुडिओ चालवू शकतो. मी देत असलेला प्रत्येक आकडा याच दोहोंपैकी एकातून येतो — दोन्हीकडे नसेल, तर मी तसे सांगेन, बनवणार नाही."
+    "I read the live map and the engine's trained history, and I can operate the studio for you. Every number I give you comes from one of those two — if neither has it, I will say so rather than invent it.": "मी थेट नकाशा आणि इंजिनचा प्रशिक्षित इतिहास वाचतो, आणि तुमच्यासाठी स्टुडिओ चालवू शकतो. मी देत असलेला प्रत्येक आकडा याच दोहोंपैकी एकातून येतो — दोन्हीकडे नसेल, तर मी तसे सांगेन, बनवणार नाही.",
+    "Search for a place, address, or coordinates": "ठिकाण, पत्ता किंवा निर्देशांक शोधा",
+    "Close the report panel": "अहवाल पॅनेल बंद करा",
+    "Collapse to a strip": "पट्टीत आवळा",
+    "Collapse the report": "अहवाल आवळा",
+    "Collapse panel": "पॅनेल आवळा",
+    "Expand the report": "अहवाल विस्तारा",
+    "Drag to resize": "आकार बदलण्यासाठी ओढा",
+    "Drag to resize · double-click to reset": "आकार बदलण्यासाठी ओढा · रीसेट करण्यासाठी डबल-क्लिक करा",
+    "Drag to move · double-click to reset": "हलवण्यासाठी ओढा · रीसेट करण्यासाठी डबल-क्लिक करा",
+    "Reset every panel to its default size and place": "प्रत्येक पॅनेल त्याच्या मूळ आकार व जागी परत आणा",
+    "Reset layout": "मांडणी रीसेट करा",
+    "Open the panel": "पॅनेल उघडा",
+    "Close panel": "पॅनेल बंद करा",
+    "Open the assistant": "सहाय्यक उघडा"
   },
   "species": {
     "Neem": "कडुनिंब",

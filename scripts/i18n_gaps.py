@@ -39,6 +39,7 @@ those orphaned would bury three real findings under a hundred false ones.
 from __future__ import annotations
 
 import argparse
+import html as html_mod
 import json
 import re
 import sys
@@ -69,7 +70,14 @@ def page_strings() -> set[str]:
     html = re.sub(r"<script.*?</script>|<style.*?</style>", "", html, flags=re.S)
     out: set[str] = set()
     for m in re.finditer(r">([^<>{}$]{12,})<", html):
-        t = " ".join(m.group(1).split())
+        # Decode entities and normalise whitespace, because the runtime
+        # compares against a DOM text node, not against the source. The source
+        # says `100&nbsp;km&sup2;`; the DOM says `100 km²`; the dictionary
+        # says `100 km²`. Comparing raw source reported two strings as
+        # untranslated that the browser matches perfectly, and hid the one
+        # real difference - the non-breaking space - behind them.
+        t = html_mod.unescape(m.group(1))
+        t = " ".join(t.replace(" ", " ").split())
         if not t or SKIP.search(t):
             continue
         if not re.search(r"[A-Za-z]{3,}", t):

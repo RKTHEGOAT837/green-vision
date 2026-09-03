@@ -148,7 +148,21 @@
     "Design a 1 hectare park": "1 હેક્ટરનો બગીચો ડિઝાઇન કરો",
     "Compare Bopal and Naranpura": "બોપલ અને નારણપુરાની સરખામણી કરો",
     "What is NDVI?": "NDVI શું છે?",
-    "I read the live map and the engine's trained history, and I can operate the studio for you. Every number I give you comes from one of those two — if neither has it, I will say so rather than invent it.": "હું જીવંત નકશો અને એન્જિનનો પ્રશિક્ષિત ઇતિહાસ વાંચું છું, અને તમારા માટે સ્ટુડિયો ચલાવી શકું છું. હું જે પણ આંકડો આપું છું તે આ બેમાંથી જ આવે છે — જો બેમાંથી કોઈ પાસે ન હોય, તો હું એમ કહી દઈશ, બનાવટી આંકડો નહીં આપું."
+    "I read the live map and the engine's trained history, and I can operate the studio for you. Every number I give you comes from one of those two — if neither has it, I will say so rather than invent it.": "હું જીવંત નકશો અને એન્જિનનો પ્રશિક્ષિત ઇતિહાસ વાંચું છું, અને તમારા માટે સ્ટુડિયો ચલાવી શકું છું. હું જે પણ આંકડો આપું છું તે આ બેમાંથી જ આવે છે — જો બેમાંથી કોઈ પાસે ન હોય, તો હું એમ કહી દઈશ, બનાવટી આંકડો નહીં આપું.",
+    "Search for a place, address, or coordinates": "સ્થળ, સરનામું અથવા યામ શોધો",
+    "Close the report panel": "રિપોર્ટ પેનલ બંધ કરો",
+    "Collapse to a strip": "પટ્ટીમાં સંકોચો",
+    "Collapse the report": "રિપોર્ટ સંકોચો",
+    "Collapse panel": "પેનલ સંકોચો",
+    "Expand the report": "રિપોર્ટ વિસ્તારો",
+    "Drag to resize": "કદ બદલવા માટે ખેંચો",
+    "Drag to resize · double-click to reset": "કદ બદલવા માટે ખેંચો · રીસેટ કરવા ડબલ-ક્લિક કરો",
+    "Drag to move · double-click to reset": "ખસેડવા માટે ખેંચો · રીસેટ કરવા ડબલ-ક્લિક કરો",
+    "Reset every panel to its default size and place": "દરેક પેનલને તેના મૂળ કદ અને સ્થાને પાછું લાવો",
+    "Reset layout": "લેઆઉટ રીસેટ કરો",
+    "Open the panel": "પેનલ ખોલો",
+    "Close panel": "પેનલ બંધ કરો",
+    "Open the assistant": "સહાયક ખોલો"
   },
   "species": {
     "Neem": "લીમડો",

@@ -11120,6 +11120,23 @@ const LANG_DIR = "data/i18n/";
 const NO_TR = "code,pre,script,style,textarea,.gva-msg,.gva-cmp,[data-no-i18n]," +
               "#acList,.gv-gcard h4,.gv-histrow";
 
+/* The same exclusions do not apply to ATTRIBUTES.
+ *
+ * NO_TR exists to protect CONTENT: what a user typed, an H3 cell id, a shell
+ * command, an assistant reply full of measured numbers and botanical names.
+ * `textarea` is on that list because its text node is the user's own words.
+ *
+ * But an attribute is never user content. placeholder, title and aria-label
+ * are interface chrome the author wrote, and blocking them alongside the text
+ * left the assistant's own placeholder - "Ask about this place, or tell me to
+ * build something…" - in English inside an otherwise Hindi interface, purely
+ * because the element it sits on happens to be a textarea. The dictionary had
+ * the string; nothing was ever going to use it.
+ *
+ * So attributes keep only the exclusions that are about authored intent, not
+ * about the element type. */
+const NO_TR_ATTR = ".gva-msg,.gva-cmp,[data-no-i18n],#acList";
+
 async function langList() {
   if (GVL.list) return GVL.list;
   /* Revalidate. This file changes when a language is added or a dictionary
@@ -11150,6 +11167,28 @@ async function langDict(code) {
 
 /* ---------- the DOM pass ---------- */
 
+/* Whitespace the DOM has and the dictionary does not.
+
+   The intro paragraph is written `100&nbsp;km&sup2;` so the number never wraps
+   away from its unit. The browser hands that to a text node as U+00A0, while
+   the dictionary key - typed by a translator, or copied out of the English
+   source - carries an ordinary space. The two strings look identical in every
+   editor and are not equal, so the lookup missed and that paragraph stayed
+   English in all four translated languages while everything around it changed.
+
+   Nothing errors when this happens. The only symptom is one sentence in the
+   wrong language, which is why it survived: it is invisible to anyone reading
+   the English, and everyone reading the other four assumed it was untranslated
+   on purpose.
+
+   Normalising both sides costs a regex per lookup and removes the whole class:
+   non-breaking spaces, narrow no-break spaces, and runs of whitespace that
+   HTML would collapse anyway. */
+const _TR_WS = /[\s\u00a0\u202f\u2009]+/g;
+let _trNorm = null;                     // normalised key -> translation
+
+function trNormKey(t) { return t.replace(_TR_WS, " ").trim(); }
+
 function trString(s) {
   if (!GVL.dict) return null;
   const ui = GVL.dict.ui || {};
@@ -11160,6 +11199,16 @@ function trString(s) {
   // Try without a trailing ellipsis / arrow, which several labels carry.
   const bare = key.replace(/[…→\s]+$/, "");
   if (bare !== key && ui[bare]) return s.replace(bare, ui[bare]);
+
+  // Whitespace-insensitive pass, built once per dictionary.
+  if (!_trNorm || _trNorm.__for !== GVL.dict) {
+    _trNorm = Object.create(null);
+    _trNorm.__for = GVL.dict;
+    for (const k in ui) _trNorm[trNormKey(k)] = ui[k];
+  }
+  const norm = trNormKey(key);
+  const soft = _trNorm[norm] || _trNorm[trNormKey(bare)];
+  if (soft) return s.replace(key, soft);
   return null;
 }
 
@@ -11188,7 +11237,7 @@ function trNode(root) {
   // Attributes people actually read.
   const els = root.querySelectorAll ? root.querySelectorAll("[placeholder],[title],[aria-label]") : [];
   els.forEach(el => {
-    if (el.closest(NO_TR)) return;
+    if (el.closest(NO_TR_ATTR)) return;
     ["placeholder", "title", "aria-label"].forEach(attr => {
       const v = el.getAttribute(attr);
       if (!v) return;
