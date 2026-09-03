@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.GreenVision" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <item name="android:statusBarColor">@color/gv_ground</item>
+        <item name="android:navigationBarColor">@color/gv_ground</item>
+        <item name="android:windowBackground">@color/gv_ground</item>
+    </style>
+</resources>

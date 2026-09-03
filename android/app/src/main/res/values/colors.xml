@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Matches the page's dark ground so there is no white flash before the
+         WebView paints. -->
+    <color name="gv_ground">#0a1512</color>
+    <color name="gv_brand">#0a7a54</color>
+</resources>

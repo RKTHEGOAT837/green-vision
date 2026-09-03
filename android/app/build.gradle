@@ -1,0 +1,80 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'app.greenvision'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "app.greenvision"
+        // Android 8.0. The launcher icon is an adaptive vector, which is
+        // an API 26 feature; supporting 24 and 25 would mean shipping five
+        // density-specific PNGs of the same mark, and a device on Android 7
+        // in 2026 is a rounding error against that cost.
+        minSdk 26
+        targetSdk 34
+        versionCode 1
+        versionName "1.0"
+    }
+
+    buildTypes {
+        release {
+            // No shrinking. There is one Activity and no library surface worth
+            // stripping, and an obfuscated stack trace from a field device is
+            // worth less than the few hundred kilobytes it saves.
+            minifyEnabled false
+            // Signed with the debug key so `gradlew assembleRelease` produces
+            // an APK that actually installs. This is NOT a Play-ready build:
+            // uploading to a store needs a real upload key, which is the
+            // developer's to generate and keep, not something to commit here.
+            signingConfig signingConfigs.debug
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    // The web bundle is built by scripts/build_static.py and copied into
+    // assets/www by the task below, so the APK carries the studio and the
+    // five baked cities rather than pointing at a server that may not exist.
+    sourceSets {
+        main {
+            assets.srcDirs += ['src/main/assets']
+        }
+    }
+}
+
+dependencies {
+    implementation 'androidx.appcompat:appcompat:1.7.0'
+    implementation 'androidx.core:core:1.13.1'
+    implementation 'androidx.activity:activity:1.9.3'
+}
+
+/* Copy the baked five-city bundle into the APK.
+ *
+ * dist_app/ is produced by:
+ *     python scripts/build_static.py --out dist_app --cities config/*.yaml
+ * and is the same output a static host would serve, so the phone and the web
+ * deploy run byte-identical files. Failing loudly when it is missing beats
+ * shipping an APK whose only screen is a 404.
+ */
+tasks.register('copyWebBundle', Copy) {
+    def bundle = file(project.findProperty("gvBundle") ?: "${rootDir}/../dist_app")
+    doFirst {
+        if (!bundle.exists()) {
+            throw new GradleException(
+                "dist_app/ not found at ${bundle}.\n" +
+                "Build it first:\n" +
+                "  python scripts/build_static.py --out dist_app --cities " +
+                "config/city.yaml config/delhi.yaml config/mumbai.yaml " +
+                "config/bengaluru.yaml config/chennai.yaml")
+        }
+    }
+    from bundle
+    into layout.projectDirectory.dir('src/main/assets/www')
+}
+
+preBuild.dependsOn 'copyWebBundle'

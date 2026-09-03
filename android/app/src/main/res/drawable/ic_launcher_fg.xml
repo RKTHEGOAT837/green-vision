@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The mark from the web app: a leaf on a stem, drawn as vector so it scales
+     to every launcher density without shipping five bitmaps. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,28 C68,28 78,38 78,52 C78,66 68,76 54,76 C54,64 54,40 54,28 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,28 C40,28 30,38 30,52 C30,66 40,76 54,76 C54,64 54,40 54,28 Z"
+        android:fillAlpha="0.72" />
+    <path
+        android:strokeColor="#FFFFFF" android:strokeWidth="3.4"
+        android:strokeLineCap="round"
+        android:pathData="M54,52 L54,86" />
+</vector>

@@ -29,3 +29,11 @@ data/osm/*.jsonl.gz
 data/osm/*.jsonl.gz
 data/osm/*.pbf
 logs/
+
+# Android toolchain and build output — large, machine-specific, regenerable
+android-sdk/
+android/local.properties
+android/.gradle/
+android/app/build/
+android/app/src/main/assets/www/
+dist_app/
