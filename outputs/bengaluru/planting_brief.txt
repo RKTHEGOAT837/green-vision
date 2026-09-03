@@ -1,65 +1,65 @@
 GREENGRID PLANTING BRIEF — Bengaluru
-Generated: 2026-09-03 12:02 UTC
+Generated: 2026-09-03 16:30 UTC
 Grid: H3 resolution 7 | Horizon: 12 months | Zones ranked: 133 | Top listed: 10
 
 TOP PRIORITY ZONES
 ============================================================
 #1  876189255ffffff  (lat 12.9184, lon 77.6568)  score 0.798
-    AQI 50 (+17 predicted yr-on-yr), traffic 50 (+0 predicted yr-on-yr), NDVI 0.42 (-0.020/yr)
+    AQI 50 (+17 predicted yr-on-yr), NDVI 0.42 (-0.020/yr)
     Soil: pH 6.4 (acidic), sandy clay loam, SOC 164 g/kg
     Plant: Palash, Pongamia (Karanj), Siris, Neem
     Why: Priority score 0.798: predicted AQI change +17.3, NDVI trend -0.0196/yr with canopy at 0.42 and plantable-space 0.29. Species chosen for pollution tolerance and fit to available space. Soil pH 6.4 (acidic), sandy clay loam — species filtered for soil fit.
 
 #2  876189274ffffff  (lat 12.8733, lon 77.7066)  score 0.783
-    AQI 50 (+15 predicted yr-on-yr), traffic 50 (+0 predicted yr-on-yr), NDVI 0.37 (-0.028/yr)
+    AQI 50 (+15 predicted yr-on-yr), NDVI 0.37 (-0.028/yr)
     Soil: pH 6.5 (neutral), sandy clay loam, SOC 136 g/kg
     Plant: Siris, Neem, Shisham, Banyan
     Why: Priority score 0.783: predicted AQI change +14.9, NDVI trend -0.0278/yr with canopy at 0.37 and plantable-space 0.39. Species chosen for pollution tolerance and fit to available space. Soil pH 6.5 (neutral), sandy clay loam — species filtered for soil fit.
 
 #3  876189256ffffff  (lat 12.9482, lon 77.6826)  score 0.761
-    AQI 50 (+17 predicted yr-on-yr), traffic 50 (+0 predicted yr-on-yr), NDVI 0.42 (-0.016/yr)
+    AQI 50 (+17 predicted yr-on-yr), NDVI 0.42 (-0.016/yr)
     Soil: pH 6.5 (neutral), sandy clay loam, SOC 178 g/kg
     Plant: Palash, Pongamia (Karanj), Siris, Neem
     Why: Priority score 0.761: predicted AQI change +17.0, NDVI trend -0.0162/yr with canopy at 0.42 and plantable-space 0.30. Species chosen for pollution tolerance and fit to available space. Soil pH 6.5 (neutral), sandy clay loam — species filtered for soil fit.
 
 #4  876189276ffffff  (lat 12.8957, lon 77.7112)  score 0.726
-    AQI 50 (+14 predicted yr-on-yr), traffic 50 (+0 predicted yr-on-yr), NDVI 0.33 (-0.019/yr)
+    AQI 50 (+14 predicted yr-on-yr), NDVI 0.33 (-0.019/yr)
     Soil: pH 6.5 (acidic), sandy clay loam, SOC 158 g/kg
     Plant: Siris, Neem, Shisham, Banyan
     Why: Priority score 0.726: predicted AQI change +14.2, NDVI trend -0.0192/yr with canopy at 0.33 and plantable-space 0.44. Species chosen for pollution tolerance and fit to available space. Soil pH 6.5 (acidic), sandy clay loam — species filtered for soil fit.
 
 #5  876189270ffffff  (lat 12.8883, lon 77.6900)  score 0.705
-    AQI 50 (+14 predicted yr-on-yr), traffic 50 (+0 predicted yr-on-yr), NDVI 0.34 (-0.019/yr)
+    AQI 50 (+14 predicted yr-on-yr), NDVI 0.34 (-0.019/yr)
     Soil: pH 6.5 (neutral), sandy clay loam, SOC 332 g/kg
     Plant: Siris, Neem, Shisham, Banyan
     Why: Priority score 0.705: predicted AQI change +14.1, NDVI trend -0.0186/yr with canopy at 0.34 and plantable-space 0.43. Species chosen for pollution tolerance and fit to available space. Soil pH 6.5 (neutral), sandy clay loam — species filtered for soil fit.
 
 #6  876189272ffffff  (lat 12.9107, lon 77.6946)  score 0.699
-    AQI 50 (+14 predicted yr-on-yr), traffic 50 (+0 predicted yr-on-yr), NDVI 0.34 (-0.018/yr)
+    AQI 50 (+14 predicted yr-on-yr), NDVI 0.34 (-0.018/yr)
     Soil: pH 6.5 (neutral), sandy clay loam, SOC 138 g/kg
     Plant: Siris, Neem, Shisham, Banyan
     Why: Priority score 0.699: predicted AQI change +14.1, NDVI trend -0.0175/yr with canopy at 0.34 and plantable-space 0.44. Species chosen for pollution tolerance and fit to available space. Soil pH 6.5 (neutral), sandy clay loam — species filtered for soil fit.
 
 #7  876014516ffffff  (lat 12.8964, lon 77.5343)  score 0.695
-    AQI 50 (+17 predicted yr-on-yr), traffic 50 (+0 predicted yr-on-yr), NDVI 0.41 (-0.009/yr)
+    AQI 50 (+17 predicted yr-on-yr), NDVI 0.41 (-0.009/yr)
     Soil: pH 6.5 (neutral), sandy clay loam, SOC 154 g/kg
     Plant: Palash, Pongamia (Karanj), Siris, Neem
     Why: Priority score 0.695: predicted AQI change +17.0, NDVI trend -0.0094/yr with canopy at 0.41 and plantable-space 0.32. Species chosen for pollution tolerance and fit to available space. Soil pH 6.5 (neutral), sandy clay loam — species filtered for soil fit.
 
 #8  876189273ffffff  (lat 12.9033, lon 77.6734)  score 0.659
-    AQI 50 (+14 predicted yr-on-yr), traffic 50 (+0 predicted yr-on-yr), NDVI 0.36 (-0.014/yr)
+    AQI 50 (+14 predicted yr-on-yr), NDVI 0.36 (-0.014/yr)
     Soil: pH 6.5 (neutral), sandy clay loam, SOC 140 g/kg
     Plant: Siris, Neem, Shisham, Banyan
     Why: Priority score 0.659: predicted AQI change +14.4, NDVI trend -0.0142/yr with canopy at 0.36 and plantable-space 0.40. Species chosen for pollution tolerance and fit to available space. Soil pH 6.5 (neutral), sandy clay loam — species filtered for soil fit.
 
 #9  876189254ffffff  (lat 12.9258, lon 77.6780)  score 0.655
-    AQI 50 (+14 predicted yr-on-yr), traffic 50 (+0 predicted yr-on-yr), NDVI 0.27 (-0.009/yr)
+    AQI 50 (+14 predicted yr-on-yr), NDVI 0.27 (-0.009/yr)
     Soil: pH 6.5 (neutral), sandy clay loam, SOC 384 g/kg
     Plant: Siris, Neem, Shisham, Banyan
     Why: Priority score 0.655: predicted AQI change +14.3, NDVI trend -0.0086/yr with canopy at 0.27 and plantable-space 0.55. Species chosen for pollution tolerance and fit to available space. Soil pH 6.5 (neutral), sandy clay loam — species filtered for soil fit.
 
 #10  876189271ffffff  (lat 12.8809, lon 77.6688)  score 0.653
-    AQI 50 (+14 predicted yr-on-yr), traffic 50 (+0 predicted yr-on-yr), NDVI 0.32 (-0.012/yr)
+    AQI 50 (+14 predicted yr-on-yr), NDVI 0.32 (-0.012/yr)
     Soil: pH 6.5 (neutral), sandy clay loam, SOC 140 g/kg
     Plant: Siris, Neem, Shisham, Banyan
     Why: Priority score 0.653: predicted AQI change +14.1, NDVI trend -0.0120/yr with canopy at 0.32 and plantable-space 0.47. Species chosen for pollution tolerance and fit to available space. Soil pH 6.5 (neutral), sandy clay loam — species filtered for soil fit.
@@ -75,6 +75,12 @@ LESSONS THE SYSTEM LEARNED WHILE BACKTESTING
   - Underestimated ndvi in zone 8760145b6ffffff for calendar month 9; weight the seasonal cycle more against the raw trend.
 
 CAVEATS
+  - Traffic is NOT in this ranking. The traffic stream is an inert
+    placeholder carried at MCDA weight 0.0, so it contributes nothing to
+    any score above, and it is left out of the per-zone lines rather than
+    printed as an identical number for every zone. Wire a real congestion
+    source and give it a weight in config/*.yaml before treating any of
+    this as traffic-aware.
   - 'Plantable space' is a placeholder proxy (1 - NDVI); supply a
     bare-ground sites CSV (sites.candidates_csv) for real open-space data.
   - Soil pH/texture are SoilGrids MODELLED estimates (250 m); moisture is

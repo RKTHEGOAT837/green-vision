@@ -454,6 +454,36 @@ check("no panel calls the 1-minus-NDVI proxy 'plantable ground'",
       not _bad_label.search(_srcs["index.html"]))
 
 
+
+# ---------------------------------------------------------------------------
+section("16. The printed brief does not present the inert stream as a reading")
+# planting_brief.txt is the artefact that actually leaves the building, and it
+# was the last place still printing traffic as data. Every zone line read
+# "traffic 50 (+0 predicted yr-on-yr)" beside real AQI and NDVI - the same 50
+# in every zone of every city, because the stream is a constant placeholder at
+# MCDA weight 0.0 that contributes nothing to any score. A planner comparing
+# ten zones sees an identical number and can only conclude traffic is uniformly
+# moderate across the city, which is a claim about the city that nothing
+# measured. The brief also listed "Underestimated traffic in zone X" as a
+# lesson learned, and its CAVEATS covered plantable space, soil and species
+# but not this.
+_briefs = sorted((ROOT / "outputs").glob("*/planting_brief.txt"))
+check("planting briefs exist to check", bool(_briefs))
+for _b in _briefs:
+    _txt = _b.read_text(encoding="utf-8")
+    _city = _b.parent.name
+    # A per-zone reading looks like "traffic 50" / "traffic 50.0".
+    check("%s: no per-zone traffic reading" % _city,
+          not re.search(r"traffic\s+\d", _txt),
+          "found %r" % (re.findall(r"traffic\s+\d[^,)]*", _txt)[:2],))
+    check("%s: no traffic MAE beside the real ones" % _city,
+          not re.search(r"MAE[^\n]*traffic", _txt))
+    check("%s: no 'lesson' about the inert stream" % _city,
+          not re.search(r"(?:Under|Over)estimated traffic", _txt))
+    check("%s: says plainly that traffic is not in the ranking" % _city,
+          "Traffic is NOT in this ranking" in _txt)
+
+
 # ---------------------------------------------------------------------------
 print("\n" + "=" * 62)
 print("  %d passed, %d failed" % (len(PASS), len(FAIL)))

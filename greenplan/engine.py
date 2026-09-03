@@ -530,8 +530,11 @@ def _write_outputs(
     if train_report:
         verdict = "beat" if train_report.get("memory_helped") else "did NOT beat"
         brief += [
+            # No traffic MAE: the error of a prediction against a constant is
+            # 0.0 by construction, and printed beside two real error figures it
+            # reads as the model's best-scoring metric.
             f"Training: {train_report['iterations']} backtest iterations at horizon "
-            f"{train_report['horizon']}. MAE — traffic {train_report['mae']['traffic']:.1f}, "
+            f"{train_report['horizon']}. MAE — "
             f"AQI {train_report['mae']['aqi']:.1f}, NDVI {train_report['mae']['ndvi']:.3f}.",
             f"With its memory the model {verdict} a memory-free naive baseline on the "
             f"same tasks (skill first half {train_report['skill_vs_baseline_first_half']:+.3f} "
@@ -553,8 +556,11 @@ def _write_outputs(
         brief += [
             f"#{int(r.rank)}  {r.zone}  (lat {lat:.4f}, lon {lon:.4f})  "
             f"score {float(r.score):.3f}",
+            # Traffic is deliberately absent. See the caveat at the foot of
+            # this brief: it is a constant placeholder at weight 0, so printing
+            # it per zone adds a column that is identical everywhere and looks
+            # like a finding.
             f"    AQI {float(r.aqi_latest):.0f} ({float(r.aqi_pred_delta):+.0f} predicted yr-on-yr), "
-            f"traffic {float(r.traffic_latest):.0f} ({float(r.traffic_pred_delta):+.0f} predicted yr-on-yr), "
             f"NDVI {float(r.ndvi_latest):.2f} ({float(r.ndvi_slope) * 12:+.3f}/yr)",
         ]
         if prof is not None:
@@ -579,10 +585,23 @@ def _write_outputs(
                 brief.append("    Planting sites: none detected — survey on foot")
         brief.append("")
     if lessons:
-        brief.append("LESSONS THE SYSTEM LEARNED WHILE BACKTESTING")
-        brief += [f"  - {l}" for l in lessons[:8]]
-        brief.append("")
+        # Drop lessons about the inert stream. "Underestimated traffic in zone
+        # X" is the backtest dutifully scoring a metric that cannot move, and
+        # it reads as though the model learned something about congestion.
+        real = [l for l in lessons if "traffic" not in l.lower()]
+        if real:
+            brief.append("LESSONS THE SYSTEM LEARNED WHILE BACKTESTING")
+            brief += [f"  - {l}" for l in real[:8]]
+            brief.append("")
     brief += ["CAVEATS"]
+    brief += [
+        "  - Traffic is NOT in this ranking. The traffic stream is an inert",
+        "    placeholder carried at MCDA weight 0.0, so it contributes nothing to",
+        "    any score above, and it is left out of the per-zone lines rather than",
+        "    printed as an identical number for every zone. Wire a real congestion",
+        "    source and give it a weight in config/*.yaml before treating any of",
+        "    this as traffic-aware.",
+    ]
     if has_sites:
         brief += [
             "  - Planting-site coordinates come from 10 m bare-ground land cover:",

@@ -1,61 +1,61 @@
 GREENGRID PLANTING BRIEF — Ahmedabad
-Generated: 2026-09-03 16:13 UTC
+Generated: 2026-09-03 16:29 UTC
 Grid: H3 resolution 7 | Horizon: 12 months | Zones ranked: 146 | Top listed: 10
 
 TOP PRIORITY ZONES
 ============================================================
 #1  8742cc692ffffff  (lat 23.0466, lon 72.6208)  score 0.829
-    AQI 81 (+16 predicted yr-on-yr), traffic 50 (+0 predicted yr-on-yr), NDVI 0.19 (-0.008/yr)
+    AQI 81 (+16 predicted yr-on-yr), NDVI 0.19 (-0.008/yr)
     Plant: Siris, Neem, Shisham, Banyan
     Why: Priority score 0.829: predicted AQI change +15.6, NDVI trend -0.0078/yr with canopy at 0.19 and plantable-space 0.68. Species chosen for pollution tolerance and fit to available space.
 
 #2  8742cea6affffff  (lat 23.0038, lon 72.6593)  score 0.774
-    AQI 81 (+16 predicted yr-on-yr), traffic 50 (+0 predicted yr-on-yr), NDVI 0.19 (-0.003/yr)
+    AQI 81 (+16 predicted yr-on-yr), NDVI 0.19 (-0.003/yr)
     Soil: pH 7.2 (neutral), clay loam, SOC 102 g/kg
     Plant: Siris, Neem, Banyan, Peepal
     Why: Priority score 0.774: predicted AQI change +15.6, NDVI trend -0.0031/yr with canopy at 0.19 and plantable-space 0.69. Species chosen for pollution tolerance and fit to available space. Soil pH 7.2 (neutral), clay loam — species filtered for soil fit.
 
 #3  8742cc698ffffff  (lat 23.0741, lon 72.6857)  score 0.769
-    AQI 81 (+12 predicted yr-on-yr), traffic 50 (+1 predicted yr-on-yr), NDVI 0.26 (-0.015/yr)
+    AQI 81 (+12 predicted yr-on-yr), NDVI 0.26 (-0.015/yr)
     Soil: pH 7.5 (neutral), clay loam, SOC 98 g/kg
     Plant: Siris, Neem, Banyan, Peepal
     Why: Priority score 0.769: predicted AQI change +12.1, NDVI trend -0.0151/yr with canopy at 0.26 and plantable-space 0.57. Species chosen for pollution tolerance and fit to available space. Soil pH 7.5 (neutral), clay loam — species filtered for soil fit.
 
 #4  8742cc693ffffff  (lat 23.0558, lon 72.6424)  score 0.768
-    AQI 81 (+16 predicted yr-on-yr), traffic 50 (+0 predicted yr-on-yr), NDVI 0.18 (-0.002/yr)
+    AQI 81 (+16 predicted yr-on-yr), NDVI 0.18 (-0.002/yr)
     Plant: Siris, Neem, Shisham, Banyan
     Why: Priority score 0.768: predicted AQI change +15.6, NDVI trend -0.0018/yr with canopy at 0.18 and plantable-space 0.70. Species chosen for pollution tolerance and fit to available space.
 
 #5  8742cea6cffffff  (lat 23.0354, lon 72.6408)  score 0.766
-    AQI 81 (+15 predicted yr-on-yr), traffic 50 (+1 predicted yr-on-yr), NDVI 0.15 (-0.002/yr)
+    AQI 81 (+15 predicted yr-on-yr), NDVI 0.15 (-0.002/yr)
     Plant: Siris, Neem, Shisham, Banyan
     Why: Priority score 0.766: predicted AQI change +15.1, NDVI trend -0.0019/yr with canopy at 0.15 and plantable-space 0.75. Species chosen for pollution tolerance and fit to available space.
 
 #6  8742cc6b5ffffff  (lat 23.1303, lon 72.5852)  score 0.756
-    AQI 77 (+12 predicted yr-on-yr), traffic 50 (+1 predicted yr-on-yr), NDVI 0.25 (-0.015/yr)
+    AQI 77 (+12 predicted yr-on-yr), NDVI 0.25 (-0.015/yr)
     Soil: pH 7.4 (neutral), clay loam, SOC 92 g/kg
     Plant: Siris, Neem, Banyan, Peepal
     Why: Priority score 0.756: predicted AQI change +11.6, NDVI trend -0.0146/yr with canopy at 0.25 and plantable-space 0.58. Species chosen for pollution tolerance and fit to available space. Soil pH 7.4 (neutral), clay loam — species filtered for soil fit.
 
 #7  8742cc6b6ffffff  (lat 23.1007, lon 72.5621)  score 0.756
-    AQI 77 (+15 predicted yr-on-yr), traffic 50 (+1 predicted yr-on-yr), NDVI 0.23 (-0.005/yr)
+    AQI 77 (+15 predicted yr-on-yr), NDVI 0.23 (-0.005/yr)
     Soil: pH 7.4 (neutral), clay loam, SOC 99 g/kg
     Plant: Siris, Neem, Banyan, Peepal
     Why: Priority score 0.756: predicted AQI change +15.1, NDVI trend -0.0054/yr with canopy at 0.23 and plantable-space 0.62. Species chosen for pollution tolerance and fit to available space. Soil pH 7.4 (neutral), clay loam — species filtered for soil fit.
 
 #8  8742ceb4dffffff  (lat 23.0803, lon 72.5605)  score 0.752
-    AQI 77 (+15 predicted yr-on-yr), traffic 50 (+0 predicted yr-on-yr), NDVI 0.18 (-0.002/yr)
+    AQI 77 (+15 predicted yr-on-yr), NDVI 0.18 (-0.002/yr)
     Plant: Siris, Neem, Shisham, Banyan
     Why: Priority score 0.752: predicted AQI change +15.1, NDVI trend -0.0016/yr with canopy at 0.18 and plantable-space 0.70. Species chosen for pollution tolerance and fit to available space.
 
 #9  8742cea6dffffff  (lat 23.0445, lon 72.6625)  score 0.745
-    AQI 81 (+16 predicted yr-on-yr), traffic 50 (+0 predicted yr-on-yr), NDVI 0.18 (+0.000/yr)
+    AQI 81 (+16 predicted yr-on-yr), NDVI 0.18 (+0.000/yr)
     Soil: pH 7.3 (neutral), clay loam, SOC 116 g/kg
     Plant: Siris, Neem, Banyan, Peepal
     Why: Priority score 0.745: predicted AQI change +15.6, NDVI trend +0.0000/yr with canopy at 0.18 and plantable-space 0.71. Species chosen for pollution tolerance and fit to available space. Soil pH 7.3 (neutral), clay loam — species filtered for soil fit.
 
 #10  8742cea61ffffff  (lat 23.0262, lon 72.6192)  score 0.744
-    AQI 81 (+16 predicted yr-on-yr), traffic 50 (+0 predicted yr-on-yr), NDVI 0.21 (-0.003/yr)
+    AQI 81 (+16 predicted yr-on-yr), NDVI 0.21 (-0.003/yr)
     Plant: Siris, Neem, Shisham, Banyan
     Why: Priority score 0.744: predicted AQI change +15.6, NDVI trend -0.0025/yr with canopy at 0.21 and plantable-space 0.65. Species chosen for pollution tolerance and fit to available space.
 
@@ -63,13 +63,19 @@ LESSONS THE SYSTEM LEARNED WHILE BACKTESTING
   - Underestimated aqi in zone 8742cc6b3ffffff for calendar month 8; weight the seasonal cycle more against the raw trend.
   - Underestimated aqi in zone 8742cc682ffffff for calendar month 8; weight the seasonal cycle more against the raw trend.
   - Overestimated ndvi in zone 8742cea55ffffff for calendar month 1; weight the seasonal cycle more against the raw trend.
-  - Underestimated traffic in zone 8742cea60ffffff for calendar month 12; weight the seasonal cycle more against the raw trend.
   - Underestimated ndvi in zone 8742cc6b6ffffff for calendar month 4; weight the seasonal cycle more against the raw trend.
   - Underestimated aqi in zone 8742cea4cffffff for calendar month 3; weight the seasonal cycle more against the raw trend.
   - Underestimated aqi in zone 8742ceb48ffffff for calendar month 2; weight the seasonal cycle more against the raw trend.
   - Overestimated aqi in zone 8742ceb48ffffff for calendar month 4; weight the seasonal cycle more against the raw trend.
+  - Underestimated aqi in zone 8742ceb4cffffff for calendar month 7; weight the seasonal cycle more against the raw trend.
 
 CAVEATS
+  - Traffic is NOT in this ranking. The traffic stream is an inert
+    placeholder carried at MCDA weight 0.0, so it contributes nothing to
+    any score above, and it is left out of the per-zone lines rather than
+    printed as an identical number for every zone. Wire a real congestion
+    source and give it a weight in config/*.yaml before treating any of
+    this as traffic-aware.
   - 'Plantable space' is a placeholder proxy (1 - NDVI); supply a
     bare-ground sites CSV (sites.candidates_csv) for real open-space data.
   - Soil pH/texture are SoilGrids MODELLED estimates (250 m); moisture is
