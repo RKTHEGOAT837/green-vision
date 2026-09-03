@@ -419,6 +419,41 @@ for _l in _langs:
     check("%s: its dictionary parses and has entries" % _l["code"], _okd)
 
 
+
+# ---------------------------------------------------------------------------
+section("15. One rainfall claim, in every place that makes it")
+# The pipeline moved from a five-year window (2020-2024, which read 45% high)
+# to the 1991-2020 WMO standard normal. Three places in the product state that
+# window in prose, and they were corrected one at a time as each was noticed:
+# the area panel, the assistant's sources answer, and - found last, by asking
+# the assistant to compare two places - the comparison table's own footnote,
+# which had gone on saying 2020-2024 for as long as the others.
+#
+# A figure that is right in the data and wrong in the sentence beside it is
+# still wrong to the reader, and prose does not get type-checked.
+_srcs = {
+    "index.html": (ROOT / "index.html").read_text(encoding="utf-8"),
+    "assistant en.json": json.dumps(
+        json.loads((ROOT / "data" / "i18n" / "en.json").read_text(encoding="utf-8")),
+        ensure_ascii=False),
+}
+_STALE = re.compile(r"2020\s*[-–]\s*2024")
+for _name, _txt in _srcs.items():
+    # Strip comments so the note explaining the old value does not trip this.
+    _code = re.sub(r"/\*.*?\*/|//[^\n]*", "", _txt, flags=re.S)
+    _hits = _STALE.findall(_code)
+    check("%s: no live text still claims the 2020-2024 window" % _name,
+          not _hits, "%d occurrence(s)" % len(_hits))
+
+check("index.html states the WMO normal period where it states a window",
+      "1991–2020" in _srcs["index.html"] or "1991-2020" in _srcs["index.html"])
+
+# The 1-minus-NDVI figure must not be sold as plantable ground anywhere.
+_bad_label = re.compile(r"Bare,?\s*plantable\s*ground", re.I)
+check("no panel calls the 1-minus-NDVI proxy 'plantable ground'",
+      not _bad_label.search(_srcs["index.html"]))
+
+
 # ---------------------------------------------------------------------------
 print("\n" + "=" * 62)
 print("  %d passed, %d failed" % (len(PASS), len(FAIL)))

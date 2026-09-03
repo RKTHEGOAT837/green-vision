@@ -8598,11 +8598,30 @@ function updateHud() {
   const d = builderDesign();
   const nTrees = B.objects.filter(o => o.def.kind === "tree").length;
   let cost = null; try { cost = GV.engines.computeCost(d, GV.ctx || {}); } catch(e) {}
+
+  /* Say whose cost this is.
+     The builder keeps its own object list; it is a separate 3D layout, not a
+     view of the plan drawn on the map. Open it over an existing design and it
+     honestly has nothing in it - but the HUD said "Elements 0 · Trees 0 · Est.
+     cost 12.17 L" while the Cost tab two clicks away said 11.25 L for 24
+     trees, and a reader has no way to tell which number is about what. It
+     reads like the work vanished.
+     Nothing is lost: the plan on the map is autosaved and stays in History.
+     Saving here writes a NEW design and makes it the active one. Both of
+     those are fine; neither was said anywhere. */
+  const outside = (GV.design && GV.design.items) ? GV.design.items.length : 0;
+  const note = (!B.objects.length && outside)
+    ? `<p class="gv3d-hudempty">This is a separate 3D layout and starts empty.
+       The ${outside}-item plan you drew on the map is saved and unchanged \u2014
+       it is in History. Saving here creates a new design alongside it.</p>`
+    : (B.objects.length ? "" :
+       `<p class="gv3d-hudempty">Pick a tool on the left and click the ground to start planting.</p>`);
+
   host.innerHTML = `
     <div class="gv3d-hudrow"><span>Elements</span><b>${B.objects.length}</b></div>
     <div class="gv3d-hudrow"><span>Trees</span><b>${nTrees}</b></div>
-    <div class="gv3d-hudrow gv3d-hudcost"><span>Est. cost</span><b>${cost ? GV.util.inr(cost.grand) : "\u2014"}</b></div>
-    ${B.objects.length ? "" : `<p class="gv3d-hudempty">Pick a tool on the left and click the ground to start planting.</p>`}`;
+    <div class="gv3d-hudrow gv3d-hudcost"><span>This 3D layout</span><b>${cost ? GV.util.inr(cost.grand) : "\u2014"}</b></div>
+    ${note}`;
 }
 
 /* ---------- review inside the overlay ---------- */
@@ -8653,8 +8672,16 @@ function builderSave() {
   if (i >= 0) all[i] = d; else all.push(d);
   GV.util.store.set("designs", all);
   GV.util.logHistory("saved", d);
+  // Switching the active design is right - the reader just chose to save this
+  // one - but doing it silently, when a different plan was active a moment
+  // ago, reads as though that plan was overwritten. It was not: it is its own
+  // entry in storage and reachable from History.
+  const prev = GV.design;
+  const replaced = prev && prev.id !== d.id && (prev.items || []).length;
   GV.design = d;
-  toast("Saved \u2014 find it in History and Library");
+  toast(replaced
+    ? "Saved as a new design. The " + prev.items.length + "-item plan you had open is still in History."
+    : "Saved \u2014 find it in History and Library");
 }
 
 
@@ -10811,12 +10838,19 @@ function aCompareTable(rows) {
     line("Air (US AQI)", "aqi", "", true) +
     line("PM2.5", "pm25", " µg/m³", true) +
     line("Canopy", "canopy", "%", false) +
-    line("Bare ground", "bare", "%", false) +
+    line("Not vegetated", "bare", "%", false) +
     line("Rainfall", "rain", " mm", false) +
+    /* This footnote said "2020-2024" long after the pipeline moved to the
+       1991-2020 WMO standard normal, and called the 1-minus-NDVI figure "bare
+       ground ... more room to plant" - the same two claims corrected in the
+       area panel and in the assistant's own sources answer, missed here
+       because the comparison table renders from its own string. */
     '</table><p class="gva-fine">Air and canopy read live across ' +
     'a ' + (GV.CFG.AOI_KM2) + ' km² perimeter at each point. Rainfall is ERA5 ' +
-    'reanalysis over 2020–2024, not a gauge record. "Better" on bare ground ' +
-    'means more room to plant, not a healthier place.</p></div>';
+    'reanalysis over 1991–2020, the WMO standard normal period — model output, ' +
+    'not a gauge record, and 5–30% under published IMD normals depending on the ' +
+    'city. "Not vegetated" counts roofs and roads as well as open ground, so a ' +
+    'higher figure is not a promise of somewhere to plant.</p></div>';
 }
 
 async function aExec(actions) {
