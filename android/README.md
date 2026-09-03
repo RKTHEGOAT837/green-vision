@@ -61,3 +61,31 @@ needs it. `allowFileAccess` and `allowContentAccess` are off; the page reads
 its baked JSON through relative `fetch` under `android_asset`, which is
 same-origin, so neither is required. Camera and microphone permission requests
 from the page are denied outright.
+
+## Toolchain, and why the build is not run from the agent shell
+
+Everything needed is installed at spaceless paths, because the Android
+`.bat` wrappers do not quote `JAVA_HOME` and the repository lives under a path
+with spaces in it:
+
+    C:\gvsdk\jdk\jdk-17.0.20.1+1      Temurin JDK 17
+    C:\gvsdk\platforms\android-34     compile SDK
+    C:\gvsdk\build-tools\34.0.0       aapt2, d8, apksigner
+    C:\gvsdk\platform-tools           adb
+    C:\gvsdk\gradle-8.7               Gradle
+
+Gradle's official distribution host 307-redirects to somewhere that stalls on
+this connection; `https://mirrors.cloud.tencent.com/gradle/` served the same
+zip in ten seconds.
+
+**Run `build-apk.bat` from a normal Windows terminal.** Gradle always forks a
+build process and speaks to it over a loopback socket, and that fork fails
+inside a sandboxed shell with
+
+    java.io.IOException: Unable to establish loopback connection
+
+before any compilation begins. Plain loopback works there — a Java program
+that binds 127.0.0.1 and connects to itself succeeds — so this is the fork
+specifically, not the network. Matching `org.gradle.jvmargs` to the launcher
+exactly does not avoid it: `gradle.bat` starts the launcher with
+`-Xmx64m -Xms64m` plus an instrumentation agent, so a fork is unconditional.
