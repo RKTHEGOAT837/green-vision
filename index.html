@@ -5942,7 +5942,17 @@ function openGalDesign(id) {
     closeSheet(); openDock("studio");
     if (copy.plot) window.map.fitBounds(L.polygon(copy.plot.ring).getBounds().pad(0.3));
   };
-  $("#gvDl").onclick = () => download((d.name || "design").replace(/\W+/g, "-") + ".json", JSON.stringify([d], null, 2));
+  /* Name the file after something that identifies it.
+     Designs the studio autosaves carry no name, so every export landed as
+     design.json - and a planner comparing three schemes for three wards ends
+     up with design.json, design(1).json and design(2).json, indistinguishable
+     without opening each one. The place is always known, because the design
+     cannot exist without a plot. */
+  $("#gvDl").onclick = () => {
+    const base = (d.name || d.place || d.city || "design")
+      .replace(/\W+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60) || "design";
+    download(base + ".json", JSON.stringify([d], null, 2));
+  };
   const del = $("#gvDel");
   if (del) del.onclick = () => {
     if (!confirm("Delete this design? It can't be undone.")) return;
