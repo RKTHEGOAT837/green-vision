@@ -290,8 +290,40 @@ def main() -> int:
 
     for m in METRICS:
         Xm, ym, bm = ds["X"][m], ds["y"][m], ds["base"][m]
-        mu = Xm[train_idx].mean(axis=0)
-        sd = Xm[train_idx].std(axis=0) + 1e-9
+
+        # Drop tasks whose BASELINE could not be computed.
+        #
+        # build_dataset already skips rows with a missing target, so `ym` is
+        # clean. `bm` is not: trend_seasonal_estimate returns None where a cell
+        # has no usable history, and the fallback to `<metric>_latest` is NaN
+        # for the same cells - Mumbai has dozens over open sea. The network
+        # trains on ym - bm, so one NaN baseline poisons the residual and
+        # sklearn refuses the whole fit with "Input y contains NaN". Mumbai
+        # was the only shipped city where this fired, and the effect was that
+        # it alone had no measured accuracy at all.
+        #
+        # Dropping is the honest handling rather than filling: a task with no
+        # baseline cannot be scored AGAINST that baseline, and imputing one
+        # would invent the very thing the skill number is measuring against.
+        usable = np.isfinite(ym) & np.isfinite(bm) & np.isfinite(Xm).all(axis=1)
+        n_dropped = int((~usable).sum())
+        if n_dropped:
+            log.info("  %s: %d of %d tasks have no computable baseline; excluded",
+                     m, n_dropped, len(usable))
+        m_train = train_idx & usable
+        m_test = test_idx & usable
+        if m_train.sum() < 20 or m_test.sum() < 5:
+            log.warning("  %s: only %d train / %d test tasks survive; skipping this metric",
+                        m, int(m_train.sum()), int(m_test.sum()))
+            report["per_metric"][m] = {
+                "test_mae": None, "baseline_mae": None, "skill_vs_baseline": None,
+                "train_seconds": 0.0, "inert_placeholder": False,
+                "note": "too few tasks with a computable baseline to validate",
+            }
+            continue
+
+        mu = Xm[m_train].mean(axis=0)
+        sd = Xm[m_train].std(axis=0) + 1e-9
         Z = (Xm - mu) / sd
 
         # The network learns the RESIDUAL from the Theil-Sen + seasonal
@@ -299,8 +331,8 @@ def main() -> int:
         # the baseline (skill ~ 0); it can only add value, never quietly
         # replace an honest estimate with a worse one.
         resid = ym - bm
-        r_mu = float(resid[train_idx].mean())
-        r_sd = float(resid[train_idx].std() + 1e-9)
+        r_mu = float(resid[m_train].mean())
+        r_sd = float(resid[m_train].std() + 1e-9)
 
         if args.model == "rf":
             net = RandomForestRegressor(
@@ -313,14 +345,14 @@ def main() -> int:
                 alpha=1e-2, max_iter=4000, random_state=cfg.run.seed,
             )
         t0 = time.perf_counter()
-        net.fit(Z[train_idx], (resid[train_idx] - r_mu) / r_sd)
+        net.fit(Z[m_train], (resid[m_train] - r_mu) / r_sd)
         fit_s = time.perf_counter() - t0
         train_seconds += fit_s
 
-        pred_resid = net.predict(Z[test_idx]) * r_sd + r_mu
-        pred = np.clip(bm[test_idx] + pred_resid, *METRIC_BOUNDS[m])
-        mae = float(np.mean(np.abs(pred - ym[test_idx])))
-        base_mae = float(np.mean(np.abs(bm[test_idx] - ym[test_idx])))
+        pred_resid = net.predict(Z[m_test]) * r_sd + r_mu
+        pred = np.clip(bm[m_test] + pred_resid, *METRIC_BOUNDS[m])
+        mae = float(np.mean(np.abs(pred - ym[m_test])))
+        base_mae = float(np.mean(np.abs(bm[m_test] - ym[m_test])))
         std = ds["stats"][m]["std"]
         skill = float((base_mae - mae) / std)  # + = beats the baseline
         report["per_metric"][m] = {
@@ -344,7 +376,7 @@ def main() -> int:
             )
         (out_dir / f"{m}.onnx").write_bytes(onx.SerializeToString())
         fitted[m] = net
-        z_test[m] = Z[test_idx].astype(np.float32)
+        z_test[m] = Z[m_test].astype(np.float32)
         norm["mu"][m] = [float(v) for v in mu]
         norm["sd"][m] = [float(v) for v in sd]
         norm.setdefault("resid_mu", {})[m] = r_mu

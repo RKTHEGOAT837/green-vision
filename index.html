@@ -166,6 +166,9 @@ button{font-family:inherit;cursor:pointer;color:inherit;}
 .gl-collapsed > *:not(.gl-drag){display:none!important;}
 .gl-collapsed{width:auto!important;height:auto!important;min-width:0!important;}
 .gl-collapsed .gl-drag{margin-bottom:0;border-bottom:0;padding-bottom:0;}
+.gvl-row.gvl-soon{opacity:.55;}
+.gvl-row.gvl-soon b{font-weight:600;}
+.gvl-row.gvl-soon em{font-style:normal;}
 /* --- reopen handle for the left panel ---------------------------------- */
 #gvDockOpen{position:absolute;left:0;top:50%;transform:translateY(-50%) translateX(-100%);
   z-index:1150;display:flex;flex-direction:column;align-items:center;gap:7px;
@@ -11119,7 +11122,11 @@ const NO_TR = "code,pre,script,style,textarea,.gva-msg,.gva-cmp,[data-no-i18n],"
 
 async function langList() {
   if (GVL.list) return GVL.list;
-  const j = await getJSON(LANG_DIR + "index.json", {}, 8000);
+  /* Revalidate. This file changes when a language is added or a dictionary
+     lands, which is a deploy, not a session - and a browser holding the old
+     copy is why the "not translated yet" markers did not appear the first
+     time they were added. An unchanged file still costs only a 304. */
+  const j = await getJSON(LANG_DIR + "index.json", { cache: "no-cache" }, 8000);
   GVL.list = (j && j.languages) ||
              [{ code: "en", name: "English", native: "English", dir: "ltr" }];
   return GVL.list;
@@ -11133,7 +11140,7 @@ async function langDict(code) {
     const hit = localStorage.getItem(LANG_KEY + "." + code);
     if (hit) return JSON.parse(hit);
   } catch (e) {}
-  const j = await getJSON(LANG_DIR + code + ".json", {}, 10000);
+  const j = await getJSON(LANG_DIR + code + ".json", { cache: "no-cache" }, 10000);
   if (j) {
     try { localStorage.setItem(LANG_KEY + "." + code, JSON.stringify(j)); }
     catch (e) { /* quota — the dictionary still works this session */ }
@@ -11268,17 +11275,32 @@ async function openLangMenu() {
       (GVL.dict && GVL.dict.ui && GVL.dict.ui["Choose a language"]
         ? esc(GVL.dict.ui["Choose a language"]) : "Choose a language") +
     "</div>" +
-    list.map(l =>
-      '<button class="gvl-row' + (l.code === GVL.code ? " on" : "") +
-      '" data-code="' + l.code + '" data-no-i18n>' +
-        '<b>' + esc(l.native) + "</b><em>" + esc(l.name) + "</em>" +
+    list.map(l => {
+      // `translated` comes from data/i18n/index.json, which records whether
+      // that dictionary file actually exists.
+      const ready = l.translated !== false;
+      return '<button class="gvl-row' + (l.code === GVL.code ? " on" : "") +
+        (ready ? "" : " gvl-soon") +
+        '" data-code="' + l.code + '" data-no-i18n>' +
+        '<b>' + esc(l.native) + "</b><em>" + esc(l.name) +
+        (ready ? "" : " \u00b7 not translated yet") + "</em>" +
         (l.code === GVL.code
           ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
             'stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>' : "") +
-      "</button>").join("");
+      "</button>";
+    }).join("");
   document.body.appendChild(m);
   m.querySelectorAll(".gvl-row").forEach(r => {
-    r.onclick = () => { m.remove(); setLang(r.dataset.code, true); };
+    r.onclick = () => {
+      m.remove();
+      const row = list.find(l => l.code === r.dataset.code);
+      if (row && row.translated === false) {
+        // Still switch: the choice is remembered, so the interface follows
+        // the day that dictionary lands. But say what will happen now.
+        toast(row.native + " has no dictionary yet — the interface stays in English");
+      }
+      setLang(r.dataset.code, true);
+    };
   });
   const close = e => {
     if (!e.target.closest("#gvLangMenu") && !e.target.closest("#gvLangBtn")) {

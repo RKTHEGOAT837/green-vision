@@ -378,6 +378,47 @@ check("latitude without longitude is not a point",
       body_point({"lat": 23.02}) == (None, None))
 
 
+
+# ---------------------------------------------------------------------------
+section("14. The language menu does not promise what it cannot deliver")
+# It listed thirteen languages and had dictionaries for five. Picking Tamil set
+# the code, relabelled the button, persisted the choice, and left the entire
+# interface in English with nothing said. For a product whose argument is that
+# it does not overstate what it has, that is a fabricated claim in a different
+# currency.
+_idx = json.loads((ROOT / "data" / "i18n" / "index.json").read_text(encoding="utf-8"))
+_langs = _idx["languages"]
+check("index.json declares languages", bool(_langs))
+check("every declared language records whether it is translated",
+      all("translated" in l for l in _langs),
+      "missing on: %s" % [l["code"] for l in _langs if "translated" not in l])
+for _l in _langs:
+    _f = ROOT / "data" / "i18n" / ("%s.json" % _l["code"])
+    check("%s: the translated flag matches whether the file exists" % _l["code"],
+          bool(_l.get("translated")) == _f.is_file(),
+          "flag=%s file=%s" % (_l.get("translated"), _f.is_file()))
+_html = (ROOT / "index.html").read_text(encoding="utf-8")
+check("the menu marks untranslated languages",
+      "not translated yet" in _html)
+check("choosing one says the interface will stay in English",
+      "the interface stays in English" in _html)
+# The dictionaries themselves must stay loadable: a language advertised as
+# translated whose file will not parse is the same broken promise.
+for _l in _langs:
+    # English is the SOURCE text, so en.json carries an empty `ui` on purpose -
+    # there is nothing to translate English into. Requiring entries there
+    # failed a file that is correct.
+    if not _l.get("translated") or _l["code"] == "en":
+        continue
+    _f = ROOT / "data" / "i18n" / ("%s.json" % _l["code"])
+    try:
+        _d = json.loads(_f.read_text(encoding="utf-8"))
+        _okd = isinstance(_d.get("ui"), dict) and len(_d["ui"]) > 0
+    except Exception as _e:
+        _okd = False
+    check("%s: its dictionary parses and has entries" % _l["code"], _okd)
+
+
 # ---------------------------------------------------------------------------
 print("\n" + "=" * 62)
 print("  %d passed, %d failed" % (len(PASS), len(FAIL)))

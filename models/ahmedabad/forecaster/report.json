@@ -18,26 +18,26 @@
       "test_mae": 0.0,
       "baseline_mae": 0.0,
       "skill_vs_baseline": 0.0,
-      "train_seconds": 0.183,
+      "train_seconds": 0.081,
       "inert_placeholder": true
     },
     "aqi": {
       "test_mae": 41.3471,
       "baseline_mae": 7.7641,
       "skill_vs_baseline": -1.5032,
-      "train_seconds": 1.105,
+      "train_seconds": 0.382,
       "inert_placeholder": false
     },
     "ndvi": {
       "test_mae": 0.1733,
       "baseline_mae": 0.0259,
       "skill_vs_baseline": -1.3129,
-      "train_seconds": 2.218,
+      "train_seconds": 1.928,
       "inert_placeholder": false
     }
   },
   "skill_combined": -1.408,
-  "train_seconds_total": 3.505,
+  "train_seconds_total": 2.392,
   "openvino_parity": {
     "measured": true,
     "device": "CPU",

@@ -10,43 +10,43 @@
     "requested": false,
     "active": false
   },
-  "n_train": 1017,
-  "n_test": 339,
+  "n_train": 902,
+  "n_test": 304,
   "horizon_months": 12,
   "per_metric": {
     "traffic": {
       "test_mae": 0.0,
       "baseline_mae": 0.0,
       "skill_vs_baseline": 0.0,
-      "train_seconds": 0.431,
+      "train_seconds": 0.528,
       "inert_placeholder": true
     },
     "aqi": {
-      "test_mae": 410.5006,
-      "baseline_mae": 331.6874,
-      "skill_vs_baseline": -0.4375,
-      "train_seconds": 1.022,
+      "test_mae": 3.2164,
+      "baseline_mae": 9.0474,
+      "skill_vs_baseline": 0.144,
+      "train_seconds": 1.524,
       "inert_placeholder": false
     },
     "ndvi": {
-      "test_mae": 0.0527,
-      "baseline_mae": 0.053,
-      "skill_vs_baseline": 0.0027,
-      "train_seconds": 3.475,
+      "test_mae": 0.1054,
+      "baseline_mae": 0.0586,
+      "skill_vs_baseline": -0.3077,
+      "train_seconds": 5.55,
       "inert_placeholder": false
     }
   },
-  "skill_combined": -0.2174,
-  "train_seconds_total": 4.928,
+  "skill_combined": -0.0818,
+  "train_seconds_total": 7.602,
   "openvino_parity": {
     "measured": true,
     "device": "CPU",
     "max_abs_diff": {
-      "traffic": 7.2e-07,
-      "aqi": 5.72e-06,
-      "ndvi": 1.67e-06
+      "traffic": 1.3e-07,
+      "aqi": 4.8e-07,
+      "ndvi": 9.5e-07
     },
-    "worst_abs_diff": 5.72e-06,
+    "worst_abs_diff": 9.5e-07,
     "tolerance": 0.001,
     "ok": true
   }
