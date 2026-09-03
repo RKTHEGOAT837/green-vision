@@ -4976,9 +4976,16 @@ function computeCost(d, ctx) {
   const sp = speciesList();
   const wf = waterFactor(ctx);
   const lines = [];
-  const add = (cat, item, qty, unit, rate, note) => {
+  // Direct cost of the individual trees only - saplings, pits, guards, stakes
+  // and the labour to put them in. Deliberately NOT the "Planting" category,
+  // which also carries area-based planting like a Miyawaki block or a shrub
+  // massing; see the per_tree note below for what that confusion cost.
+  let treeDirect = 0;
+  const add = (cat, item, qty, unit, rate, note, isTree) => {
     if (!qty) return;
-    lines.push({ cat, item, qty: round(qty, qty < 10 ? 1 : 0), unit, rate: round(rate), amount: qty * rate, note });
+    const amount = qty * rate;
+    if (isTree) treeDirect += amount;
+    lines.push({ cat, item, qty: round(qty, qty < 10 ? 1 : 0), unit, rate: round(rate), amount, note });
   };
 
   /* --- site preparation, from the plot -------------------------------- */
@@ -5040,17 +5047,17 @@ function computeCost(d, ctx) {
     if (!s) continue;
     add("Planting", s.name + " sapling", n, "no.", s.sapling,
         s.bot + " · 6–8 ft avenue grade. Forest Department polybag stock is Rs 1–3 " +
-        "and reaches the same size in ~3 years — worth it behind a fence, not on a roadside.");
+        "and reaches the same size in ~3 years — worth it behind a fence, not on a roadside.", true);
     saplingTotal += n * s.sapling;
     estWater += n * s.water * 3;   // three-year establishment
   }
   const nTrees = trees.length;
   if (nTrees) {
-    add("Planting", "Pit excavation and backfill", nTrees, "no.", PLANT_OPS.pit);
-    add("Planting", "Soil amendment and manure", nTrees, "no.", PLANT_OPS.amend);
-    add("Planting", "Tree guard", nTrees, "no.", PLANT_OPS.guard, "MS guard; bamboo cuts this to about \u20B9350");
-    add("Planting", "Staking and tying", nTrees, "no.", PLANT_OPS.stake);
-    add("Planting", "Planting labour", nTrees, "no.", PLANT_OPS.plant_labour);
+    add("Planting", "Pit excavation and backfill", nTrees, "no.", PLANT_OPS.pit, null, true);
+    add("Planting", "Soil amendment and manure", nTrees, "no.", PLANT_OPS.amend, null, true);
+    add("Planting", "Tree guard", nTrees, "no.", PLANT_OPS.guard, "MS guard; bamboo cuts this to about \u20B9350", true);
+    add("Planting", "Staking and tying", nTrees, "no.", PLANT_OPS.stake, null, true);
+    add("Planting", "Planting labour", nTrees, "no.", PLANT_OPS.plant_labour, null, true);
   }
 
   /* --- everything else you drew or placed ----------------------------- */
@@ -5103,9 +5110,20 @@ function computeCost(d, ctx) {
   // of the three-year establishment that the trees drive. Dividing the
   // whole project by the tree count would charge each tree for the
   // toilet block, which is how "trees cost a lakh each" numbers happen.
-  const plantingDirect = (cats["Planting"] || 0);
   const estTree = nTrees ? (cats["Establishment (3 yr)"] || 0) * clamp(nTrees * 3000 / Math.max(totalWaterL, 1), 0, 1) : 0;
-  const treeAttrib = (plantingDirect + estTree) * (1 + R.contingency + R.design_fee) * (1 + R.gst);
+  const treeAttrib = (treeDirect + estTree) * (1 + R.contingency + R.design_fee) * (1 + R.gst);
+
+  /* A share cannot exceed the whole. If it does, the attribution is reading
+     something it should not - which is exactly how this line came to report
+     24,287 per tree on a 47.6 lakh scheme, by taking the entire "Planting"
+     category including a 397 m2 Miyawaki block. Complaining in the console is
+     not a fix, but it turns an invisible wrong number into a visible one the
+     next time the categories move. */
+  if (treeAttrib > grand + 1) {
+    console.warn("Green Vision costing: per-tree attribution (" + Math.round(treeAttrib) +
+                 ") exceeds the project total (" + Math.round(grand) +
+                 "). Something outside the tree lines is being charged to the trees.");
+  }
 
   /* Does the design physically fit?
 
