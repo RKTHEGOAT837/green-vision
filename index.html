@@ -5008,13 +5008,21 @@ function computeCost(d, ctx) {
   // Tree pits still need soil even where they sit in bare ground. 4 m2 is the
   // pit plus its watering basin at the avenue-grade sizes this costs.
   const treePitM2 = d.items.filter(i => i.k === "tree").length * 4;
-  const topsoilM2 = groundPlaced
+  /* The 60% stand-in is for an EMPTY design only.
+
+     Gating it on ground surfaces alone was still wrong: a design of 70 trees
+     and no lawn has 280 m2 of pits to fill, not 5,960 m2 of topsoil, and it
+     was charged for the latter. Anything actually placed - surfaces, trees,
+     or both - is measured; the assumption applies only when there is nothing
+     to measure at all. */
+  const anythingPlaced = groundPlaced > 0 || treePitM2 > 0;
+  const topsoilM2 = anythingPlaced
     ? Math.min(area, plantedM2 + treePitM2)
     : area * 0.6;
-  add("Site preparation", "Topsoil spreading, 150 mm", topsoilM2, "m\u00B2", 55,
-      groundPlaced
-        ? "Measured from the planted ground in this design plus 4 m\u00B2 per tree pit"
-        : "No ground surfaces placed yet, so this assumes 60% of the plot is planted");
+  add("Site preparation", "Topsoil spreading, 150 mm", topsoilM2, "m²", 55,
+      anythingPlaced
+        ? "Measured from the planted ground in this design plus 4 m² per tree pit"
+        : "Nothing placed yet, so this assumes 60% of the plot ends up planted");
 
   add("Site preparation", "Survey and setting out", 1, "job", Math.max(18000, area * 3.5));
 
