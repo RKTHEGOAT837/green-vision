@@ -343,6 +343,26 @@ body.gv-dock-on .gv-greenleg{left:444px;}
   padding:1px 4px;border-radius:4px;}
 @media (max-width:640px){.gv-greenleg{width:158px;left:10px;bottom:78px;padding:11px 12px;}}
 @media (max-width:640px){#toolbar{flex-wrap:wrap;} .brand span{display:none;} #panel{width:100vw;} .searchwrap{order:3;flex-basis:100%;max-width:none;} #views{bottom:14px;}}
+/* The view switcher did not fit a phone.
+
+   Four labelled buttons come to 377px of content, 401px with the padding and
+   gaps, against a 375-390px viewport - so it sat 13px off the left edge with
+   "Satellite" clipped, and worse on a narrower handset. It is the primary
+   navigation of the whole app and the first thing anyone reaches for.
+
+   Tightening the padding rather than dropping the labels: an icon-only row
+   saves more space and costs a reader who does not already know which glyph
+   means "Priority". max-width keeps it inside the viewport whatever the
+   translation does to the label lengths - Hindi's "प्राथमिकता" is longer than
+   "Priority". */
+@media (max-width:640px){
+  #views{ max-width:calc(100vw - 16px); gap:2px; padding:4px; }
+  .viewbtn{ padding:8px 9px; font-size:12px; gap:5px; }
+  .viewbtn svg{ width:15px; height:15px; }
+}
+@media (max-width:400px){
+  .viewbtn{ padding:8px 7px; font-size:11.5px; gap:4px; }
+}
 </style>
 </head>
 <body>
