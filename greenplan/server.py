@@ -607,7 +607,12 @@ class Engine:
         except Exception:
             zone = "point"
 
-        # crude single-point MCDA-ish score just for the justification text
+        # A stand-in for a point the trained grid does not cover. It is NOT the
+        # MCDA score and must never be presented as one: different inputs
+        # (today's AQI, not its forecast change; raw NDVI, not its decline),
+        # different weights, and no cross-cell normalisation, so it is not even
+        # on the same scale. Where the panel covers the cell, the real score
+        # replaces it below.
         score = float(np.clip(0.3 * (aqi / 300.0) + 0.35 * (1.0 - ndvi) + 0.1 * plantable, 0, 1))
         # Real values wherever the trained panel covers this cell. The forecast
         # delta and the NDVI slope are the two things a browser click cannot
@@ -624,8 +629,24 @@ class Engine:
         # air there is forecast to hold steady, by a model that has never seen
         # Delhi. Absent and zero are different claims.
         trained = bool(hist)
+        # The number the ranking actually uses, wherever there is one.
+        #
+        # This used to ship the stand-in above under the name "Priority score",
+        # in the same sentence as the panel's real forecast values. For cell
+        # 8742cea64ffffff the report said "Priority score 0.385" while the
+        # Priority view, the worklist and the exported GeoJSON all said 0.616
+        # and rank 46 — two numbers, one name, one cell, and nothing on screen
+        # to say they were computed differently. A planner checking the report
+        # against the programme found a contradiction and no way to resolve it.
+        #
+        # Off-panel the stand-in stays, and the justification's other branch
+        # already refuses to call it a priority score there: it says "live
+        # readings only — no trained history for this cell" and prints no score
+        # at all.
+        panel_score = hist.get("score") if trained else None
         row = {
-            "zone": zone, "score": round(score, 3),
+            "zone": zone,
+            "score": round(panel_score if panel_score is not None else score, 3),
             "aqi_latest": round(aqi, 1),
             "aqi_pred_delta": hist.get("aqi_pred_delta") if trained else None,
             "traffic_latest": None, "traffic_pred_delta": None,

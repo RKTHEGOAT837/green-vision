@@ -779,6 +779,53 @@ check("None offers nothing", point_offered(None) is False)
 
 
 # ---------------------------------------------------------------------------
+section("21. One cell, one priority score")
+
+# The point report printed "Priority score 0.385" for cell 8742cea64ffffff
+# while the Priority view, the worklist and the exported GeoJSON all said
+# 0.616 at rank 46. Two numbers, one name, one cell.
+#
+# They came from different formulas. The ranking is the MCDA total: weighted,
+# normalised across every cell. The report used a stand-in meant for points
+# outside the trained grid - today's AQI rather than its forecast change, raw
+# NDVI rather than its decline, weights that do not sum to one, no
+# normalisation - and printed it under the ranking's name, in the same
+# sentence as the panel's real forecast values.
+#
+# Every published justification carries its own score, so the two can be
+# checked against each other directly.
+_JSCORE = re.compile(r"Priority score ([0-9.]+)")
+_checked = 0
+for _f in sorted((ROOT / "outputs").glob("*/recommendations.geojson")):
+    _gj = json.loads(_f.read_text(encoding="utf-8"))
+    _bad = []
+    for _feat in _gj.get("features", []):
+        _p = _feat.get("properties", {})
+        _m = _JSCORE.search(_p.get("justification") or "")
+        if not _m:
+            continue
+        _said = float(_m.group(1))
+        _real = _p.get("priority_score")
+        if _real is None or abs(_said - float(_real)) > 0.0015:
+            _bad.append("%s: text %.3f vs ranking %s" % (_p.get("zone"), _said, _real))
+        _checked += 1
+    check("%s: the justification quotes the ranking's own score" % _f.parent.name,
+          not _bad, "; ".join(_bad[:3]))
+
+check("there were justifications to check", _checked > 0)
+
+# And a justification for an untrained cell must not quote a score at all -
+# there is no ranking there to quote.
+for _f in sorted((ROOT / "outputs").glob("*/recommendations.geojson")):
+    _gj = json.loads(_f.read_text(encoding="utf-8"))
+    _wrong = [f["properties"].get("zone") for f in _gj.get("features", [])
+              if f["properties"].get("priority_score") is None
+              and "Priority score" in (f["properties"].get("justification") or "")]
+    check("%s: no score is quoted where the ranking has none" % _f.parent.name,
+          not _wrong, "%s" % _wrong[:3])
+
+
+# ---------------------------------------------------------------------------
 print("\n" + "=" * 62)
 print("  %d passed, %d failed" % (len(PASS), len(FAIL)))
 if FAIL:
