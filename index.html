@@ -9173,13 +9173,19 @@ function priLegend(show){
   // The studio dock occupies the left edge when open; a legend under it is
   // a legend nobody can read.
   const dockOpen = document.body.classList.contains("gv-dock-on");
+  // A starting width, not a cap: the resize grip writes an inline width that
+  // overrides this, and a saved one is restored over it. Without any width at
+  // all the longest sentence inside set the box, which is how a colour key
+  // ended up 700 px wide with its own fine print running off the edge.
   el.style.cssText = "position:absolute;left:" + (dockOpen ? 444 : 14) + "px;" +
-    "bottom:22px;z-index:1100;padding:12px 14px;transition:left .18s;" +
+    "bottom:22px;z-index:1100;padding:12px 14px;transition:left .18s;width:210px;" +
+    "box-sizing:border-box;" +
     "border-radius:14px;font:600 11.5px 'Manrope',sans-serif;color:var(--ink);pointer-events:none;";
   const rows = [[.85,"Critical"],[.72,"High"],[.57,"Moderate"],[.42,"Low"],[.2,"Least"]];
+  // No heading here: the drag bar added below already reads PLANTING PRIORITY,
+  // and two identical titles stacked on top of each other was the first thing
+  // the eye hit.
   el.innerHTML =
-    '<div style="font:700 10.5px \'Sora\',sans-serif;letter-spacing:.1em;text-transform:uppercase;' +
-    'color:var(--ink-soft);margin-bottom:8px">Planting priority</div>' +
     rows.map(function(r){
       return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">' +
              '<i style="width:13px;height:13px;border-radius:3px;background:' + priColor(r[0]) +
@@ -9188,7 +9194,10 @@ function priLegend(show){
     '<div style="margin-top:8px;padding-top:7px;border-top:1px solid var(--line);font-weight:600;' +
     'color:var(--ink-soft);font-size:10.5px;max-width:150px;line-height:1.45">' +
     "Click a cell for the engine's reasoning</div>" +
-    priSummaryHTML() +
+    // The headline figures used to sit here, and between them, the duplicate
+    // title and the two toggles the legend ran the height of the map. They
+    // have moved into the planting programme, next to the four assumptions
+    // that produce them — which is the only place a reader can act on them.
     '<label class="gl-tog"><input type="checkbox" id="priTopOnly"' +
       (GVP.topOnly ? " checked" : "") + "> Show only the top " + GVW_TOP_N + "</label>" +
     '<label class="gl-tog"><input type="checkbox" id="priLabels"' +
@@ -9233,8 +9242,8 @@ function priSummaryHTML(){
     '<div class="gl-sum-row"><b>' + gvwNum(su.trees) + "</b> trees</div>" +
     '<div class="gl-sum-row"><b>' + gvwRupees(su.cost) + "</b> indicative</div>" +
     (drv ? '<div class="gl-sum-why">Driven by ' + drv + " of them</div>" : "") +
-    '<div class="gl-sum-fine">Area, trees and cost are modelled on assumptions ' +
-      "you set in the programme below \u2014 not measurements.</div>" +
+    '<div class="gl-sum-fine">Area, trees and cost are modelled on the four ' +
+      "assumptions below \u2014 not measurements. Change one and these move.</div>" +
   "</div>";
 }
 
@@ -10146,7 +10155,12 @@ GVW.show = function (mode) {
     mode === "priority" ? "Planting programme" : "Canopy watch list";
   GVW.node.querySelector(".gvw-sub2").textContent =
     have.length + " cells · the engine's ranking, unaltered · sort any column";
-  GVW.node.querySelector(".gvw-assume").innerHTML = mode === "priority" ? gvwAssumeUI() : "";
+  // The headline totals belong against the assumptions, not over the map: the
+  // four inputs that produce them are in this same block, so changing one and
+  // watching the total move is a single glance instead of a comparison across
+  // two floating panels.
+  GVW.node.querySelector(".gvw-assume").innerHTML =
+    mode === "priority" ? (priSummaryHTML() + gvwAssumeUI()) : "";
   GVW.node.querySelector('[data-a="geo"]').style.display = mode === "priority" ? "" : "none";
   gvwRender();
 };
@@ -10493,6 +10507,10 @@ function gvlMakeMovable(el, opts){
 
   handle.classList.add("gvl-handle");
   el.classList.add("gvl-movable");
+  // The grips are absolutely positioned inside, so they need a positioned
+  // ancestor — but only a static panel needs promoting. fixed and absolute
+  // are already containing blocks, and overwriting them moves the panel.
+  if(getComputedStyle(el).position === "static") el.style.position = "relative";
 
   const changed = () => { if(opts.onChange) try { opts.onChange(); } catch(e){} };
 
@@ -10706,7 +10724,15 @@ GVLAY.resetAll = function(){
   ".gvl-moved{transition:none!important;transform:none!important;border-radius:16px;box-shadow:0 22px 54px rgba(0,0,0,.34);}" +
   ".gvl-moved#gvDock,.gvl-moved#panel{bottom:auto!important;height:min(78vh,720px);border-left:1px solid var(--glass-brd);border-right:1px solid var(--glass-brd);overflow:hidden;}" +
   ".gvl-dragging *{user-select:none;}" +
-  ".gvl-movable{position:relative;}" +
+  // No position here. The grips need a positioned ancestor, but this sheet is
+  // injected after the stylesheet, so at equal specificity ".gvl-movable"
+  // beat every panel selected by class: ".gvw{position:fixed;left:16px;
+  // right:16px;bottom:16px}" became relative, its anchoring turned into flow
+  // offsets, and the planting programme sat 16px off the top of the window
+  // and 16px past its right edge. Panels selected by id were untouched, which
+  // is why only one panel looked wrong. gvlMakeMovable now promotes to
+  // relative only when the panel really is static, which is the case the rule
+  // was written for.
   // The grips. Deliberately visible on hover rather than always: a permanent
   // handle on every panel is visual noise for the majority who never resize.
   ".gvl-grip{position:absolute;z-index:30;opacity:.30;transition:opacity .15s,background .15s;touch-action:none;}" +

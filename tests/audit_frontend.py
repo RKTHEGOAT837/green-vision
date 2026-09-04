@@ -307,6 +307,36 @@ for bi, blk in enumerate(scripts):
                             "its declaration (ReferenceError at load)"
                             % (bi, name, line))
 
+# --------------------------------------------------------------------------
+# CSS injected from JS lands after the stylesheet, so at EQUAL specificity it
+# wins on order alone. That is harmless for a rule describing its own panel,
+# and dangerous for a MIXIN - a class handed to arbitrary elements with
+# classList.add - because the element it lands on usually positions itself
+# already.
+#
+# ".gvl-movable{position:relative}" was added so resize grips would have a
+# positioned ancestor. It also outranked ".gvw{position:fixed;left:16px;
+# right:16px;bottom:16px}", so the planting programme's anchoring became flow
+# offsets and it rendered 16px above the top of the window and 16px past its
+# right edge. Panels selected by id kept their position, so exactly one panel
+# looked wrong and the cause sat three hundred lines away.
+#
+# position is the property that does this: change it and every offset on the
+# element silently means something else.
+mixins = set(re.findall(r"""classList\.add\(\s*["']([\w-]+)["']""", js))
+for _m in re.finditer(r'"(\.[\w-]+)\{([^"{}]*)\}"', js):
+    _sel, _body = _m.group(1), _m.group(2)
+    if not re.fullmatch(r"\.[\w-]+", _sel):
+        continue
+    if _sel.lstrip(".") not in mixins:
+        continue                       # the rule describes its own element
+    if re.search(r"(?:^|;)\s*position\s*:", _body):
+        problems.append(
+            "injected CSS %s sets position, and %s is applied with "
+            "classList.add to elements that position themselves. Injected "
+            "rules load last, so this silently reanchors them"
+            % (_sel, _sel))
+
 ROLE_PAT = 'role\\s*=\\s*["\']%s["\']'
 
 # --------------------------------------------------------------------------
