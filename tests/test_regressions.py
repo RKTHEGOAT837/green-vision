@@ -485,6 +485,63 @@ for _b in _briefs:
 
 
 # ---------------------------------------------------------------------------
+section("17. Every assistant sentence exists in every language it offers")
+
+# Two separate promises, and only one of them is cosmetic.
+#
+# Coverage is cosmetic: i18n.t falls back per key, so a missing string comes
+# out in English. Ugly, obvious, harmless.
+#
+# Placeholder drift is not. A translation that spells {trees} as {tree} either
+# raises at format time or renders a sentence with a hole where a measured
+# number belongs, and no amount of reading the Marathi will catch it unless you
+# already know what the English took. This asserts both, because the second one
+# is invisible until a planner is looking at it.
+#
+# The third check is the one that bit: _load cached a dictionary forever, so a
+# language exercised before a translation pass kept answering in English while
+# an untouched language picked the new strings up in the same process. The file
+# was right and the reply was wrong, which is the worst shape a bug can take.
+from greenplan.reasoning import i18n as _i18n
+
+_FIELD = re.compile(r"\{([A-Za-z_][A-Za-z0-9_]*)[^{}]*\}")
+_en_a = (json.loads((ROOT / "data/i18n/en.json").read_text(encoding="utf-8"))
+         .get("assistant") or {})
+check("en.json carries the assistant strings", bool(_en_a))
+
+for _lang in _i18n.available():
+    _code = _lang.get("code")
+    if _code == "en":
+        continue
+    _d = (json.loads((ROOT / ("data/i18n/%s.json" % _code)).read_text(encoding="utf-8"))
+          .get("assistant") or {})
+    _missing = sorted(k for k in _en_a if k not in _d)
+    check("%s: every assistant string translated" % _code, not _missing,
+          "%d missing, first: %s" % (len(_missing), ", ".join(_missing[:4])))
+    _drift = [k for k, v in _d.items()
+              if k in _en_a
+              and set(_FIELD.findall(_en_a[k])) != set(_FIELD.findall(v))]
+    check("%s: no placeholder drift" % _code, not _drift,
+          "would render a hole or raise: " + ", ".join(_drift[:4]))
+
+# An edited dictionary must take effect. Probe a key no other check reads.
+_probe = ROOT / "data/i18n/hi.json"
+_orig = _probe.read_bytes()
+try:
+    _before = _i18n.t("view.satellite", "hi")
+    _mut = json.loads(_orig.decode("utf-8"))
+    _mut["assistant"]["view.satellite"] = "MTIME-PROBE"
+    _probe.write_text(json.dumps(_mut, ensure_ascii=False, indent=2), encoding="utf-8")
+    _after = _i18n.t("view.satellite", "hi")
+finally:
+    _probe.write_bytes(_orig)
+check("an edited dictionary is re-read, not served from a stale cache",
+      _after == "MTIME-PROBE", "still serving %r" % _before)
+check("restoring the file restores the string",
+      _i18n.t("view.satellite", "hi") == _before)
+
+
+# ---------------------------------------------------------------------------
 print("\n" + "=" * 62)
 print("  %d passed, %d failed" % (len(PASS), len(FAIL)))
 if FAIL:

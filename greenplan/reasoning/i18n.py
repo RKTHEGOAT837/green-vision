@@ -29,8 +29,13 @@ log = logging.getLogger(__name__)
 
 _DIR = Path(__file__).resolve().parent.parent.parent / "data" / "i18n"
 
-# code -> loaded dict, or None when the file is absent/unreadable
-_CACHE: dict[str, dict[str, Any] | None] = {}
+# code -> (mtime_ns, loaded dict or None when the file is absent/unreadable).
+# The mtime is what makes an edited dictionary take effect: a plain cache holds
+# whichever version happened to be read first, so a language exercised before a
+# translation pass keeps answering in English afterwards while an untouched one
+# picks the new strings up — the same trap zones_geojson was pulled out of. The
+# cost is one stat() per lookup against a re-parse we skip.
+_CACHE: dict[str, tuple[int, dict[str, Any] | None]] = {}
 
 DEFAULT_LANG = "en"
 
@@ -70,16 +75,22 @@ def _load(code: str) -> dict[str, Any] | None:
     # request costs a string scan; caching it cost the process.
     if not code or not code.replace("-", "").isalnum() or len(code) > 8:
         return None
-    if code in _CACHE:
-        return _CACHE[code]
-    # A well-formed code we have no file for still caches its None, so a
-    # missing translation is one failed read rather than one per request.
+    # A well-formed code we have no file for caches under mtime -1, so a
+    # missing translation is one failed read rather than one per request, and
+    # dropping the file in later still gets picked up.
     path = _DIR / (code + ".json")
+    try:
+        mtime = path.stat().st_mtime_ns
+    except OSError:
+        mtime = -1
+    hit = _CACHE.get(code)
+    if hit is not None and hit[0] == mtime:
+        return hit[1]
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
     except Exception:
         data = None
-    _CACHE[code] = data
+    _CACHE[code] = (mtime, data)
     return data
 
 
