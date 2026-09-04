@@ -2201,7 +2201,40 @@ window.addEventListener("DOMContentLoaded",()=>{
   $$(".viewbtn").forEach(b=>b.onclick=()=>setView(b.dataset.view));
   $("#zoomIn").onclick=()=>map.zoomIn();
   $("#zoomOut").onclick=()=>map.zoomOut();
-  $("#locBtn").onclick=()=>navigator.geolocation&&navigator.geolocation.getCurrentPosition(p=>{map.setView([p.coords.latitude,p.coords.longitude],15);analyse(p.coords.latitude,p.coords.longitude);},()=>toast("Location unavailable"));
+  /* "My location", with the two silent failures closed.
+
+     The old one-liner was `navigator.geolocation && getCurrentPosition(ok, err)`.
+     Two ways that button did nothing at all, with no message:
+
+       no geolocation API - the && short-circuits and the click is swallowed;
+       a fix that never arrives - getCurrentPosition's default timeout is
+       INFINITE, so on a handset indoors with permission granted and no signal
+       the error callback is never reached either.
+
+     Both matter more on the Android build than on a desktop: a phone inside a
+     municipal office is precisely the second case. A 12 s cap turns a dead
+     button into one that says what happened.
+
+     enableHighAccuracy stays off deliberately. Centring the map on a ward does
+     not need a GPS-grade fix; the coarse one is faster, works indoors, costs
+     less battery, and matches the COARSE_LOCATION permission the app asks for
+     rather than quietly wanting more than it declared. */
+  $("#locBtn").onclick = () => {
+    if (!navigator.geolocation) {
+      toast("This browser will not share a location");
+      return;
+    }
+    toast("Finding your location…");
+    navigator.geolocation.getCurrentPosition(
+      p => { map.setView([p.coords.latitude, p.coords.longitude], 15);
+             analyse(p.coords.latitude, p.coords.longitude); },
+      e => toast(e && e.code === 1
+                 ? "Location permission was refused"
+                 : e && e.code === 3
+                   ? "Could not get a location fix — try again outdoors"
+                   : "Location unavailable"),
+      { timeout: 12000, maximumAge: 60000, enableHighAccuracy: false });
+  };
   /* Collapse, do not close.
 
      Closing threw the report away: the reader had to find the same point on
@@ -4655,7 +4688,7 @@ function drawStudioPanel() {
       <div><b>${fmt(round(d.plot.area_m2))} m&sup2;</b><span>${round(d.plot.area_m2 / 10000, 2)} ha plot</span></div>
       <div><b>${d.items.length}</b><span>elements</span></div>
       <button class="gv-mini" id="gvStreetView" title="See this plot from the road">Street view</button>
-      <button class="gv-mini" id="gvRedrawPlot">Redraw plot</button>
+      <button class="gv-mini" id="gvRedrawPlot" title="Clears the boundary and everything placed inside it, so you can draw a new plot">Redraw plot</button>
     </div>
 
     <div class="gv-toolgroup">
@@ -4709,7 +4742,27 @@ function drawStudioPanel() {
     setTool({ kind: e.unit === "each" ? "point" : e.unit === "m" ? "line" : "area", ref: e.id, el: e });
   });
   const l1 = $("#gv3dLaunch"); if (l1) l1.onclick = () => openBuilder();
-  $("#gvRedrawPlot").onclick = () => { GV.design.plot = null; GV.design.items = []; redrawDesign(); drawStudioPanel(); };
+  /* "Redraw plot" also deleted everything planted in it.
+     The label says plot. It nulled the boundary AND emptied every item, with
+     no confirmation and no message - twenty trees gone on one click of a
+     button whose name promises to redraw an outline. Delete, a strictly less
+     destructive action, asks first.
+     The work is in fact recoverable, because this path never calls
+     touchDesign() so the wipe is not autosaved and the last save still holds
+     the items. Nobody was told that either. */
+  $("#gvRedrawPlot").onclick = () => {
+    const n = (GV.design.items || []).length;
+    if (n && !confirm(
+        "Redrawing the plot also removes the " + n + " item" + (n === 1 ? "" : "s") +
+        " placed inside it." +
+        "\n\nThe version you last saved keeps them \u2014 you can" +
+        " reopen it from History. Continue?")) return;
+    GV.design.plot = null; GV.design.items = [];
+    redrawDesign(); drawStudioPanel();
+    toast(n ? "Plot cleared — draw a new one. The saved version still has the "
+              + n + " item" + (n === 1 ? "" : "s") + ", in History."
+            : "Plot cleared — draw a new one on the map");
+  };
   const _sv = $("#gvStreetView");
   if (_sv) _sv.onclick = () => GV.streetView();
   $("#gvFinish").onclick = finishDesign;
