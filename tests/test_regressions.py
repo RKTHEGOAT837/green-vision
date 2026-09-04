@@ -826,6 +826,28 @@ for _f in sorted((ROOT / "outputs").glob("*/recommendations.geojson")):
 
 
 # ---------------------------------------------------------------------------
+section("22. The rainfall note speaks about the city on screen")
+
+# The provenance behind the rainfall figure was a fixed sentence quoting
+# Ahmedabad's check - "757 mm/yr modelled vs 750 published, a 1% difference" -
+# shown wherever the reader happened to be. Someone looking at Chennai was
+# reassured by a 1% match while the number in front of them was 30% low.
+# Rainfall sets the irrigation budget, so understating it makes a scheme look
+# cheaper and more viable than it is: the dangerous direction to be wrong in.
+_h22 = (ROOT / "index.html").read_text(encoding="utf-8")
+check("the rainfall provenance is built per city",
+      "RAIN_PROV" in _h22 and "GV.rainGapNote" in _h22)
+check("it no longer hard-codes one city's verification",
+      "Verified against the IMD published normal for Ahmedabad" not in _h22)
+
+# Every city the app ranks must appear in the gap table, or the note falls
+# silent exactly where a reader needs it.
+for _c in ("Ahmedabad", "Bengaluru", "Mumbai", "Delhi", "Chennai"):
+    check("the IMD gap table covers %s" % _c,
+          re.search(r'city:\s*"%s"' % _c, _h22) is not None)
+
+
+# ---------------------------------------------------------------------------
 print("\n" + "=" * 62)
 print("  %d passed, %d failed" % (len(PASS), len(FAIL)))
 if FAIL:
