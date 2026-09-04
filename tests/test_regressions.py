@@ -542,6 +542,88 @@ check("restoring the file restores the string",
 
 
 # ---------------------------------------------------------------------------
+section("18. Site preparation is billed over ground the design actually works")
+
+# Three site-prep lines are quantity x rate over an area, and all three used to
+# take the whole plot. On a one-hectare plot holding sixty trees and nothing
+# else that billed 9,933 m2 of clearing and 9,933 m2 of rough grading - about
+# 4.96 lakh of a 10.87 lakh scheme, for levelling nobody would do to dig sixty
+# pits. Topsoil was fixed first; clearing and grading kept the fault, and they
+# were the expensive half.
+#
+# Each applies to different ground, and the differences are the point:
+#
+#   clearing   surfaces + tree pits   scrub goes where machines go
+#   grading    surfaces only          pits are excavated under Planting, and
+#                                     grading them bills the same earth twice
+#   topsoil    planted + pits         not under paving
+#
+# The arithmetic is pulled out of index.html and run, so this tests the
+# quantities rather than the presence of a comment about them.
+_html18 = (ROOT / "index.html").read_text(encoding="utf-8")
+check("the empty-design fallback still prices the whole plot",
+      "anythingPlaced ? clearM2 : area" in _html18
+      and "anythingPlaced ? gradeM2 : area" in _html18,
+      "an undesigned plot should still show a full-site budget")
+
+_exprs = {}
+for _name in ("clearM2", "gradeM2", "topsoilM2"):
+    _m = re.search(r"const %s = ([^;]+);" % _name, _html18, re.S)
+    check("the %s quantity can be located" % _name, _m is not None)
+    if _m:
+        _exprs[_name] = " ".join(_m.group(1).split())
+
+check("grading does not also bill the tree pits",
+      "treePitM2" not in _exprs.get("gradeM2", "treePitM2"),
+      "pit earth is already billed under Planting: %r" % _exprs.get("gradeM2"))
+
+_node18 = shutil.which("node")
+if not _node18 or len(_exprs) != 3:
+    print("  -- node not on PATH; the quantities were not executed")
+else:
+    _cases = {
+        # area, planted, paved, pits
+        "treesOnly":    [9933, 0, 0, 240],
+        "surfacesOnly": [9933, 3477, 596, 0],
+        "mixed":        [9933, 3477, 596, 240],
+        "overCommitted": [1000, 900, 900, 40],
+    }
+    _harness = "const CASES = " + json.dumps(_cases) + ";\nconst out = {};\n" + """
+for (const [k, v] of Object.entries(CASES)) {
+  const [area, plantedM2, pavedM2, treePitM2] = v;
+  const anythingPlaced = (plantedM2 + pavedM2) > 0 || treePitM2 > 0;
+""" + "  const clearM2 = %s;\n  const gradeM2 = %s;\n  const topsoilM2 = %s;\n" % (
+        _exprs["clearM2"], _exprs["gradeM2"], _exprs["topsoilM2"]) + """
+  out[k] = {clear: clearM2, grade: gradeM2, topsoil: topsoilM2, area};
+}
+console.log(JSON.stringify(out));
+"""
+    _t18 = Path(tempfile.mkdtemp()) / "prep.js"
+    _t18.write_text(_harness, encoding="utf-8")
+    _r18 = subprocess.run([_node18, str(_t18)], capture_output=True, text=True)
+    check("the quantities run", _r18.returncode == 0, _r18.stderr[:200])
+    if _r18.returncode == 0:
+        _q = json.loads(_r18.stdout)
+        _t = _q["treesOnly"]
+        check("sixty trees do not have a hectare graded", _t["grade"] == 0,
+              "graded %s m2 for tree pits" % _t["grade"])
+        check("sixty trees clear only their own pits", _t["clear"] == 240)
+        check("sixty trees topsoil only their own pits", _t["topsoil"] == 240)
+        _s = _q["surfacesOnly"]
+        check("surfaces are graded over exactly the surfaces",
+              _s["grade"] == 3477 + 596)
+        check("paving gets no topsoil", _s["topsoil"] == 3477)
+        _m18 = _q["mixed"]
+        check("clearing covers surfaces and pits together",
+              _m18["clear"] == 3477 + 596 + 240)
+        check("grading stays under clearing", _m18["grade"] < _m18["clear"])
+        for _k, _v in _q.items():
+            check("%s: no quantity exceeds the plot" % _k,
+                  max(_v["clear"], _v["grade"], _v["topsoil"]) <= _v["area"],
+                  "%s in a %s m2 plot" % (_v, _v["area"]))
+
+
+# ---------------------------------------------------------------------------
 print("\n" + "=" * 62)
 print("  %d passed, %d failed" % (len(PASS), len(FAIL)))
 if FAIL:

@@ -5106,8 +5106,6 @@ function computeCost(d, ctx) {
 
   /* --- site preparation, from the plot -------------------------------- */
   const area = d.plot ? d.plot.area_m2 : 0;
-  add("Site preparation", "Clearing and grubbing", area, "m\u00B2", 12);
-  add("Site preparation", "Rough grading and levelling", area, "m\u00B2", 38);
 
   /* Topsoil goes under planting, so it is measured from the planting that is
      actually in the design.
@@ -5142,6 +5140,38 @@ function computeCost(d, ctx) {
      or both - is measured; the assumption applies only when there is nothing
      to measure at all. */
   const anythingPlaced = groundPlaced > 0 || treePitM2 > 0;
+
+  /* Clearing and grading had the same fault topsoil was fixed for, and it was
+     the more expensive half: both billed the whole plot unconditionally. On a
+     one-hectare plot holding 60 trees and nothing else that is 9,933 m² of
+     clearing and grubbing plus 9,933 m² of rough grading — about 4.96 lakh of
+     a 10.87 lakh scheme, 46% of the project, for earthworks no contractor
+     would carry out. You do not level a hectare to dig sixty pits.
+
+     So each is measured against the ground it actually applies to:
+
+       clearing   the worked footprint — surfaces plus pits. Scrub is removed
+                  where people and machines go, not across untouched ground.
+       grading    surfaces only. Pits are excavated and backfilled under their
+                  own line in Planting; grading them too bills the same earth
+                  twice.
+
+     With nothing placed the old whole-plot figure stands in, and says so — an
+     empty plot is a park not yet designed, and a planner sizing a budget for
+     one does want the full-site number. */
+  const clearM2 = Math.min(area, plantedM2 + pavedM2 + treePitM2);
+  const gradeM2 = Math.min(area, plantedM2 + pavedM2);
+  add("Site preparation", "Clearing and grubbing",
+      anythingPlaced ? clearM2 : area, "m²", 12,
+      anythingPlaced
+        ? "Measured over the worked ground — surfaces plus 4 m² per tree pit"
+        : "Nothing placed yet, so this assumes the whole plot is cleared");
+  add("Site preparation", "Rough grading and levelling",
+      anythingPlaced ? gradeM2 : area, "m²", 38,
+      anythingPlaced
+        ? "Only under the surfaces being built; tree pits are excavated under Planting"
+        : "Nothing placed yet, so this assumes the whole plot is graded");
+
   const topsoilM2 = anythingPlaced
     ? Math.min(area, plantedM2 + treePitM2)
     : area * 0.6;
@@ -7282,8 +7312,21 @@ function actPlant(mix, spacing_m) {
 
   // Interleave the mix so species alternate across the plot instead of
   // arriving in blocks — mixed planting is the point of a mix.
+  //
+  // `mix` is the one argument that arrives as raw JSON from a 1.5B model, and
+  // a small model writes {"species":"Neem","count":60} where the schema asks
+  // for [{...}] often enough to matter. That used to reach .map() and throw a
+  // TypeError the reader saw verbatim — "(mix || []).map is not a function" —
+  // which reads like the app is broken rather than like one field was shaped
+  // wrong. A single entry is an unambiguous intention, so accept it; anything
+  // that is neither an array nor an entry is refused by name.
   const queue = [];
-  const want = (mix || []).map(m => ({
+  const rows = Array.isArray(mix) ? mix
+             : (mix && typeof mix === "object" && "species" in mix) ? [mix]
+             : mix == null ? []
+             : null;
+  if (rows === null) return { placed: 0, missing: [], badMix: typeof mix };
+  const want = rows.filter(m => m && typeof m === "object").map(m => ({
     s: resolveSpecies(m.species), left: Math.max(0, m.count | 0), name: m.species
   }));
   const missing = want.filter(w => !w.s).map(w => w.name);
@@ -10883,7 +10926,15 @@ const A_TOOLS = {
 
   "studio.autoplant": async a => {
     const res = GV.act.plant(a.mix || [], a.spacing_m || 8);
-    if (!res.placed) throw new Error("nothing could be placed — is there a plot?");
+    // Say which of the two went wrong. "Nothing could be placed" sent the
+    // reader looking for a plot that was sitting there the whole time.
+    if (res.badMix) throw new Error("the species mix came through as a " +
+      res.badMix + ", not a list of {species, count} — ask again naming the " +
+      "species and how many");
+    if (res.noPlot) throw new Error("there is no plot yet — draw one, or ask " +
+      "me to site one, and then plant into it");
+    if (!res.placed) throw new Error("nothing could be placed — the plot may " +
+      "be too small for this spacing, or no species matched");
     let msg = "planted " + res.placed + " trees";
     if (res.placed < res.requested) {
       msg += " (plot fits " + res.placed + " of " + res.requested + " at this spacing)";
