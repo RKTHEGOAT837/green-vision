@@ -167,6 +167,66 @@ def safe_static_path(root: Path, rel: str, within: str | None = None) -> Path | 
     return target
 
 
+def point_offered(b: dict | None) -> bool:
+    """Did the caller TRY to give a point, whatever the values were?
+
+    body_point returns (None, None) for a location-free request and for a
+    malformed one alike, and the caller then falls through to the default city.
+    That is right for the first and wrong for the second: "help" has no point
+    and deserves the boot city, while lat=999 is a question about somewhere
+    that does not exist and deserves a refusal. This is the bit that tells them
+    apart - was the key there at all.
+    """
+    def has(d):
+        return isinstance(d, dict) and (d.get("lat") is not None
+                                        or d.get("lon") is not None)
+    if has(b):
+        return True
+    return has((b or {}).get("aoi") if isinstance(b, dict) else None)
+
+
+def resolve_slug(registry, want: str | None, lat: float | None,
+                 lon: float | None, gave_point: bool) -> tuple[str | None, str | None]:
+    """Which city answers this request, or why none should.
+
+    Three cases, and collapsing the last two is what went wrong:
+
+      no point         the boot city. A location-free question - "help", a
+                       health check - is properly answered by whatever is
+                       loaded.
+      point, unusable  refuse. lat=999 or lat=abc is not a place.
+      point, unserved  refuse. Surat sits between two trained cities and is
+                       covered by neither; it used to come back as 146
+                       Ahmedabad cells with nothing marking them as somewhere
+                       else. Every figure real, every figure about a different
+                       city - which pick()'s own docstring already called worse
+                       than refusing, for the ?city= path it did refuse on.
+
+    The browser survives the refusal: getJSON treats a non-200 as null, the
+    ranking falls through to its static paths and then shows its "no data for
+    this area" notice, which is the honest thing to put on screen.
+    """
+    if want:
+        slug = registry.pick(want, None, None)
+        if slug is None:
+            names = ", ".join(c["slug"] for c in registry.summary() if c["ready"])
+            return None, "unknown or unavailable city %r; have: %s" % (want, names)
+        return slug, None
+
+    if gave_point:
+        if lat is None or lon is None:
+            return None, ("coordinates are not a usable lat, lon - "
+                          "expected -90..90 and -180..180")
+        hit = registry.containing(lat, lon)
+        if hit is None:
+            names = ", ".join(c["slug"] for c in registry.summary() if c["ready"])
+            return None, ("no trained city covers %.4f, %.4f; have: %s"
+                          % (lat, lon, names))
+        return hit, None
+
+    return registry.default_slug, None
+
+
 def body_point(b: dict | None) -> tuple[float | None, float | None]:
     """The (lat, lon) a request is about, wherever the caller put it.
 
@@ -1142,16 +1202,18 @@ def make_handler(registry: CityRegistry):
             would be worse than refusing."""
             qs = parse_qs(self.path.split("?", 1)[1] if "?" in self.path else "")
             want = (qs.get("city") or [None])[0]
+            gave_point = bool(qs.get("lat") or qs.get("lon"))
             lat = lon = None
             try:
                 if qs.get("lat") and qs.get("lon"):
                     lat, lon = float(qs["lat"][0]), float(qs["lon"][0])
+                    if not (-90.0 <= lat <= 90.0 and -180.0 <= lon <= 180.0):
+                        lat = lon = None
             except ValueError:
-                pass
-            slug = registry.pick(want, lat, lon)
-            if slug is None:
-                names = ", ".join(c["slug"] for c in registry.summary() if c["ready"])
-                return None, None, "unknown or unavailable city %r; have: %s" % (want, names)
+                lat = lon = None
+            slug, err = resolve_slug(registry, want, lat, lon, gave_point)
+            if err:
+                return None, None, err
             return registry.engine(slug), slug, None
 
         def do_GET(self) -> None:  # noqa: N802
@@ -1291,6 +1353,20 @@ def make_handler(registry: CityRegistry):
                 Ahmedabad's species. Every figure real; every figure about
                 somewhere else, which is the worst way to be wrong."""
                 lat, lon = body_point(b)
+                # A point that was offered but is not a point at all - lat=999,
+                # lat="north" - is a question about nowhere, and answering it
+                # with the boot city's numbers is the quiet kind of wrong. The
+                # caught exception below turns this into a 400 with the reason.
+                #
+                # A VALID point outside every trained city is different, and is
+                # deliberately allowed through: air, canopy and the OSM census
+                # are read live and work anywhere, and the engine's own answers
+                # already say when a point is outside the trained grid rather
+                # than pretending otherwise. Refusing here would take the
+                # assistant offline for most of India to fix a smaller problem.
+                if point_offered(b) and lat is None:
+                    raise ValueError("coordinates are not a usable lat, lon - "
+                                     "expected -90..90 and -180..180")
                 slug = registry.pick(b.get("city"), lat, lon)
                 return registry.engine(slug) or registry.engine(registry.default_slug)
 

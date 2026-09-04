@@ -699,6 +699,86 @@ check("a directory is not a file",
 
 
 # ---------------------------------------------------------------------------
+section("20. A point nobody trained on is refused, not reassigned")
+
+# pick() answered ?city=nosuchcity with a refusal and ?lat=&lon= with the boot
+# city, whatever the coordinates were. So Surat - a real place, between two
+# trained cities and covered by neither - came back as 146 Ahmedabad cells, and
+# so did lat=999. Every figure real, every figure about somewhere else, which
+# is the failure pick()'s own docstring already named as worse than refusing.
+#
+# Three cases, and collapsing the last two was the bug:
+#   no point         boot city. "help" and a health check deserve an answer.
+#   point, unusable  refuse. lat=999 is not a place.
+#   point, unserved  refuse. Nothing here is about Surat.
+from greenplan.server import point_offered, resolve_slug
+
+
+class _FakeRegistry:
+    """Two cities, so 'covered', 'uncovered' and 'unknown' are all reachable."""
+    default_slug = "ahmedabad"
+
+    def summary(self):
+        return [{"slug": "ahmedabad", "ready": True},
+                {"slug": "delhi", "ready": True},
+                {"slug": "mumbai", "ready": False}]
+
+    def containing(self, lat, lon):
+        if 22.8 <= lat <= 23.3 and 72.3 <= lon <= 72.8:
+            return "ahmedabad"
+        if 28.4 <= lat <= 28.9 and 76.9 <= lon <= 77.4:
+            return "delhi"
+        return None
+
+    def pick(self, city, lat, lon):
+        if city:
+            c = str(city).lower()
+            ok = {s["slug"] for s in self.summary() if s["ready"]}
+            return c if c in ok else None
+        return self.default_slug
+
+
+_R = _FakeRegistry()
+
+_slug, _err = resolve_slug(_R, None, None, None, False)
+check("no point at all still gets the boot city", _slug == "ahmedabad" and not _err)
+
+_slug, _err = resolve_slug(_R, None, 23.02, 72.57, True)
+check("a covered point gets its own city", _slug == "ahmedabad" and not _err)
+
+_slug, _err = resolve_slug(_R, None, 28.61, 77.21, True)
+check("a point in the other city gets that one", _slug == "delhi" and not _err)
+
+_slug, _err = resolve_slug(_R, None, 21.17, 72.83, True)
+check("Surat is refused, not answered as Ahmedabad", _slug is None and bool(_err),
+      "got %r" % (_slug,))
+check("the refusal names the point and what is served",
+      bool(_err) and "21.17" in _err and "ahmedabad" in _err)
+
+_slug, _err = resolve_slug(_R, None, None, None, True)
+check("a point that was offered but is unusable is refused",
+      _slug is None and bool(_err))
+
+_slug, _err = resolve_slug(_R, "delhi", None, None, False)
+check("an explicit city still works", _slug == "delhi" and not _err)
+_slug, _err = resolve_slug(_R, "nosuchcity", None, None, False)
+check("an unknown city is still refused", _slug is None and bool(_err))
+_slug, _err = resolve_slug(_R, "mumbai", None, None, False)
+check("a city that is not ready is refused", _slug is None and bool(_err))
+
+# point_offered is what separates "no point" from "bad point", so it has to see
+# the key wherever the caller put it - the assistant nests it under aoi.
+check("a top-level point is seen", point_offered({"lat": 1, "lon": 2}) is True)
+check("a nested point is seen", point_offered({"aoi": {"lat": 1, "lon": 2}}) is True)
+check("a bad point is still SEEN as offered",
+      point_offered({"lat": 999, "lon": 999}) is True,
+      "otherwise it falls through to the boot city, which is the bug")
+check("a point-free body offers nothing", point_offered({"message": "help"}) is False)
+check("an empty body offers nothing", point_offered({}) is False)
+check("None offers nothing", point_offered(None) is False)
+
+
+# ---------------------------------------------------------------------------
 print("\n" + "=" * 62)
 print("  %d passed, %d failed" % (len(PASS), len(FAIL)))
 if FAIL:

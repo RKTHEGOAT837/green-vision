@@ -11575,10 +11575,41 @@ async function langDict(code) {
   if (code === "en") return null;                 // English is the source text
   // localStorage cache keeps a language switch instant after the first load,
   // and keeps the page working if the file server goes away mid-session.
+  let cached = null;
   try {
     const hit = localStorage.getItem(LANG_KEY + "." + code);
-    if (hit) return JSON.parse(hit);
+    if (hit) cached = JSON.parse(hit);
   } catch (e) {}
+
+  if (cached) {
+    /* Serve the cache, then check the file behind it.
+
+       This used to return the cache and stop. The cache never expired and
+       nothing ever invalidated it, so a reader who had once opened Hindi kept
+       that exact dictionary for good: every correction and every added string
+       shipped afterwards reached new readers only. Twenty-nine strings I had
+       just translated stayed English on this page for that reason alone, and
+       the file on disk said otherwise, which is the hardest kind of wrong to
+       see.
+
+       Revalidating in the background keeps both things the cache was for -
+       switching is still instant, and a file server that has gone away still
+       leaves the page working - while letting a corrected dictionary actually
+       arrive. */
+    (async () => {
+      const fresh = await getJSON(LANG_DIR + code + ".json", { cache: "no-cache" }, 10000);
+      if (!fresh) return;                       // offline: the cache stands
+      const next = JSON.stringify(fresh);
+      if (next === JSON.stringify(cached)) return;
+      try { localStorage.setItem(LANG_KEY + "." + code, next); } catch (e) {}
+      if (GVL.code === code) {                  // still the language on screen
+        GVL.dict = fresh;
+        try { trNode(document.body); renderLangBtn(); } catch (e) {}
+      }
+    })();
+    return cached;
+  }
+
   const j = await getJSON(LANG_DIR + code + ".json", { cache: "no-cache" }, 10000);
   if (j) {
     try { localStorage.setItem(LANG_KEY + "." + code, JSON.stringify(j)); }
@@ -11618,6 +11649,18 @@ function trString(s) {
   if (!key) return null;
   const hit = ui[key];
   if (hit) return s.replace(key, hit);           // keep surrounding whitespace
+
+  /* Species common names live in their own block, and this only ever read
+     `ui`. So the assistant said "नीम (Neem)" - it looks its names up server
+     side - while the report panel two inches away said "Neem", from the same
+     dictionary, for the same tree.
+
+     Only a WHOLE text node is matched, never a substring, so this cannot
+     corrupt a sentence that happens to contain a species name; the panel puts
+     each name in its own <b>. Botanical names are untouched by design: they
+     are the unambiguous thing a nursery order is written against. */
+  const sp = (GVL.dict.species || {})[key];
+  if (sp) return s.replace(key, sp);
   // Try without a trailing ellipsis / arrow, which several labels carry.
   const bare = key.replace(/[…→\s]+$/, "");
   if (bare !== key && ui[bare]) return s.replace(bare, ui[bare]);
