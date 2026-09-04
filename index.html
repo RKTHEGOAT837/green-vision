@@ -398,7 +398,12 @@ body.gv-dock-on .gv-greenleg{left:444px;}
     <input id="q" type="search" placeholder="Search a place, address or lat, lon…"
       autocomplete="off" role="combobox" aria-expanded="false" aria-controls="acList"
       aria-autocomplete="list" aria-label="Search for a place, address, or coordinates">
-    <div id="acList" class="glass"></div>
+    <div id="acList" class="glass" role="listbox"
+      aria-label="Place suggestions"></div>
+    <!-- The suggestion rows are options in a listbox, which a screen reader
+         only reads out when the input points at one. The status line carries
+         what the options cannot: "Searching…", "Nothing found for Bopal". -->
+    <div id="acStatus" class="gv-sronly" role="status" aria-live="polite"></div>
   </div>
   <div class="tb-actions">
     <button class="iconbtn glass" id="themeBtn" title="Toggle dark / light"><svg id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2M12 20v2M4 12H2M22 12h-2M5 5l1.5 1.5M17.5 17.5L19 19M19 5l-1.5 1.5M6.5 17.5L5 19"/></svg></button>
@@ -1871,10 +1876,35 @@ function rangeOK(lat, lon) {
   return null;
 }
 
+/* The combobox contract, in one place.
+ *
+ * #q declares role="combobox" with aria-expanded and aria-autocomplete, which
+ * is a promise to a screen reader: I will tell you when the list opens, and I
+ * will name the row you are on. The markup made that promise and nothing ever
+ * kept it — aria-expanded sat at "false" through every search, the rows had no
+ * ids to point at, and arrow-keys moved a highlight that was visible only to
+ * people who could see it. Sighted keyboard use worked; nobody else could
+ * choose a place at all.
+ */
+function acAria(open, activeId, status) {
+  const q = $("#q");
+  if (q) {
+    q.setAttribute("aria-expanded", open ? "true" : "false");
+    if (activeId) q.setAttribute("aria-activedescendant", activeId);
+    else q.removeAttribute("aria-activedescendant");
+  }
+  if (status !== undefined) {
+    const s = $("#acStatus");
+    // Notes carry markup (<b>Bopal</b>); a live region wants the words.
+    if (s) s.textContent = String(status || "").replace(/<[^>]*>/g, "");
+  }
+}
+
 function acHide() {
   GVS.open = false; GVS.sel = -1;
   const el = $("#acList");
   if (el) { el.classList.remove("show"); el.innerHTML = ""; }
+  acAria(false, null, "");
 }
 
 function acRender(rows, note) {
@@ -1883,10 +1913,13 @@ function acRender(rows, note) {
   GVS.items = rows;
   GVS.sel = -1;
   el.innerHTML =
-    (note ? '<div class="ac-note">' + note + "</div>" : "") +
+    // A listbox may only contain options, so the note is marked as scenery
+    // and its words go to the status line instead.
+    (note ? '<div class="ac-note" role="presentation">' + note + "</div>" : "") +
     (rows.length
       ? rows.map((r, i) =>
-          '<div class="ac" role="option" data-i="' + i + '">' +
+          '<div class="ac" role="option" id="ac-opt-' + i + '"' +
+            ' aria-selected="false" data-i="' + i + '">' +
             '<div class="ac-ic">' + (r.icon || acIcon(r.kind)) + "</div>" +
             '<div class="ac-tx"><div class="n">' + esc(r.name) + "</div>" +
             (r.meta ? '<div class="m">' + esc(r.meta) + "</div>" : "") + "</div>" +
@@ -1895,6 +1928,11 @@ function acRender(rows, note) {
       : "");
   el.classList.add("show");
   GVS.open = true;
+  acAria(true, null,
+         note ? note
+              : rows.length + (rows.length === 1 ? " place found"
+                                                 : " places found") +
+                ", use the arrow keys to choose");
   el.querySelectorAll(".ac").forEach(node => {
     node.onmousedown = ev => { ev.preventDefault(); acChoose(+node.dataset.i); };
     node.onmouseenter = () => acHighlight(+node.dataset.i);
@@ -1920,9 +1958,14 @@ function acHighlight(i) {
   GVS.sel = i;
   const el = $("#acList");
   if (!el) return;
-  el.querySelectorAll(".ac").forEach((n, k) => n.classList.toggle("on", k === i));
+  el.querySelectorAll(".ac").forEach((n, k) => {
+    n.classList.toggle("on", k === i);
+    n.setAttribute("aria-selected", k === i ? "true" : "false");
+  });
   const on = el.querySelector(".ac.on");
   if (on && on.scrollIntoView) on.scrollIntoView({ block: "nearest" });
+  // Point the input at the row, which is how a screen reader knows to read it.
+  acAria(true, on ? on.id : null);
 }
 
 function acChoose(i) {

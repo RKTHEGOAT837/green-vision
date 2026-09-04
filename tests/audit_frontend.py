@@ -307,6 +307,31 @@ for bi, blk in enumerate(scripts):
                             "its declaration (ReferenceError at load)"
                             % (bi, name, line))
 
+ROLE_PAT = 'role\\s*=\\s*["\']%s["\']'
+
+# --------------------------------------------------------------------------
+# A widget that declares an ARIA role is promising behaviour, and markup alone
+# cannot keep the promise. role="combobox" says "I will tell you when the list
+# opens and name the row you are on", which costs aria-expanded on every open
+# and close and aria-activedescendant pointing at the highlighted option. The
+# search box declared the role, hard-coded aria-expanded="false" and never
+# touched either again, so arrow-keys moved a highlight only a sighted user
+# could perceive and a screen-reader user could not choose a place at all.
+#
+# Nothing else here would catch it: the markup is valid, the JS parses, every
+# id resolves. The role is the claim; this checks the claim is serviced.
+ARIA_CONTRACT = {
+    "combobox": ("aria-expanded", "aria-activedescendant"),
+    "listbox": ("aria-selected",),
+}
+for _role, _needs in ARIA_CONTRACT.items():
+    if not re.search(ROLE_PAT % _role, html):
+        continue
+    for _attr in _needs:
+        if _attr not in js:
+            problems.append('markup declares role="%s" but no script sets %s, '
+                            "so the state is announced wrong" % (_role, _attr))
+
 print("=" * 70)
 print("  STATIC AUDIT: index.html  (%d lines, %d script blocks)"
       % (html.count("\n") + 1, len(scripts)))
