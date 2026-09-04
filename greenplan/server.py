@@ -134,6 +134,39 @@ def osm_index_path(base: Path | None = None) -> Path:
     return base / OSM_INDEX_NAMES[0]
 
 
+def safe_static_path(root: Path, rel: str, within: str | None = None) -> Path | None:
+    """The file `rel` names — but only if it stays where it is allowed.
+
+    Two separate questions, and answering only the first is what went wrong.
+
+    Is it inside the repo? has to be a DIRECTORY-BOUNDARY test, not a text
+    prefix: str.startswith compares characters, so with the repo at
+    .../Green-Vision a sibling named .../Green-Vision-secrets matched the
+    prefix and sailed through. is_relative_to compares components.
+
+    Is it inside the directory that ALLOWED it? The router decides a request is
+    permitted by reading its first segment — "data" in
+    /data/../greenplan/server.py — and that segment survives `..` untouched.
+    Confining the result to the repo alone let every file in the repo out
+    through a directory meant to publish nothing but JSON: the engine's source,
+    config/city.yaml where an API key would live, and the venv config were all
+    downloadable. The answer has to come from the directory that authorised the
+    question.
+
+    Returns the resolved path, or None if it may not be served.
+    """
+    base = (root / within).resolve() if within else root.resolve()
+    try:
+        target = (root / rel).resolve()
+    except (OSError, ValueError):
+        return None
+    if not target.is_relative_to(base):
+        return None
+    if not target.is_file():
+        return None
+    return target
+
+
 def body_point(b: dict | None) -> tuple[float | None, float | None]:
     """The (lat, lon) a request is about, wherever the caller put it.
 
@@ -1083,17 +1116,12 @@ def make_handler(registry: CityRegistry):
         NO_CONTENT = ("/favicon.ico", "/apple-touch-icon.png",
                       "/apple-touch-icon-precomposed.png")
 
-        def _send_file(self, rel: str, ctype: str) -> bool:
+        def _send_file(self, rel: str, ctype: str, within: str | None = None) -> bool:
+            # The decision itself is safe_static_path, at module level, so it
+            # can be tested without standing a server up.
             root = Path(__file__).resolve().parent.parent
-            target = (root / rel).resolve()
-            # Refuse anything that escapes the repo root, whatever the path said.
-            # This has to be a real DIRECTORY-BOUNDARY test, not a text prefix:
-            # str.startswith compares characters, so with the repo at
-            # .../Green-Vision a sibling folder named .../Green-Vision-secrets
-            # matched the prefix and sailed through — `/data/../../Green-Vision-
-            # secrets/key.txt` resolved outside the repo and was served.
-            # is_relative_to compares path COMPONENTS, so a sibling never counts.
-            if not target.is_relative_to(root) or not target.is_file():
+            target = safe_static_path(root, rel, within)
+            if target is None:
                 return False
             body = target.read_bytes()
             self.send_response(200)
@@ -1188,13 +1216,16 @@ def make_handler(registry: CityRegistry):
                 # keeps them under dist/. Same bytes, same URL for the page.
                 if rel.startswith("engine/"):
                     rel = "dist/" + rel
+                # The directory that authorised this request is the directory
+                # the answer has to come from.
+                allowed_dir = rel.split("/", 1)[0]
                 ctype = (
                     "application/geo+json" if rel.endswith(".geojson")
                     else "text/csv; charset=utf-8" if rel.endswith(".csv")
                     else "application/json" if rel.endswith(".json")
                     else "application/octet-stream"
                 )
-                if not self._send_file(rel, ctype):
+                if not self._send_file(rel, ctype, within=allowed_dir):
                     self._json({"error": "not found"}, 404)
             else:
                 self._json({"error": "not found"}, 404)

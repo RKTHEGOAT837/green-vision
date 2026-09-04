@@ -624,6 +624,81 @@ console.log(JSON.stringify(out));
 
 
 # ---------------------------------------------------------------------------
+section("19. A published directory publishes only what is in it")
+
+# The server serves three directories - outputs, data, dist - and decides a
+# request is allowed by reading its FIRST PATH SEGMENT. "data" in
+# /data/../greenplan/server.py is that segment, and `..` does not disturb it.
+# The only other check was that the resolved file stayed inside the repo, which
+# every file in the repo does. So the engine's own source came back over HTTP,
+# and so did config/city.yaml - where a TomTom key lives when one is set - and
+# the venv config. curl hides this by normalising `..` before it sends; a raw
+# socket, or any client that does not, walked straight through.
+#
+# safe_static_path answers both halves: inside the repo, AND inside the
+# directory that authorised the request.
+from greenplan.server import safe_static_path
+
+_root = ROOT
+
+# Things that must never come back, whatever route is tried.
+_escapes = [
+    ("data",    "data/../greenplan/server.py"),
+    ("data",    "data/../config/city.yaml"),
+    ("data",    "data/../.venv/pyvenv.cfg"),
+    ("data",    "data/i18n/../../greenplan/server.py"),
+    ("data",    "data/./../greenplan/engine.py"),
+    ("outputs", "outputs/../greenplan/reasoning/assistant.py"),
+    ("dist",    "dist/../greenplan/server.py"),
+    ("dist",    "dist/engine/../../../greenplan/server.py"),
+    ("data",    "data/../../../../Windows/win.ini"),
+]
+for _within, _rel in _escapes:
+    check("refused: %s" % _rel,
+          safe_static_path(_root, _rel, _within) is None,
+          "served a file outside %s/" % _within)
+
+# A sibling directory whose name merely starts with an allowed one. This is the
+# text-prefix trap: "data-secrets" starts with "data".
+_sib = _root / "data-secrets-probe"
+_made = False
+try:
+    if not _sib.exists():
+        _sib.mkdir()
+        _made = True
+    (_sib / "key.txt").write_text("nope", encoding="utf-8")
+    check("a sibling directory sharing a prefix is not inside it",
+          safe_static_path(_root, "data-secrets-probe/key.txt", "data") is None)
+finally:
+    try:
+        (_sib / "key.txt").unlink()
+        if _made:
+            _sib.rmdir()
+    except OSError:
+        pass
+
+# And the ordinary files still resolve, or the fix has broken the app.
+_serves = [
+    ("data",    "data/i18n/en.json"),
+    ("data",    "data/i18n/index.json"),
+    ("outputs", "outputs/ahmedabad/planting_brief.txt"),
+]
+for _within, _rel in _serves:
+    if (_root / _rel).is_file():
+        check("still serves %s" % _rel,
+              safe_static_path(_root, _rel, _within) is not None)
+
+# index.html is named literally by the route table, not built from user input,
+# so it is checked against the repo root rather than a subdirectory.
+check("the page itself still resolves",
+      safe_static_path(_root, "index.html") is not None)
+check("a missing file is None, not an error",
+      safe_static_path(_root, "data/nope.json", "data") is None)
+check("a directory is not a file",
+      safe_static_path(_root, "data", "data") is None)
+
+
+# ---------------------------------------------------------------------------
 print("\n" + "=" * 62)
 print("  %d passed, %d failed" % (len(PASS), len(FAIL)))
 if FAIL:
