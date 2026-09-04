@@ -54,7 +54,16 @@ button{font-family:inherit;cursor:pointer;color:inherit;}
 .leaflet-container{background:var(--bg2);font-family:'Manrope',sans-serif;}
 .glass{background:var(--card);-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);
   border:1px solid var(--glass-brd);box-shadow:var(--shadow);}
-#toolbar{position:absolute;top:14px;left:14px;right:14px;z-index:1000;display:flex;gap:10px;align-items:center;pointer-events:none;}
+/* The map's chrome lives BETWEEN the two sidebars, not underneath them.
+   --gv-il and --gv-ir are the inner edges of the studio dock and the report
+   panel, written by gvSyncInsets() whenever either opens, closes, rails or is
+   resized. Without them the dock (z-index 1250) covered the left 416px of the
+   toolbar — which is where the search box is, so opening the studio made the
+   search unreachable — and the panel (1200) covered its right end and the
+   whole zoom column. */
+#toolbar{position:absolute;top:14px;left:calc(14px + var(--gv-il,0px));
+  right:calc(14px + var(--gv-ir,0px));z-index:1000;display:flex;gap:10px;align-items:center;pointer-events:none;
+  transition:left .18s,right .18s;}
 #toolbar>*{pointer-events:auto;}
 .brand{display:flex;align-items:center;gap:10px;padding:9px 14px;border-radius:16px;}
 .brand .logo{width:30px;height:30px;flex:none;}
@@ -79,12 +88,24 @@ button{font-family:inherit;cursor:pointer;color:inherit;}
 .tb-actions{display:flex;gap:8px;margin-left:auto;}
 .iconbtn{width:44px;height:44px;border:0;border-radius:14px;display:flex;align-items:center;justify-content:center;transition:transform .12s ease,background .15s;}
 .iconbtn:hover{transform:translateY(-2px);} .iconbtn svg{width:20px;height:20px;}
-#views{position:absolute;bottom:22px;left:50%;transform:translateX(-50%);z-index:1000;display:flex;gap:4px;padding:5px;border-radius:18px;}
+/* Centred in the free area, not in the window: with the studio open the bar
+   was centred on ground the studio was covering. */
+#views{position:absolute;bottom:22px;
+  left:calc(var(--gv-il,0px) + (100% - var(--gv-il,0px) - var(--gv-ir,0px)) / 2);
+  transform:translateX(-50%);z-index:1000;display:flex;gap:4px;padding:5px;border-radius:18px;
+  transition:left .18s;}
 .viewbtn{border:0;background:transparent;padding:9px 15px;border-radius:14px;font-weight:700;font-size:13px;color:var(--ink-soft);display:flex;align-items:center;gap:7px;transition:.15s;}
 .viewbtn svg{width:16px;height:16px;}
 .viewbtn.active{background:var(--brand-solid);color:#fff;box-shadow:0 6px 16px -5px rgba(18,185,129,.7);}
 .viewbtn:not(.active):hover{color:var(--ink);background:var(--bg2);}
-#mapctrl{position:absolute;right:14px;top:50%;transform:translateY(-50%);z-index:1000;display:flex;flex-direction:column;gap:8px;}
+/* When the sidebars leave the map a narrow strip, the switcher drops its
+   labels and keeps its icons: 401px becomes about 170px, which fits. Each
+   button already carries a title, and font-size:0 leaves the text in the
+   accessibility tree, so nothing is lost but the pixels. */
+body.gv-cramped .viewbtn{font-size:0;gap:0;padding:9px 11px;}
+body.gv-cramped #views{gap:2px;padding:4px;}
+#mapctrl{position:absolute;right:calc(14px + var(--gv-ir,0px));top:50%;transform:translateY(-50%);z-index:1000;display:flex;flex-direction:column;gap:8px;
+  transition:right .18s;}
 #mapctrl .iconbtn{width:42px;height:42px;border-radius:13px;}
 #panel{position:fixed;top:0;right:0;bottom:0;width:min(var(--gv-panel-w,400px),94vw);z-index:1200;
   transform:translateX(102%);
@@ -318,11 +339,47 @@ body.gv-rtl .gva-bot{align-self:flex-end;}
   background:var(--bg2);padding:3px 7px;border-radius:7px;}
 .ac.on .ac-d{background:var(--card-solid);}
 
-/* --- green view legend ------------------------------------------------- */
-body.gv-dock-on .gv-greenleg{left:444px;}
-@media (max-width:640px){body.gv-dock-on .gv-greenleg{left:10px;}}
-.gv-greenleg{position:absolute;left:14px;bottom:22px;transition:left .18s;z-index:1100;padding:13px 15px;
-  border-radius:15px;font:600 11.5px 'Manrope',sans-serif;color:var(--ink);width:186px;}
+/* --- map legends -------------------------------------------------------
+   Both legends sit at the left of the FREE area and clear the view switcher.
+
+   bottom is 82px, not 22px, because the switcher is a permanent fixture
+   across the bottom centre: at 22px a legend's own button sat on top of it as
+   soon as the studio pushed the legend inboard.
+
+   The priority legend's layout used to be assigned inline, which made "Reset
+   layout" destroy it - that button clears inline geometry on every movable
+   panel, which is right for the ones whose layout is in the stylesheet and
+   fatal for the one whose layout was the inline style. It ended up a
+   full-width block in the top-left corner. Its layout lives here now, so
+   reset restores it instead of deleting it. */
+.gv-greenleg,.gv-prileg{position:absolute;left:calc(14px + var(--gv-il,0px));bottom:82px;
+  transition:left .18s;z-index:1100;box-sizing:border-box;
+  font:600 11.5px 'Manrope',sans-serif;color:var(--ink);
+  /* Never taller than the gap between the toolbar and the view switcher. The
+     canopy legend carries two ramps, four toggles, a summary and an export
+     button: 822px of it, which on a 720px screen ran off the top of the
+     window and buried the toolbar. It scrolls inside itself instead.
+     --gv-it is the toolbar's real bottom edge plus a gap, because the toolbar
+     wraps to two rows on a narrow window; 82px is the one-row fallback. */
+  max-height:calc(100vh - var(--gv-it,82px) - 82px);
+  overflow-y:auto;overscroll-behavior:contain;}
+/* The grab bar has to stay grabbable once the contents scroll under it. */
+.gv-greenleg .gl-drag,.gv-prileg .gl-drag{position:sticky;top:-2px;z-index:2;
+  background:var(--card);}
+/* The width is a preference, clamped to the room that actually exists.
+
+   --gv-free is what is left between the two sidebars once the zoom column and
+   its gaps are taken out. On a 1024px window with both sidebars opened to
+   400px there are 194px of map left, and a 210px legend simply does not fit:
+   it used to spill across the report panel and the zoom buttons rather than
+   give way. Now it narrows, and when even the floor will not fit it collapses
+   to its title bar, which is one click from being back. */
+.gv-greenleg{padding:13px 15px;border-radius:15px;width:min(186px,var(--gv-free,186px));}
+.gv-prileg{padding:12px 14px;border-radius:14px;width:min(210px,var(--gv-free,210px));}
+body.gv-cramped .gv-greenleg > *:not(.gl-drag),
+body.gv-cramped .gv-prileg  > *:not(.gl-drag){display:none;}
+body.gv-cramped .gv-greenleg,body.gv-cramped .gv-prileg{width:auto;max-height:none;overflow:visible;}
+body.gv-cramped .gl-drag{margin-bottom:0;border-bottom:0;padding-bottom:0;}
 .gv-greenleg .gl-h{font:700 10px 'Sora',sans-serif;letter-spacing:.11em;
   text-transform:uppercase;color:var(--ink-soft);margin-bottom:7px;}
 .gv-greenleg .gl-h2{margin-top:13px;padding-top:11px;border-top:1px solid var(--line);}
@@ -9169,18 +9226,26 @@ function priLegend(show){
   if(GVP.legend){ GVP.legend.remove(); GVP.legend=null; }
   if(!show) return;
   const el = document.createElement("div");
-  el.className = "glass";
-  // The studio dock occupies the left edge when open; a legend under it is
-  // a legend nobody can read.
-  const dockOpen = document.body.classList.contains("gv-dock-on");
-  // A starting width, not a cap: the resize grip writes an inline width that
-  // overrides this, and a saved one is restored over it. Without any width at
-  // all the longest sentence inside set the box, which is how a colour key
-  // ended up 700 px wide with its own fine print running off the edge.
-  el.style.cssText = "position:absolute;left:" + (dockOpen ? 444 : 14) + "px;" +
-    "bottom:22px;z-index:1100;padding:12px 14px;transition:left .18s;width:210px;" +
-    "box-sizing:border-box;" +
-    "border-radius:14px;font:600 11.5px 'Manrope',sans-serif;color:var(--ink);pointer-events:none;";
+  /* Layout comes from .gv-prileg in the stylesheet, deliberately.
+
+     The dock occupies the left edge when it is open, and a legend underneath
+     it is a legend nobody can read. That used to be handled by reading a body
+     class here and hard-coding 444px; the rule now offsets by --gv-il, so it
+     follows a resized dock too instead of only the default width.
+
+     It was assigned here as an inline cssText, which meant "Reset layout"
+     wiped it - that button clears inline geometry on every movable panel, so
+     the one panel whose geometry WAS the inline style came back as a
+     full-width block in the corner. It also had pointer-events:none, to keep
+     the legend from swallowing map clicks; it swallowed its own instead, so
+     the drag bar could not be grabbed, neither checkbox could be ticked and
+     the button could not be pressed.
+
+     The width there is a starting width, not a cap: the resize grip writes an
+     inline width over it, and a saved one is restored over that. Nothing
+     bounded it before, so the longest sentence inside set the box - which is
+     how a colour key ended up 700px wide with its fine print off the edge. */
+  el.className = "glass gv-prileg";
   const rows = [[.85,"Critical"],[.72,"High"],[.57,"Moderate"],[.42,"Low"],[.2,"Least"]];
   // No heading here: the drag bar added below already reads PLANTING PRIORITY,
   // and two identical titles stacked on top of each other was the first thing
@@ -10467,6 +10532,82 @@ const GVLAY = window.GVLAY = { stores: {}, dragging: null };
 
 const GVLAY_MIN_VISIBLE = 60;      // px of a panel that must stay reachable
 
+/* Where the two sidebars actually end, published as --gv-il / --gv-ir so the
+   map's chrome can stay between them.
+
+   Measuring beats tracking state. The panel has four of them — open, closed,
+   railed to 46px, and dragged loose — and the dock is resizable, so a class
+   hook per state would have to be kept in step at every call site and was
+   already out of step at three of them. The edges are the truth; read them.
+
+   A panel dragged off its edge floats over the map and insets nothing: it is
+   no longer a wall, and pushing the toolbar around to avoid one would move
+   the search box every time somebody repositioned a window. */
+function gvInsetOf(el, side){
+  if(!el) return 0;
+  if(el.classList.contains("gvl-moved")) return 0;
+  const cs = getComputedStyle(el);
+  if(cs.display === "none" || cs.visibility === "hidden" || +cs.opacity < 0.05) return 0;
+  const r = el.getBoundingClientRect();
+  if(r.width < 2) return 0;
+  const inset = side === "left" ? r.right : innerWidth - r.left;
+  // Slid off-screen, or somehow spanning the window: neither is a wall.
+  if(!(inset > 0) || inset > innerWidth * 0.75) return 0;
+  return Math.round(inset);
+}
+
+function gvSyncInsets(){
+  const de = document.documentElement;
+  de.style.setProperty("--gv-il",
+    gvInsetOf(document.getElementById("gvDock"), "left") + "px");
+  de.style.setProperty("--gv-ir",
+    gvInsetOf(document.getElementById("panel"), "right") + "px");
+  /* And the top, because the toolbar is not a fixed height: it wraps to two
+     rows on a narrow window, and a legend sized against the one-row height
+     then slid under it. */
+  const tb = document.getElementById("toolbar");
+  const h = tb ? Math.round(tb.getBoundingClientRect().bottom) : 68;
+  de.style.setProperty("--gv-it", (h > 0 && h < innerHeight ? h + 14 : 82) + "px");
+
+  /* How wide a legend may be: the strip between the sidebars, less the zoom
+     column on the right and the gaps either side of both. Below the floor
+     there is no honest width left, so the legends show their title bar only.
+     LEG_FLOOR is where the five colour rows stop being readable. */
+  const LEG_FLOOR = 130, GUTTERS = 14 + 14 + 42 + 14;   // left, gap, zoom, gap
+  const il = parseFloat(de.style.getPropertyValue("--gv-il")) || 0;
+  const ir = parseFloat(de.style.getPropertyValue("--gv-ir")) || 0;
+  const free = Math.round(innerWidth - il - ir - GUTTERS);
+  de.style.setProperty("--gv-free", Math.max(0, free) + "px");
+  document.body.classList.toggle("gv-cramped", free < LEG_FLOOR);
+}
+window.gvSyncInsets = gvSyncInsets;
+
+/* The sidebars slide, so their edge during the 340ms is not where they land.
+   Re-read on the class change (so the chrome starts moving together with
+   them) and again when the slide finishes (so it lands exactly right). */
+(function(){
+  const start = () => {
+    const dock = document.getElementById("gvDock");
+    const panel = document.getElementById("panel");
+    [dock, panel].forEach(el => {
+      if(!el) return;
+      el.addEventListener("transitionend", ev => {
+        if(ev.propertyName === "transform" || ev.propertyName === "width") gvSyncInsets();
+      });
+    });
+    if(window.MutationObserver){
+      const mo = new MutationObserver(gvSyncInsets);
+      [dock, panel].forEach(el => {
+        if(el) mo.observe(el, { attributes: true, attributeFilter: ["class", "style"] });
+      });
+    }
+    addEventListener("resize", gvSyncInsets);
+    gvSyncInsets();
+  };
+  if(document.readyState === "loading") addEventListener("DOMContentLoaded", start);
+  else start();
+})();
+
 function gvlLoad(key){
   try {
     const raw = localStorage.getItem("gv.layout." + key);
@@ -10656,8 +10797,18 @@ function gvlSidebarResize(el, side, varName, key){
   grip.title = "Drag to resize \u00b7 double-click to reset";
   el.appendChild(grip);
 
+  /* How small and how large a sidebar may be dragged.
+
+     180px was too timid at both ends: a reader who wanted the map back could
+     not shrink the studio below a third of a laptop screen, and one reading a
+     long brief could not give it more than 80%. 150 still fits the narrowest
+     control in either sidebar, and below that the rail (46px) is the honest
+     way to get out of the way rather than a squeezed panel nothing fits in. */
+  const MIN_W = 150, MAX_FRAC = 0.92;
+  const maxW = () => Math.round(innerWidth * MAX_FRAC);
+
   const stored = gvlLoad(key);
-  if(stored && stored.w && stored.w >= 180 && stored.w <= innerWidth * 0.8){
+  if(stored && stored.w && stored.w >= MIN_W && stored.w <= maxW()){
     document.documentElement.style.setProperty(varName, stored.w + "px");
   }
 
@@ -10667,7 +10818,7 @@ function gvlSidebarResize(el, side, varName, key){
     document.body.style.userSelect = "none";
     function move(ev){
       const d = (ev.clientX - x0) * (side === "left" ? 1 : -1);
-      const w = Math.max(180, Math.min(w0 + d, Math.round(innerWidth * 0.8)));
+      const w = Math.max(MIN_W, Math.min(w0 + d, maxW()));
       document.documentElement.style.setProperty(varName, w + "px");
       if(window.gvwFit) gvwFit();
     }
