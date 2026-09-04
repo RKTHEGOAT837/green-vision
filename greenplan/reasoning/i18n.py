@@ -29,13 +29,13 @@ log = logging.getLogger(__name__)
 
 _DIR = Path(__file__).resolve().parent.parent.parent / "data" / "i18n"
 
-# code -> (mtime_ns, loaded dict or None when the file is absent/unreadable).
+# code -> ((mtime_ns, size), loaded dict or None when absent/unreadable).
 # The mtime is what makes an edited dictionary take effect: a plain cache holds
 # whichever version happened to be read first, so a language exercised before a
 # translation pass keeps answering in English afterwards while an untouched one
 # picks the new strings up — the same trap zones_geojson was pulled out of. The
 # cost is one stat() per lookup against a re-parse we skip.
-_CACHE: dict[str, tuple[int, dict[str, Any] | None]] = {}
+_CACHE: dict[str, tuple[tuple[int, int], dict[str, Any] | None]] = {}
 
 DEFAULT_LANG = "en"
 
@@ -79,18 +79,27 @@ def _load(code: str) -> dict[str, Any] | None:
     # missing translation is one failed read rather than one per request, and
     # dropping the file in later still gets picked up.
     path = _DIR / (code + ".json")
+    # Size as well as mtime. Windows updates file timestamps on a coarse tick
+    # (tens of milliseconds), so two writes close together can share an
+    # st_mtime_ns and the second one goes unseen - which is exactly what the
+    # regression test does when it writes a probe and restores the original,
+    # and it failed intermittently because of it. A real translation edit is
+    # never that close to the previous read, but a test that fails at random
+    # is its own defect. Size changes whenever the content length does, which
+    # covers the same-tick case cheaply.
     try:
-        mtime = path.stat().st_mtime_ns
+        st = path.stat()
+        stamp = (st.st_mtime_ns, st.st_size)
     except OSError:
-        mtime = -1
+        stamp = (-1, -1)
     hit = _CACHE.get(code)
-    if hit is not None and hit[0] == mtime:
+    if hit is not None and hit[0] == stamp:
         return hit[1]
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
     except Exception:
         data = None
-    _CACHE[code] = (mtime, data)
+    _CACHE[code] = (stamp, data)
     return data
 
 

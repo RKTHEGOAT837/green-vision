@@ -650,9 +650,21 @@ class Engine:
             "aqi_latest": round(aqi, 1),
             "aqi_pred_delta": hist.get("aqi_pred_delta") if trained else None,
             "traffic_latest": None, "traffic_pred_delta": None,
-            "ndvi_latest": round(ndvi, 3),
+            # Quote what the score was actually computed from.
+            #
+            # These used to be the browser's numbers even where the panel had
+            # its own, so the justification read "priority score 0.616 ... with
+            # canopy at 0.29 and plantable-space 0.71" for a cell the engine
+            # scored from NDVI 0.199 and plantable 0.67. One sentence, two
+            # instruments: MODIS NDVI over 42 months on one side, a
+            # visible-band greenness index off today's satellite tiles on the
+            # other, presented as the reasoning behind a single number. The
+            # browser's canopy is not wrong and the panel still shows it, under
+            # its own label - it just did not produce this score.
+            "ndvi_latest": hist.get("ndvi_latest") if trained else round(ndvi, 3),
             "ndvi_slope": hist.get("ndvi_slope") if trained else None,
-            "plantable_space": round(plantable, 2),
+            "plantable_space": (hist.get("plantable_space") if trained
+                                else round(plantable, 2)),
             "soil": prof.as_dict() if prof is not None else None,
         }
         used = self._reasoning_label()
