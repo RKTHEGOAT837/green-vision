@@ -18,14 +18,22 @@ launcher polls `/api/health` and only opens the browser once that returns 200.
 Opening sooner shows a connection error and teaches the reader the app is
 broken when it is merely still starting.
 
-## Why it checks the port first
+## Which port it uses
 
-If something else is already on port 8000 the launcher says so and stops,
-rather than starting an engine that cannot bind and then opening a page that
-something else is serving. That failure is silent and confusing: the app looks
-stale or wrong when it is in fact a different program's copy of the page. It
-happened during development, with a second checkout answering on 8000 while
-the edits went to this one.
+It tries 8000 first and falls back through 8001-8020, in three steps:
+
+1. **Is one of ours already running?** Every candidate port that has a listener
+   is asked for `/api/health`, and the reply has to look like this engine -
+   `ok: true` and a city. If one answers, the browser opens on that port and
+   nothing new is started.
+2. **Otherwise, the first port nobody is on** gets a fresh engine.
+3. If all twenty-one are busy and none is ours, it says so and stops.
+
+Checking the payload rather than the status code matters. Starting an engine
+that cannot bind and then opening a page some other program is serving fails
+silently: the app looks stale or broken when it is in fact a different
+program's copy of the page. That happened during development, with a second
+checkout answering on 8000 while the edits went into this one.
 
 ## Recreating the shortcut
 
