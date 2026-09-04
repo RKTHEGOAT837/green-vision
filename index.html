@@ -235,18 +235,34 @@ body.gv-rtl .gva-bot{align-self:flex-end;}
   #gvLangMenu{right:8px;left:8px;width:auto;}
 }
 /* --- assistant --------------------------------------------------------- */
-#gvaFab{position:absolute;right:14px;bottom:22px;z-index:1200;display:flex;align-items:center;
+/* Both of these sit at the right of the FREE area, not of the window. Pinned
+   to the window they landed on top of the report panel - the assistant covered
+   386x620 of a 400px-wide report, so asking a question hid the answer you were
+   reading. --gv-ir is the report panel's inner edge; see gvSyncInsets. */
+#gvaFab{position:absolute;right:calc(14px + var(--gv-ir,0px));bottom:22px;z-index:1200;display:flex;align-items:center;
   gap:8px;padding:11px 17px 11px 14px;border:0;border-radius:16px;font-family:'Sora',sans-serif;
   font-weight:700;font-size:14px;color:#fff;
   background:linear-gradient(135deg,var(--brand),var(--sky));
-  box-shadow:0 10px 26px -8px rgba(18,185,129,.65);transition:transform .14s,opacity .14s;}
+  /* right belongs in this declaration: a second `transition` in the same rule
+     replaces the first outright rather than adding to it. */
+  box-shadow:0 10px 26px -8px rgba(18,185,129,.65);transition:transform .14s,opacity .14s,right .18s;}
 #gvaFab:hover{transform:translateY(-2px);}
 #gvaFab svg{width:19px;height:19px;}
 #gvaFab.hide{opacity:0;pointer-events:none;transform:translateY(8px);}
-#gvaPanel{position:absolute;right:14px;bottom:22px;z-index:1201;width:392px;max-width:calc(100vw - 28px);
-  height:min(620px,calc(100vh - 120px));border-radius:20px;display:flex;flex-direction:column;
+/* Sits above the view switcher, like the legends do: at bottom:22 the open
+   assistant covered the Satellite/Green/Map/Priority bar, and switching view
+   meant closing the assistant first.
+   The height is bounded by --gv-it, the toolbar's real bottom edge, for the
+   same reason the legends are: the toolbar wraps to two rows on a narrow
+   window, and a fixed allowance sized for one row put the panel's top 8px
+   underneath it. */
+#gvaPanel{position:absolute;right:calc(14px + var(--gv-ir,0px));bottom:82px;z-index:1201;width:392px;
+  max-width:calc(100vw - var(--gv-il,0px) - var(--gv-ir,0px) - 28px);
+  height:min(620px,calc(100vh - var(--gv-it,82px) - 82px));border-radius:20px;display:flex;flex-direction:column;
   overflow:hidden;opacity:0;pointer-events:none;transform:translateY(14px) scale(.985);
-  transition:opacity .16s ease,transform .16s ease;}
+  /* right is in here, not in a second transition declaration: a later
+     transition in the same rule replaces the earlier one outright. */
+  transition:opacity .16s ease,transform .16s ease,right .18s;}
 #gvaPanel.on{opacity:1;pointer-events:auto;transform:none;}
 .gva-h{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;
   padding:15px 16px 12px;border-bottom:1px solid var(--line);flex:none;}
