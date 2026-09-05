@@ -437,6 +437,34 @@ def extract_place(msg: str) -> str | None:
 
     place = re.split(_PLACE_STOP, rest, 1, flags=re.I)[0]
     place = place.strip(" ,.-")
+
+    # Drop a trailing generic noun. "ahmedabad vastrapur area" is how people
+    # write it and no gazetteer holds it; "ahmedabad vastrapur" resolves to
+    # Vastrapur, Ahmedabad.
+    #
+    # This is stripped HERE, not only in the browser, because the word does
+    # real damage further down. A failed geocode falls back to the last word,
+    # and "area" is a village in Taiarapu-Ouest, French Polynesia - so the map
+    # flew into the South Pacific and the reply then described the plantable
+    # ground there in good faith. Reported twice from real use. Fixing the
+    # browser alone left the bad string in the action payload and in the
+    # "Moving to ... first" sentence, and any client running a cached page
+    # kept the old behaviour.
+    #
+    # Bare words only: "Sector 17" and "Ward 12" are addresses and keep their
+    # numbers.
+    for _ in range(3):
+        stripped = re.sub(
+            r"\s+(area|areas|region|zone|locality|ward|district|side|part|parts|"
+            r"sector|neighbourhood|neighborhood|vicinity|surroundings)$",
+            "", place, flags=re.I).strip(" ,.-")
+        if stripped == place:
+            break
+        place = stripped
+    # "show me the bopal area" leaves "the bopal", which reads badly in
+    # "Moving to **the bopal** first" and helps no gazetteer.
+    place = re.sub(r"^(the|a|an)\s+", "", place, flags=re.I).strip()
+
     if not place or len(place) < 2:
         return None
     # A bare intent word is not a place ("show me the green view").

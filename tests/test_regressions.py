@@ -883,6 +883,39 @@ for _q in ["how much would that cost", "what is the cost", "price of the design"
 
 
 # ---------------------------------------------------------------------------
+section("24. A generic noun is not a place")
+
+# "find empty land in ahmedabad vastrapur area" flew the map to the South
+# Pacific. The place came out as "ahmedabad vastrapur area", no gazetteer
+# holds that, the browser retried with the last word - and "area" is a village
+# in Taiarapu-Ouest, French Polynesia. The reply then described the plantable
+# ground there in good faith. Reported twice from real use.
+#
+# Stripped server-side as well as in the browser: the bad string was reaching
+# the action payload and the "Moving to ... first" sentence, and any client on
+# a cached page kept the old behaviour.
+from greenplan.reasoning.assistant import extract_place as _place_from
+
+for _q, _want in [
+    ("find empty land in ahmedabad vastrapur area", "ahmedabad vastrapur"),
+    ("find empty land in vastrapur area",           "vastrapur"),
+    ("show me the bopal area",                      "bopal"),
+    ("go to vastrapur",                             "vastrapur"),
+    ("find empty land near rajpath club",           "rajpath club"),
+    ("take me to sector 17 chandigarh",             "sector 17 chandigarh"),
+]:
+    _got = _place_from(_q)
+    check("%r -> %r" % (_q[:38], _want), _got == _want, "got %r" % (_got,))
+
+for _q in ["go to satellite area", "show me the green view"]:
+    check("%r names no place" % _q, _place_from(_q) is None,
+          "got %r" % (_place_from(_q),))
+
+check("a numbered sector survives the strip",
+      "17" in (_place_from("take me to sector 17 chandigarh") or ""))
+
+
+# ---------------------------------------------------------------------------
 print("\n" + "=" * 62)
 print("  %d passed, %d failed" % (len(PASS), len(FAIL)))
 if FAIL:
