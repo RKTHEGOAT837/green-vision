@@ -1,18 +1,96 @@
 {
-  "_note": "Language registry for Green Vision. `dir` drives the document direction; `native` is what the picker shows, because a language selector that lists languages in a language you cannot read is not a language selector.",
+  "_note": "Language registry for Green Vision. `dir` drives the document direction; `native` is what the picker shows, because a language selector that lists languages in a language you cannot read is not a language selector. `translated` says whether data/i18n/<code>.json actually exists. Eight of these are declared as intended languages and have no dictionary yet; the menu must not offer them as if they were finished, because selecting one leaves the whole interface in English with no explanation.",
   "languages": [
-    { "code": "en", "name": "English",   "native": "English",   "dir": "ltr" },
-    { "code": "hi", "name": "Hindi",     "native": "हिन्दी",      "dir": "ltr" },
-    { "code": "gu", "name": "Gujarati",  "native": "ગુજરાતી",     "dir": "ltr" },
-    { "code": "mr", "name": "Marathi",   "native": "मराठी",      "dir": "ltr" },
-    { "code": "bn", "name": "Bengali",   "native": "বাংলা",      "dir": "ltr" },
-    { "code": "ta", "name": "Tamil",     "native": "தமிழ்",      "dir": "ltr" },
-    { "code": "te", "name": "Telugu",    "native": "తెలుగు",      "dir": "ltr" },
-    { "code": "kn", "name": "Kannada",   "native": "ಕನ್ನಡ",       "dir": "ltr" },
-    { "code": "ml", "name": "Malayalam", "native": "മലയാളം",     "dir": "ltr" },
-    { "code": "pa", "name": "Punjabi",   "native": "ਪੰਜਾਬੀ",      "dir": "ltr" },
-    { "code": "or", "name": "Odia",      "native": "ଓଡ଼ିଆ",       "dir": "ltr" },
-    { "code": "as", "name": "Assamese",  "native": "অসমীয়া",     "dir": "ltr" },
-    { "code": "ur", "name": "Urdu",      "native": "اردو",       "dir": "rtl" }
+    {
+      "code": "en",
+      "name": "English",
+      "native": "English",
+      "dir": "ltr",
+      "translated": true
+    },
+    {
+      "code": "hi",
+      "name": "Hindi",
+      "native": "हिन्दी",
+      "dir": "ltr",
+      "translated": true
+    },
+    {
+      "code": "gu",
+      "name": "Gujarati",
+      "native": "ગુજરાતી",
+      "dir": "ltr",
+      "translated": true
+    },
+    {
+      "code": "mr",
+      "name": "Marathi",
+      "native": "मराठी",
+      "dir": "ltr",
+      "translated": true
+    },
+    {
+      "code": "bn",
+      "name": "Bengali",
+      "native": "বাংলা",
+      "dir": "ltr",
+      "translated": true
+    },
+    {
+      "code": "ta",
+      "name": "Tamil",
+      "native": "தமிழ்",
+      "dir": "ltr",
+      "translated": false
+    },
+    {
+      "code": "te",
+      "name": "Telugu",
+      "native": "తెలుగు",
+      "dir": "ltr",
+      "translated": false
+    },
+    {
+      "code": "kn",
+      "name": "Kannada",
+      "native": "ಕನ್ನಡ",
+      "dir": "ltr",
+      "translated": false
+    },
+    {
+      "code": "ml",
+      "name": "Malayalam",
+      "native": "മലയാളം",
+      "dir": "ltr",
+      "translated": false
+    },
+    {
+      "code": "pa",
+      "name": "Punjabi",
+      "native": "ਪੰਜਾਬੀ",
+      "dir": "ltr",
+      "translated": false
+    },
+    {
+      "code": "or",
+      "name": "Odia",
+      "native": "ଓଡ଼ିଆ",
+      "dir": "ltr",
+      "translated": false
+    },
+    {
+      "code": "as",
+      "name": "Assamese",
+      "native": "অসমীয়া",
+      "dir": "ltr",
+      "translated": false
+    },
+    {
+      "code": "ur",
+      "name": "Urdu",
+      "native": "اردو",
+      "dir": "rtl",
+      "translated": false
+    }
   ]
 }
