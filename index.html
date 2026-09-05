@@ -9892,7 +9892,15 @@ function gvwCols() {
     { k: "ha", h: "Plantable ha", w: 108, num: true,
       get: function (r) { return r.ha; },
       cell: function (r) { return r.ha == null ? '<span class="gvw-un">—</span>' : gvwNum(r.ha, 1); } },
-    { k: "trees", h: "Trees", w: 92, num: true,
+    /* "Trees to plant", not "trees". The figure carries the survival uplift:
+       plantable ha x stems/ha DIVIDED BY the survival share, so that the
+       spacing is what stands at the end rather than what went in the ground.
+       Labelled just "Trees" against a header quoting "1,111 stems/ha", a
+       reader multiplying those two got 18,345 where the column says 26,206 -
+       43% apart, on the number the indicative cost is calculated from. */
+    { k: "trees", h: "Trees to plant", w: 104, num: true,
+      title: "Plantable ha x stems/ha, divided by the expected survival share " +
+             "— what goes in the ground so the spacing is what survives.",
       get: function (r) { return r.trees; }, cell: function (r) { return gvwNum(r.trees); } },
     { k: "cost", h: "Indicative cost", w: 120, num: true,
       get: function (r) { return r.cost; }, cell: function (r) { return gvwRupees(r.cost); } }
@@ -9929,7 +9937,9 @@ function gvwRender() {
 
   const head = cols.map(function (c) {
     return '<th data-k="' + c.k + '" class="' + (c.num ? "n " : "") +
-      (c.k === GVW.sortKey ? "s" : "") + '" style="min-width:' + c.w + 'px">' + c.h +
+      (c.k === GVW.sortKey ? "s" : "") + '"' +
+      (c.title ? ' title="' + esc(c.title) + '"' : "") +
+      ' style="min-width:' + c.w + 'px">' + c.h +
       (c.k === GVW.sortKey ? (GVW.sortDir > 0 ? " ↑" : " ↓") : "") + "</th>";
   }).join("");
 
@@ -10009,7 +10019,10 @@ function gvwStamp() {
     "ARITHMETIC ON ASSUMPTIONS, not measurements: realisable share of non-vegetated land " +
     a.realisable_pct + "%, spacing " + a.spacing_m + " m (" +
     Math.round(10000 / (a.spacing_m * a.spacing_m)) + " stems/ha), expected survival " +
-    a.survival_pct + "%, cost " + a.cost_per_tree + " INR per tree. Replace all four with a " +
+    a.survival_pct + "%, cost " + a.cost_per_tree + " INR per tree. The trees column is " +
+    "what to PLANT: stems/ha divided by the survival share (" +
+    Math.round(10000 / (a.spacing_m * a.spacing_m) / (a.survival_pct / 100)) +
+    "/ha), so the spacing is what stands at the end. Replace all four with a " +
     "local schedule of rates and a site survey before quoting.";
 }
 
