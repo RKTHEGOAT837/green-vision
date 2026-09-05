@@ -3223,6 +3223,11 @@ GV.CFG = {
   },
 
   MAX_AOI_FEATURES: 2500,        // Overpass safety valve (100 km2 is a lot of geometry)
+  // Point features are cheap - a signal is a coordinate, not a polyline - so
+  // they get their own headroom rather than competing with road geometry for
+  // the budget above. Bengaluru has 776 signals inside 100 km2; sharing the
+  // road cap left it reporting zero.
+  MAX_AOI_POINTS: 6000,
   OVERPASS_TIMEOUT: 90000,
   /* Interactive budget for the area census. 90 s x 4 attempts was a
      ~6 minute worst case behind a spinner; this bounds it to ~25 s and
@@ -4003,14 +4008,33 @@ async function loadTraffic(aoi) {
   // Geometry query, restricted to roads that actually carry through
   // traffic. Residential streets are excluded at this radius or the
   // response is tens of megabytes.
+  /* Roads and point features are asked for SEPARATELY, each with its own
+     budget.
+
+     They used to be one union under a single `out geom qt 2500`, and that cap
+     is a limit on the whole result, not on the roads. In a city with more than
+     2,500 arterial ways inside 100 km² the roads consumed the entire budget
+     and every node was cut off, so Bengaluru reported "0 signals" against 776
+     that are actually mapped — and signal and junction density is one of the
+     three inputs this congestion model claims to use. `qt` sorts by quadtile,
+     so what survived was an arbitrary corner of the area rather than a sample
+     of it.
+
+     Two out statements in one request: same round trip, same queue, but the
+     nodes can no longer be starved by the ways. */
   const q = `[out:json][timeout:80];
 (
   way(around:${r},${la},${lo})[highway~"^(motorway|trunk|primary|secondary)(_link)?$"];
+);
+out geom qt ${GV.CFG.MAX_AOI_FEATURES};`;
+
+  const qPts = `[out:json][timeout:80];
+(
   node(around:${r},${la},${lo})[highway=traffic_signals];
   node(around:${r},${la},${lo})[railway=level_crossing];
   node(around:${r},${la},${lo})[highway=motorway_junction];
 );
-out geom qt ${GV.CFG.MAX_AOI_FEATURES};`;
+out body qt ${GV.CFG.MAX_AOI_POINTS};`;
 
   /* Through the SHARED queue, not a raw getJSON: this used to bypass
      overpassFetch entirely, so it ignored the 1.2 s spacing every other
@@ -4021,8 +4045,18 @@ out geom qt ${GV.CFG.MAX_AOI_FEATURES};`;
                                        { deadlineMs: GV.CFG.OVERPASS_UI_DEADLINE_MS });
   if (!j || !j.elements) return null;
 
+  /* The point features come separately, and their absence is survivable.
+     Roads are the model; signals and level crossings sharpen it. If this
+     second call fails the panel still works, one input short, rather than
+     the whole tab failing because a node query timed out. */
+  let jp = null;
+  try {
+    jp = await window.overpassFetch(qPts, GV.CFG.OVERPASS_UI_MS,
+                                    { deadlineMs: GV.CFG.OVERPASS_UI_DEADLINE_MS });
+  } catch (e) { jp = null; }
+
   const ways = [], signals = [], crossings = [], ramps = [];
-  for (const el of j.elements) {
+  for (const el of j.elements.concat((jp && jp.elements) || [])) {
     if (el.type === "way" && el.geometry && el.geometry.length > 1) {
       const t = el.tags || {};
       const cls = (t.highway || "").replace(/_link$/, "") + (/_link$/.test(t.highway || "") ? "_link" : "");
@@ -4280,7 +4314,7 @@ function drawTrafficPanel() {
       <div class="gv-tbig">${network}<span>/100</span></div>
       <div>
         <b>${congWord(network)}</b> across the network
-        <p>${scored.length} bottlenecks found in ${GV.aoi.km2} km&sup2; \u00B7 ${fmt(GV.traffic.data.ways.length)} road segments \u00B7 ${fmt(GV.traffic.data.signals.length)} signals</p>
+        <p>${scored.length} bottlenecks found in ${GV.aoi.km2} km&sup2; \u00B7 ${fmt(GV.traffic.data.ways.length)}${GV.traffic.data.ways.length >= GV.CFG.MAX_AOI_FEATURES ? "+" : ""} road segments \u00B7 ${fmt(GV.traffic.data.signals.length)} signals${GV.traffic.data.ways.length >= GV.CFG.MAX_AOI_FEATURES ? ` <em class="gv-cap">\u2014 the road query stops at ${fmt(GV.CFG.MAX_AOI_FEATURES)}, so this is a floor and the bottlenecks below are drawn from that subset</em>` : ""}</p>
       </div>
     </div>
 
