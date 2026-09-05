@@ -11096,7 +11096,38 @@ const A_TOOLS = {
   },
 
   "map.search": async a => {
-    const q = String(a.query || "").trim();
+    /* Words that are never a place on their own.
+     *
+     * The fallback below retries with the last two words and then the last
+     * one. "find empty land in ahmedabad vastrapur area" reached it as
+     * "ahmedabad vastrapur area", which Nominatim does not match; the last
+     * two words, "vastrapur area", it does not match either; and the last
+     * word, "area", it matches to Area in Taiarapu-Ouest, French Polynesia -
+     * so the map flew to the middle of the South Pacific and then reported
+     * the plantable ground there. Reported from real use, and every step of
+     * that was working as written.
+     *
+     * "region" lands on Hong Kong, "zone" on a comune in Lombardy. A word
+     * this generic is a false friend: it always resolves somewhere, so it
+     * never fails loudly. */
+    const NOT_A_PLACE = new Set(["area", "areas", "region", "zone", "sector",
+      "locality", "ward", "district", "place", "places", "city", "town",
+      "village", "side", "part", "parts", "spot", "site", "location", "near",
+      "nearby", "around", "here", "there", "land", "ground", "space"]);
+
+    let q = String(a.query || "").trim();
+    // Trailing generic nouns cost the whole match: "vastrapur area" finds
+    // nothing where "vastrapur" finds Vastrapur, Ahmedabad. Strip them, but
+    // only when bare - "Sector 17" is a real address and keeps its number.
+    let trimmed = q;
+    for (;;) {
+      const next = trimmed.replace(
+        /\s+(area|areas|region|zone|locality|ward|district|side|part|parts)$/i, "");
+      if (next === trimmed) break;
+      trimmed = next.trim();
+    }
+    if (trimmed.length >= 3) q = trimmed;
+
     let rows = await acSearch(q);
     // Nominatim is strict about extra words. If the phrase found nothing,
     // retry with the last two words and then the last one — "rajpath club
@@ -11106,6 +11137,10 @@ const A_TOOLS = {
       const w = q.split(/\s+/);
       for (const attempt of [w.slice(-2).join(" "), w.slice(-1)[0]]) {
         if (attempt.length < 3) continue;
+        // Never fall back onto a word that is not a place. It would always
+        // resolve, somewhere, and a confident wrong answer beats a failure
+        // only for the machine.
+        if (attempt.split(/\s+/).every(t => NOT_A_PLACE.has(t.toLowerCase()))) continue;
         await new Promise(r => setTimeout(r, 1100));   // Nominatim: 1 req/sec
         rows = await acSearch(attempt);
         if (rows && rows.length) break;
