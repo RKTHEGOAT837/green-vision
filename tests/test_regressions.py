@@ -848,6 +848,41 @@ for _c in ("Ahmedabad", "Bengaluru", "Mumbai", "Delhi", "Chennai"):
 
 
 # ---------------------------------------------------------------------------
+section("23. Upkeep is not the build cost")
+
+# The maintenance intent matched `maintain\w*`. "maintenance" stems on
+# mainten-, not maintain-, so the noun itself never matched: asking
+# "maintenance" was not understood at all, and "what does maintenance cost"
+# fell past it to the cost intent and answered about the build cost - the one
+# figure the maintenance answer exists to hold separate, because upkeep is
+# what actually kills municipal plantings.
+from greenplan.reasoning.assistant import _INTENTS as INTENTS
+
+_pat = {name: pat for name, pat in INTENTS}
+check("there is a maintenance intent", "maintenance" in _pat)
+check("there is a cost intent", "cost" in _pat)
+
+# Order matters as much as the pattern: maintenance has to be tried first, or
+# any phrasing containing "cost" is claimed by the cost intent.
+_order = [n for n, _ in INTENTS]
+check("maintenance is matched before cost",
+      _order.index("maintenance") < _order.index("cost"))
+
+_MAINT = ["maintenance", "what does maintenance cost", "who waters these trees",
+          "what is the upkeep", "how much does it cost to maintain",
+          "running cost per year"]
+for _q in _MAINT:
+    _first = next((n for n, pat in INTENTS if re.search(pat, _q, re.I)), None)
+    check("%r routes to maintenance" % _q, _first == "maintenance",
+          "went to %r" % _first)
+
+# And the plain cost questions must NOT be captured by it.
+for _q in ["how much would that cost", "what is the cost", "price of the design"]:
+    _first = next((n for n, pat in INTENTS if re.search(pat, _q, re.I)), None)
+    check("%r still routes to cost" % _q, _first == "cost", "went to %r" % _first)
+
+
+# ---------------------------------------------------------------------------
 print("\n" + "=" * 62)
 print("  %d passed, %d failed" % (len(PASS), len(FAIL)))
 if FAIL:

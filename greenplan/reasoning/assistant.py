@@ -170,7 +170,13 @@ _INTENTS: list[tuple[str, str]] = [
                   r"heat ?island|uhi|degrees)\b"),
     ("budget",    r"\b(lakh|crore|rupees?|\u20b9|rs\.?|budget of|afford|"
                   r"with \d+|for \d+ ?(lakh|crore|k))\b"),
-    ("maintenance", r"\b(maintain\w*|upkeep|watering|who waters|annual cost|"
+    # maint\w*, not maintain\w*. "maintenance" stems on mainten-, so the
+    # narrower form matched "maintain" and "maintaining" and missed the noun
+    # itself: "maintenance" alone was not understood at all, and "what does
+    # maintenance cost" fell through to the cost intent below and answered
+    # about the build cost - the one figure the maintenance answer exists to
+    # keep separate from.
+    ("maintenance", r"\b(maint\w*|upkeep|watering|who waters|annual cost|"
                     r"running cost|per year cost|survive without)\b"),
     ("timing",    r"\b(when (to|should)|which (season|month)|monsoon|"
                   r"best time|planting season|sapling season)\b"),
