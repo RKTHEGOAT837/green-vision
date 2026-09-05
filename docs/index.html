@@ -54,7 +54,16 @@ button{font-family:inherit;cursor:pointer;color:inherit;}
 .leaflet-container{background:var(--bg2);font-family:'Manrope',sans-serif;}
 .glass{background:var(--card);-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);
   border:1px solid var(--glass-brd);box-shadow:var(--shadow);}
-#toolbar{position:absolute;top:14px;left:14px;right:14px;z-index:1000;display:flex;gap:10px;align-items:center;pointer-events:none;}
+/* The map's chrome lives BETWEEN the two sidebars, not underneath them.
+   --gv-il and --gv-ir are the inner edges of the studio dock and the report
+   panel, written by gvSyncInsets() whenever either opens, closes, rails or is
+   resized. Without them the dock (z-index 1250) covered the left 416px of the
+   toolbar — which is where the search box is, so opening the studio made the
+   search unreachable — and the panel (1200) covered its right end and the
+   whole zoom column. */
+#toolbar{position:absolute;top:14px;left:calc(14px + var(--gv-il,0px));
+  right:calc(14px + var(--gv-ir,0px));z-index:1000;display:flex;gap:10px;align-items:center;pointer-events:none;
+  transition:left .18s,right .18s;}
 #toolbar>*{pointer-events:auto;}
 .brand{display:flex;align-items:center;gap:10px;padding:9px 14px;border-radius:16px;}
 .brand .logo{width:30px;height:30px;flex:none;}
@@ -79,20 +88,51 @@ button{font-family:inherit;cursor:pointer;color:inherit;}
 .tb-actions{display:flex;gap:8px;margin-left:auto;}
 .iconbtn{width:44px;height:44px;border:0;border-radius:14px;display:flex;align-items:center;justify-content:center;transition:transform .12s ease,background .15s;}
 .iconbtn:hover{transform:translateY(-2px);} .iconbtn svg{width:20px;height:20px;}
-#views{position:absolute;bottom:22px;left:50%;transform:translateX(-50%);z-index:1000;display:flex;gap:4px;padding:5px;border-radius:18px;}
+/* Centred in the free area, not in the window: with the studio open the bar
+   was centred on ground the studio was covering. */
+#views{position:absolute;bottom:22px;
+  left:calc(var(--gv-il,0px) + (100% - var(--gv-il,0px) - var(--gv-ir,0px)) / 2);
+  transform:translateX(-50%);z-index:1000;display:flex;gap:4px;padding:5px;border-radius:18px;
+  transition:left .18s;}
 .viewbtn{border:0;background:transparent;padding:9px 15px;border-radius:14px;font-weight:700;font-size:13px;color:var(--ink-soft);display:flex;align-items:center;gap:7px;transition:.15s;}
 .viewbtn svg{width:16px;height:16px;}
 .viewbtn.active{background:var(--brand-solid);color:#fff;box-shadow:0 6px 16px -5px rgba(18,185,129,.7);}
 .viewbtn:not(.active):hover{color:var(--ink);background:var(--bg2);}
-#mapctrl{position:absolute;right:14px;top:50%;transform:translateY(-50%);z-index:1000;display:flex;flex-direction:column;gap:8px;}
+/* When the sidebars leave the map a narrow strip, the switcher drops its
+   labels and keeps its icons: 401px becomes about 170px, which fits. Each
+   button already carries a title, and font-size:0 leaves the text in the
+   accessibility tree, so nothing is lost but the pixels. */
+body.gv-cramped .viewbtn{font-size:0;gap:0;padding:9px 11px;}
+body.gv-cramped #views{gap:2px;padding:4px;}
+#mapctrl{position:absolute;right:calc(14px + var(--gv-ir,0px));top:50%;transform:translateY(-50%);z-index:1000;display:flex;flex-direction:column;gap:8px;
+  transition:right .18s;}
 #mapctrl .iconbtn{width:42px;height:42px;border-radius:13px;}
-#panel{position:fixed;top:0;right:0;bottom:0;width:min(400px,94vw);z-index:1200;transform:translateX(102%);
+#panel{position:fixed;top:0;right:0;bottom:0;width:min(var(--gv-panel-w,400px),94vw);z-index:1200;
+  transform:translateX(102%);
   transition:transform .34s cubic-bezier(.22,1,.36,1);display:flex;flex-direction:column;border-left:1px solid var(--glass-brd);}
 #panel.open{transform:translateX(0);}
+/* Collapsed, not gone: RAIL_W of it stays on screen so the reader keeps their
+   place and can put it back with one click. */
+#panel.open.rail{transform:translateX(calc(100% - 46px));}
+#panel.rail .pbody,#panel.rail .ph .sub,#panel.rail .ph .eyebrow{opacity:0;pointer-events:none;}
+#panel.rail .ph h2{writing-mode:vertical-rl;margin:44px 0 0 11px;font-size:14px;
+  max-height:calc(100vh - 90px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+#panel.rail .ph{border-bottom:0;}
+.railtab{position:absolute;top:12px;left:7px;width:32px;height:32px;border-radius:10px;border:0;
+  background:var(--bg2);color:var(--ink-soft);display:none;align-items:center;justify-content:center;
+  cursor:pointer;z-index:2;}
+#panel.rail .railtab{display:flex;}
+#panel.rail .close{display:none;}
+.railtab:hover{color:var(--brand-solid);}
+@media (max-width:820px){
+  #panel{width:min(400px,94vw);}
+  #panel.open.rail{transform:translateX(calc(100% - 40px));}
+}
 .ph{padding:16px 18px 12px;border-bottom:1px solid var(--line);position:relative;}
+.ph .gv-minbtn{right:52px;}
 .ph .close{position:absolute;top:14px;right:14px;width:32px;height:32px;border-radius:10px;border:0;background:var(--bg2);display:flex;align-items:center;justify-content:center;}
-.ph .eyebrow{font-size:10.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--brand-dk);padding-right:38px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.ph h2{margin:3px 40px 2px 0;font-size:20px;line-height:1.15;letter-spacing:-.02em;}
+.ph .eyebrow{font-size:10.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--brand-dk);padding-right:78px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.ph h2{margin:3px 80px 2px 0;font-size:20px;line-height:1.15;letter-spacing:-.02em;}
 .ph .sub{font-size:12px;color:var(--ink-soft);font-weight:600;}
 .pbody{flex:1;overflow-y:auto;padding:14px 16px 30px;}
 .pbody::-webkit-scrollbar{width:8px;} .pbody::-webkit-scrollbar-thumb{background:var(--line);border-radius:8px;}
@@ -137,6 +177,19 @@ button{font-family:inherit;cursor:pointer;color:inherit;}
 
 
 
+.gl-drag{display:flex;align-items:center;justify-content:space-between;gap:8px;
+  margin:-2px -2px 8px;padding:2px 2px 7px;border-bottom:1px solid var(--line);cursor:grab;}
+.gl-drag span{font:800 9.5px 'Sora',sans-serif;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--ink-soft);}
+.gl-min{border:0;background:transparent;color:var(--ink-soft);font-size:15px;line-height:1;
+  width:20px;height:20px;border-radius:6px;cursor:pointer;}
+.gl-min:hover{background:var(--bg2);color:var(--ink);}
+.gl-collapsed > *:not(.gl-drag){display:none!important;}
+.gl-collapsed{width:auto!important;height:auto!important;min-width:0!important;}
+.gl-collapsed .gl-drag{margin-bottom:0;border-bottom:0;padding-bottom:0;}
+.gvl-row.gvl-soon{opacity:.55;}
+.gvl-row.gvl-soon b{font-weight:600;}
+.gvl-row.gvl-soon em{font-style:normal;}
 /* --- reopen handle for the left panel ---------------------------------- */
 #gvDockOpen{position:absolute;left:0;top:50%;transform:translateY(-50%) translateX(-100%);
   z-index:1150;display:flex;flex-direction:column;align-items:center;gap:7px;
@@ -182,18 +235,34 @@ body.gv-rtl .gva-bot{align-self:flex-end;}
   #gvLangMenu{right:8px;left:8px;width:auto;}
 }
 /* --- assistant --------------------------------------------------------- */
-#gvaFab{position:absolute;right:14px;bottom:22px;z-index:1200;display:flex;align-items:center;
+/* Both of these sit at the right of the FREE area, not of the window. Pinned
+   to the window they landed on top of the report panel - the assistant covered
+   386x620 of a 400px-wide report, so asking a question hid the answer you were
+   reading. --gv-ir is the report panel's inner edge; see gvSyncInsets. */
+#gvaFab{position:absolute;right:calc(14px + var(--gv-ir,0px));bottom:22px;z-index:1200;display:flex;align-items:center;
   gap:8px;padding:11px 17px 11px 14px;border:0;border-radius:16px;font-family:'Sora',sans-serif;
   font-weight:700;font-size:14px;color:#fff;
   background:linear-gradient(135deg,var(--brand),var(--sky));
-  box-shadow:0 10px 26px -8px rgba(18,185,129,.65);transition:transform .14s,opacity .14s;}
+  /* right belongs in this declaration: a second `transition` in the same rule
+     replaces the first outright rather than adding to it. */
+  box-shadow:0 10px 26px -8px rgba(18,185,129,.65);transition:transform .14s,opacity .14s,right .18s;}
 #gvaFab:hover{transform:translateY(-2px);}
 #gvaFab svg{width:19px;height:19px;}
 #gvaFab.hide{opacity:0;pointer-events:none;transform:translateY(8px);}
-#gvaPanel{position:absolute;right:14px;bottom:22px;z-index:1201;width:392px;max-width:calc(100vw - 28px);
-  height:min(620px,calc(100vh - 120px));border-radius:20px;display:flex;flex-direction:column;
+/* Sits above the view switcher, like the legends do: at bottom:22 the open
+   assistant covered the Satellite/Green/Map/Priority bar, and switching view
+   meant closing the assistant first.
+   The height is bounded by --gv-it, the toolbar's real bottom edge, for the
+   same reason the legends are: the toolbar wraps to two rows on a narrow
+   window, and a fixed allowance sized for one row put the panel's top 8px
+   underneath it. */
+#gvaPanel{position:absolute;right:calc(14px + var(--gv-ir,0px));bottom:82px;z-index:1201;width:392px;
+  max-width:calc(100vw - var(--gv-il,0px) - var(--gv-ir,0px) - 28px);
+  height:min(620px,calc(100vh - var(--gv-it,82px) - 82px));border-radius:20px;display:flex;flex-direction:column;
   overflow:hidden;opacity:0;pointer-events:none;transform:translateY(14px) scale(.985);
-  transition:opacity .16s ease,transform .16s ease;}
+  /* right is in here, not in a second transition declaration: a later
+     transition in the same rule replaces the earlier one outright. */
+  transition:opacity .16s ease,transform .16s ease,right .18s;}
 #gvaPanel.on{opacity:1;pointer-events:auto;transform:none;}
 .gva-h{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;
   padding:15px 16px 12px;border-bottom:1px solid var(--line);flex:none;}
@@ -286,11 +355,47 @@ body.gv-rtl .gva-bot{align-self:flex-end;}
   background:var(--bg2);padding:3px 7px;border-radius:7px;}
 .ac.on .ac-d{background:var(--card-solid);}
 
-/* --- green view legend ------------------------------------------------- */
-body.gv-dock-on .gv-greenleg{left:444px;}
-@media (max-width:640px){body.gv-dock-on .gv-greenleg{left:10px;}}
-.gv-greenleg{position:absolute;left:14px;bottom:22px;transition:left .18s;z-index:1100;padding:13px 15px;
-  border-radius:15px;font:600 11.5px 'Manrope',sans-serif;color:var(--ink);width:186px;}
+/* --- map legends -------------------------------------------------------
+   Both legends sit at the left of the FREE area and clear the view switcher.
+
+   bottom is 82px, not 22px, because the switcher is a permanent fixture
+   across the bottom centre: at 22px a legend's own button sat on top of it as
+   soon as the studio pushed the legend inboard.
+
+   The priority legend's layout used to be assigned inline, which made "Reset
+   layout" destroy it - that button clears inline geometry on every movable
+   panel, which is right for the ones whose layout is in the stylesheet and
+   fatal for the one whose layout was the inline style. It ended up a
+   full-width block in the top-left corner. Its layout lives here now, so
+   reset restores it instead of deleting it. */
+.gv-greenleg,.gv-prileg{position:absolute;left:calc(14px + var(--gv-il,0px));bottom:82px;
+  transition:left .18s;z-index:1100;box-sizing:border-box;
+  font:600 11.5px 'Manrope',sans-serif;color:var(--ink);
+  /* Never taller than the gap between the toolbar and the view switcher. The
+     canopy legend carries two ramps, four toggles, a summary and an export
+     button: 822px of it, which on a 720px screen ran off the top of the
+     window and buried the toolbar. It scrolls inside itself instead.
+     --gv-it is the toolbar's real bottom edge plus a gap, because the toolbar
+     wraps to two rows on a narrow window; 82px is the one-row fallback. */
+  max-height:calc(100vh - var(--gv-it,82px) - 82px);
+  overflow-y:auto;overscroll-behavior:contain;}
+/* The grab bar has to stay grabbable once the contents scroll under it. */
+.gv-greenleg .gl-drag,.gv-prileg .gl-drag{position:sticky;top:-2px;z-index:2;
+  background:var(--card);}
+/* The width is a preference, clamped to the room that actually exists.
+
+   --gv-free is what is left between the two sidebars once the zoom column and
+   its gaps are taken out. On a 1024px window with both sidebars opened to
+   400px there are 194px of map left, and a 210px legend simply does not fit:
+   it used to spill across the report panel and the zoom buttons rather than
+   give way. Now it narrows, and when even the floor will not fit it collapses
+   to its title bar, which is one click from being back. */
+.gv-greenleg{padding:13px 15px;border-radius:15px;width:min(186px,var(--gv-free,186px));}
+.gv-prileg{padding:12px 14px;border-radius:14px;width:min(210px,var(--gv-free,210px));}
+body.gv-cramped .gv-greenleg > *:not(.gl-drag),
+body.gv-cramped .gv-prileg  > *:not(.gl-drag){display:none;}
+body.gv-cramped .gv-greenleg,body.gv-cramped .gv-prileg{width:auto;max-height:none;overflow:visible;}
+body.gv-cramped .gl-drag{margin-bottom:0;border-bottom:0;padding-bottom:0;}
 .gv-greenleg .gl-h{font:700 10px 'Sora',sans-serif;letter-spacing:.11em;
   text-transform:uppercase;color:var(--ink-soft);margin-bottom:7px;}
 .gv-greenleg .gl-h2{margin-top:13px;padding-top:11px;border-top:1px solid var(--line);}
@@ -311,6 +416,26 @@ body.gv-dock-on .gv-greenleg{left:444px;}
   padding:1px 4px;border-radius:4px;}
 @media (max-width:640px){.gv-greenleg{width:158px;left:10px;bottom:78px;padding:11px 12px;}}
 @media (max-width:640px){#toolbar{flex-wrap:wrap;} .brand span{display:none;} #panel{width:100vw;} .searchwrap{order:3;flex-basis:100%;max-width:none;} #views{bottom:14px;}}
+/* The view switcher did not fit a phone.
+
+   Four labelled buttons come to 377px of content, 401px with the padding and
+   gaps, against a 375-390px viewport - so it sat 13px off the left edge with
+   "Satellite" clipped, and worse on a narrower handset. It is the primary
+   navigation of the whole app and the first thing anyone reaches for.
+
+   Tightening the padding rather than dropping the labels: an icon-only row
+   saves more space and costs a reader who does not already know which glyph
+   means "Priority". max-width keeps it inside the viewport whatever the
+   translation does to the label lengths - Hindi's "प्राथमिकता" is longer than
+   "Priority". */
+@media (max-width:640px){
+  #views{ max-width:calc(100vw - 16px); gap:2px; padding:4px; }
+  .viewbtn{ padding:8px 9px; font-size:12px; gap:5px; }
+  .viewbtn svg{ width:15px; height:15px; }
+}
+@media (max-width:400px){
+  .viewbtn{ padding:8px 7px; font-size:11.5px; gap:4px; }
+}
 </style>
 </head>
 <body>
@@ -346,7 +471,12 @@ body.gv-dock-on .gv-greenleg{left:444px;}
     <input id="q" type="search" placeholder="Search a place, address or lat, lon…"
       autocomplete="off" role="combobox" aria-expanded="false" aria-controls="acList"
       aria-autocomplete="list" aria-label="Search for a place, address, or coordinates">
-    <div id="acList" class="glass"></div>
+    <div id="acList" class="glass" role="listbox"
+      aria-label="Place suggestions"></div>
+    <!-- The suggestion rows are options in a listbox, which a screen reader
+         only reads out when the input points at one. The status line carries
+         what the options cannot: "Searching…", "Nothing found for Bopal". -->
+    <div id="acStatus" class="gv-sronly" role="status" aria-live="polite"></div>
   </div>
   <div class="tb-actions">
     <button class="iconbtn glass" id="themeBtn" title="Toggle dark / light"><svg id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2M12 20v2M4 12H2M22 12h-2M5 5l1.5 1.5M17.5 17.5L19 19M19 5l-1.5 1.5M6.5 17.5L5 19"/></svg></button>
@@ -783,7 +913,20 @@ async function overpassFetch(query, ms, opts) {
       for (const ep of eps) {
         const budget = Math.min(ms || 90000, Math.max(0, left()));
         if (budget <= 0) break;
-        const j = await getJSON(ep, overpassReq(query), budget);
+        /* Resolve the local endpoint against the ENGINE's origin, not the
+           page's.
+
+           "/api/osm" was fetched as a relative URL, so it only ever worked
+           when greenplan.server was also the web server. Serve index.html
+           from anything else - a static host, a different port, Pages behind
+           a tunnel - and it 404s, the loop falls through to the public
+           Overpass instance, and the census gets throttled while a local
+           index holding a million features for this exact city sits unused
+           three ports away. The page already discovers the engine origin for
+           /api/zones and /api/health; this is the one call that was not
+           using it. */
+        const url = ep.charAt(0) === "/" ? gvEngineUrl(ep) : ep;
+        const j = await getJSON(url, overpassReq(query), budget);
         _opLast = Date.now();
         // An empty array is a throttle or a mirror without your region's
         // data — never proof that nothing is there. See CFG.OVERPASS.
@@ -804,7 +947,79 @@ function lon2x(lon,z){return Math.floor((lon+180)/360*Math.pow(2,z));}
 function lat2y(lat,z){const r=lat*Math.PI/180;return Math.floor((1-Math.log(Math.tan(r)+1/Math.cos(r))/Math.PI)/2*Math.pow(2,z));}
 function x2lon(x,z){return x/Math.pow(2,z)*360-180;}
 function y2lat(y,z){const n=Math.PI-2*Math.PI*y/Math.pow(2,z);return 180/Math.PI*Math.atan(0.5*(Math.exp(n)-Math.exp(-n)));}
-function loadTile(z,x,y){return new Promise(res=>{const i=new Image();i.crossOrigin="anonymous";let d=false;const f=v=>{if(!d){d=true;res(v);}};i.onload=()=>f(i);i.onerror=()=>f(null);setTimeout(()=>f(null),9000);i.src=CFG.ESRI.replace("{z}",z).replace("{x}",x).replace("{y}",y);});}
+/* Imagery tiles, bounded and cached.
+
+   Four things in this page read raw tiles: the green raster (up to 30 at
+   once), the point report's 3x3 sample, the AOI canopy read, and the site
+   finder. Each of them pushed its whole batch at the browser simultaneously,
+   and all four pull from the SAME host as the basemap. A browser opens about
+   six connections per host, so those requests do not run in parallel - they
+   queue, behind each other and in front of the basemap.
+
+   Measured in Chrome on a cold load: individual Esri tile requests reporting
+   218 SECONDS, because the number is time-since-queued, not time-in-flight.
+   The map appeared broken and the tab stopped responding to anything that
+   needed the page to finish loading. The app was starving its own basemap.
+
+   So the limit lives here, in the one function all four go through, rather
+   than in four separate call sites that would drift apart:
+
+   IN-FLIGHT CAP of 5 leaves a connection free for the basemap, which is the
+   thing the reader is actually looking at. Callers still push as many jobs as
+   they like; they simply run five at a time.
+
+   A CACHE, because these callers ask for the same tiles repeatedly - the
+   green view re-renders on every pan, and the AOI read and the site finder
+   overlap almost completely. A cached tile is an Image that is already
+   decoded, so drawImage on it is free.
+
+   The 9 s timeout is per attempt and unchanged: a tile that does not arrive
+   is drawn as a gap, which is honest, rather than holding the render open. */
+const TILE_MAX_INFLIGHT = 5;
+const TILE_CACHE_MAX = 300;
+const _tileCache = new Map();
+let _tileInflight = 0;
+const _tileQueue = [];
+
+function _tilePump(){
+  while (_tileInflight < TILE_MAX_INFLIGHT && _tileQueue.length) {
+    const job = _tileQueue.shift();
+    _tileInflight++;
+    job().finally(() => { _tileInflight--; _tilePump(); });
+  }
+}
+
+function loadTile(z, x, y){
+  const key = z + "/" + x + "/" + y;
+  const hit = _tileCache.get(key);
+  if (hit !== undefined) {
+    // Refresh recency: a Map preserves insertion order, so delete-and-set is
+    // the cheapest LRU there is.
+    _tileCache.delete(key); _tileCache.set(key, hit);
+    return Promise.resolve(hit);
+  }
+  return new Promise(res => {
+    _tileQueue.push(() => new Promise(done => {
+      const i = new Image();
+      i.crossOrigin = "anonymous";
+      let settled = false;
+      const finish = v => {
+        if (settled) return;
+        settled = true;
+        if (_tileCache.size >= TILE_CACHE_MAX) {
+          _tileCache.delete(_tileCache.keys().next().value);
+        }
+        _tileCache.set(key, v);
+        res(v); done();
+      };
+      i.onload = () => finish(i);
+      i.onerror = () => finish(null);
+      setTimeout(() => finish(null), 9000);
+      i.src = CFG.ESRI.replace("{z}", z).replace("{x}", x).replace("{y}", y);
+    }));
+    _tilePump();
+  });
+}
 function vegScore(r,g,b){const denom=(g+r-b)||1;const vari=(g-r)/denom;return (2*g-r-b)>22 && g>r+6 && g>b+4 ? clamp((vari+.1)/.5,0,1):0;}
 Object.assign(window,{lon2x,lat2y,x2lon,y2lat,loadTile,vegScore});
 
@@ -815,10 +1030,18 @@ function pinIcon(){return L.divIcon({className:"",iconSize:[30,40],iconAnchor:[1
 function initMap(){
   map=L.map("map",{preferCanvas:true,center:CFG.START,zoom:CFG.START_Z,zoomControl:false,attributionControl:true,zoomSnap:.5});
   window.map=map;
-  esriLayer=L.tileLayer(CFG.ESRI,{maxZoom:19,crossOrigin:true,attribution:"Imagery © Esri, Maxar, Earthstar"});
+  esriLayer=L.tileLayer(CFG.ESRI,{maxZoom:19,crossOrigin:true,
+    /* keepBuffer 1 rather than Leaflet's 2 halves the ring of
+       off-screen tiles it holds; updateWhenZooming false stops it
+       requesting a fresh set on every frame of a zoom animation.
+       Both are pure request-volume savings on a host that is the
+       measured bottleneck. */
+    keepBuffer:1, updateWhenZooming:false, updateWhenIdle:true,
+    attribution:"Imagery © Esri, Maxar, Earthstar"});
   esriLayer.on("tileerror",e=>{if(e.tile&&!e.tile._fb){e.tile._fb=1;const c=e.coords;e.tile.src=CFG.GOOG_SAT.replace("{x}",c.x).replace("{y}",c.y).replace("{z}",c.z);}});
   esriLayer.addTo(map);
   osmLayer=L.tileLayer(CFG.MAP_TILE,{maxZoom:19,crossOrigin:true,
+    keepBuffer:1, updateWhenZooming:false, updateWhenIdle:true,
     attribution:"Esri, HERE, Garmin, © OpenStreetMap contributors"});
   /* Same per-tile fallback the satellite layer uses: one retry onto the OSM
      server, marked so a tile is never retried forever. A base layer that
@@ -838,6 +1061,8 @@ function setView(v){
   currentView=v;
   $$(".viewbtn").forEach(b=>b.classList.toggle("active",b.dataset.view===v));
   if(prev==="green"&&v!=="green") greenExit();
+  // Accuracy is keyed to where the reader is, so a view change invalidates it.
+  if(window.GVACC) GVACC.cache = {};
   [esriLayer,osmLayer].forEach(l=>{if(l&&map.hasLayer(l))map.removeLayer(l);});
   if(window.GVP) GVP.setActive(v==="priority");
   if(v==="map"){osmLayer.addTo(map);}
@@ -873,8 +1098,8 @@ window.currentViewName = () => currentView;
    ===================================================================== */
 
 const GVG = window.GVG = {
-  raster: null, hexes: null, legend: null,
-  showCanopy: true, showForecast: true,
+  raster: null, hexes: null, legend: null, labels: null,
+  showCanopy: true, showForecast: true, showLabels: true,
   stats: null, gen: 0, busy: false, loss: null, lossTried: false, moveHooked: false
 };
 
@@ -991,6 +1216,7 @@ function greenClearRaster() {
 }
 function greenClearHexes() {
   if (GVG.hexes) { map.removeLayer(GVG.hexes); GVG.hexes = null; }
+  if (GVG.labels) { map.removeLayer(GVG.labels); GVG.labels = null; }
 }
 
 /* ---------- the engine's forecast layer ---------- */
@@ -1046,6 +1272,7 @@ function greenDrawHexes() {
     }
   }).addTo(map);
   if (GVG.hexes.bringToBack) GVG.hexes.bringToBack();
+  greenDrawLabels();
 }
 
 function greenCellReport(p) {
@@ -1088,6 +1315,89 @@ function greenCellReport(p) {
 }
 
 /* ---------- legend ---------- */
+
+/* The canopy forecast as an area, not a tally of hexagons.
+
+   "34 cells losing cover" is a number a planner cannot act on: cells are an
+   analysis artefact, not a unit of anything they own. The actionable version
+   is how much canopy is actually at risk and how fast it is going, because
+   that is what decides whether this is a maintenance problem or a capital
+   one. Both come straight out of the cells already on screen.
+
+   NDVI is an index, not a canopy fraction, so this reports VEGETATED AREA at
+   the engine's own green threshold rather than pretending to convert an index
+   into a percentage cover. The wording says so. */
+function greenSummary(){
+  const feats = (GVG.loss && GVG.loss.features) || [];
+  if(!feats.length) return null;
+  const th = (GVG.loss.thresholds || {});
+  let atRiskKm2 = 0, atRisk = 0, worst = 0, sumTrend = 0, nTrend = 0;
+  for(const f of feats){
+    const pr = f.properties;
+    if(pr.status !== "yellow") continue;
+    atRisk++;
+    const km2 = gvwAreaKm2(f.geometry && f.geometry.coordinates && f.geometry.coordinates[0]);
+    if(km2 != null) atRiskKm2 += km2;
+    const d = pr.ndvi_pred_delta;
+    if(d != null && isFinite(d)){ worst = Math.min(worst, d); }
+    const t = pr.ndvi_slope_per_year;
+    if(t != null && isFinite(t)){ sumTrend += t; nTrend++; }
+  }
+  const c = GVG.loss.count || {};
+  return {
+    atRisk: atRisk, atRiskKm2: atRiskKm2,
+    bare: c.red || 0, holding: c.green || 0, total: feats.length,
+    worstDelta: worst, meanTrend: nTrend ? sumTrend / nTrend : null,
+    greenNdvi: th.green_ndvi, lossDelta: th.loss_delta
+  };
+}
+
+function greenSummaryHTML(){
+  const su = greenSummary();
+  if(!su) return "";
+  return '<div class="gl-sum">' +
+    '<div class="gl-sum-h">Cover at risk</div>' +
+    '<div class="gl-sum-row"><b>' + su.atRiskKm2.toFixed(0) + "</b> km\u00b2 vegetated today, " +
+      "forecast to decline</div>" +
+    '<div class="gl-sum-row">across <b>' + su.atRisk + "</b> cells</div>" +
+    (su.meanTrend != null
+      ? '<div class="gl-sum-why">Losing NDVI at ' + su.meanTrend.toFixed(4) +
+        "/yr on average \u2014 the steepest is " + su.worstDelta.toFixed(3) +
+        " over the horizon</div>"
+      : "") +
+    '<div class="gl-sum-fine">Vegetated at the engine\u2019s own threshold ' +
+      "(NDVI \u2265 " + su.greenNdvi + "), not a canopy percentage. Holding on to " +
+      "this is cheaper than replacing it.</div>" +
+  "</div>";
+}
+
+/* Label the at-risk cells with how fast they are going. Amber says "this one";
+   the number says "this much", which is what decides the order of work. */
+GVG.labels = null;
+
+function greenDrawLabels(){
+  if(GVG.labels){ map.removeLayer(GVG.labels); GVG.labels = null; }
+  if(!GVG.showLabels || !GVG.showForecast || !GVG.loss) return;
+  const marks = [];
+  for(const f of GVG.loss.features){
+    const pr = f.properties;
+    if(pr.status !== "yellow") continue;
+    const ring = f.geometry && f.geometry.coordinates && f.geometry.coordinates[0];
+    if(!ring) continue;
+    let x = 0, y = 0;
+    for(const q of ring){ x += q[0]; y += q[1]; }
+    const d = pr.ndvi_pred_delta;
+    marks.push(L.marker([y / ring.length, x / ring.length], {
+      interactive: false, keyboard: false,
+      icon: L.divIcon({
+        className: "pri-badge-wrap",
+        html: '<span class="grn-badge">' + (d == null ? "?" : d.toFixed(2)) + "</span>",
+        iconSize: [44, 20], iconAnchor: [22, 10]
+      })
+    }));
+  }
+  if(marks.length) GVG.labels = L.layerGroup(marks).addTo(map);
+}
 
 function greenLegend() {
   if (GVG.legend) { GVG.legend.remove(); GVG.legend = null; }
@@ -1132,6 +1442,9 @@ function greenLegend() {
         "</div>" +
         '<label class="gl-tog"><input type="checkbox" id="glForecast"' +
           (GVG.showForecast ? " checked" : "") + "> Show forecast</label>" +
+        '<label class="gl-tog"><input type="checkbox" id="glLabels"' +
+          (GVG.showLabels ? " checked" : "") + "> Show the rate of loss</label>" +
+        greenSummaryHTML() +
         '<div class="gl-fine">Amber = green today, predicted to decline. ' +
         'Click a hexagon for its history.</div>'
       : '<div class="gl-fine">Canopy here is a visible-band greenness index from ' +
@@ -1141,16 +1454,33 @@ function greenLegend() {
 
   if (GVG.loss) {
     // Only with the engine's forecast in hand: the canopy raster alone is a
-    // snapshot with no per-cell history to list.
+    // snapshot with no per-cell history to export.
+    //
+    // Export, not a table. The legend above already gives the counts, the
+    // area at risk and the rate it is going at, and every cell answers a
+    // click - so a sheet listing the same figures was repetition that covered
+    // the map to deliver it. What the legend cannot do is leave the browser,
+    // and that is the one thing the button is for.
     el.insertAdjacentHTML("beforeend",
-      '<button class="gvw-open" id="grnWork">Open canopy watch list</button>');
+      '<button class="gvw-open" id="grnWork">Export CSV</button>');
   }
 
+  el.insertAdjacentHTML("afterbegin",
+    '<div class="gl-drag" title="Drag to move \u00b7 double-click to reset">' +
+      '<span>Canopy</span>' +
+      '<button class="gl-min" title="Collapse">\u2212</button>' +
+    "</div>");
   document.getElementById("map").appendChild(el);
   GVG.legend = el;
+  gvlMakeMovable(el, { key: "greenLegend", handle: ".gl-drag", resize: "both", minW: 210 });
+  const gmn = el.querySelector(".gl-min");
+  if(gmn) gmn.onclick = function(){
+    el.classList.toggle("gl-collapsed");
+    gmn.textContent = el.classList.contains("gl-collapsed") ? "+" : "\u2212";
+  };
 
   const gw = el.querySelector("#grnWork");
-  if (gw) gw.onclick = () => GVW.toggle("green");
+  if (gw) gw.onclick = () => greenExportCSV();
 
   const c = el.querySelector("#glCanopy");
   if (c) c.onchange = () => {
@@ -1161,8 +1491,29 @@ function greenLegend() {
   if (f) f.onchange = () => {
     GVG.showForecast = f.checked;
     greenDrawHexes();
+    greenDrawLabels();
     if (GVG.showCanopy) drawGreen();   // raster opacity depends on this toggle
   };
+  const gl = el.querySelector("#glLabels");
+  if (gl) gl.onchange = () => { GVG.showLabels = gl.checked; greenDrawLabels(); };
+}
+
+/* The canopy forecast as a file, without standing a table up first.
+
+   gvwExportCSV() reads GVW.mode and the column set the sheet is showing, so
+   it used to need the sheet open. Flipping the mode around the call keeps one
+   column definition and one provenance stamp for both views - two exporters
+   would drift, and the CSV is the artefact that outlives the session. */
+function greenExportCSV(){
+  if(!(GVG.loss && GVG.loss.features && GVG.loss.features.length)){
+    toast("No canopy forecast loaded to export");
+    return;
+  }
+  const wasMode = GVW.mode, wasPicked = GVW.picked;
+  GVW.mode = "green";
+  GVW.picked = GVW.picked || new Set();
+  try { gvwExportCSV(); }
+  finally { GVW.mode = wasMode; GVW.picked = wasPicked; }
 }
 
 /* ---------- lifecycle ---------- */
@@ -1233,6 +1584,14 @@ function placeNames(a){
   return { city, locality };
 }
 
+
+/* Radius of the obstacle fetch, and therefore the hard limit on how far a
+   plot may be sited. Measured at 1,200 m over Bodakdev: ~1.1 MB, 2,714
+   features, 2.6 s warm. Wider than this and Overpass takes 100 s+, which
+   even a prefetch cannot hide. */
+const SITE_SEARCH_R = 1200;
+const SITE_ROAD_SETBACK = 7;    // metres either side of a road centreline
+const SITE_EDGE_BUFFER = 4;     // metres of clearance around every obstacle
 
 /* ---------- data fetchers ---------- */
 async function reverseGeocode(lat,lon){
@@ -1395,7 +1754,11 @@ function metric(label,value,detail,barVal,col){
   const bar=barVal!=null?`<div class="bar"><i style="width:${clamp(barVal,0,100)}%;background:${col||grade(barVal)[1]}"></i></div>`:"";
   return `<div class="metric"><div class="l">${label}</div><div class="v">${value}</div>${detail?`<div class="d">${detail}</div>`:""}${bar}</div>`;}
 
-function openPanel(){$("#panel").classList.add("open");}
+function openPanel(){
+  // A new report arriving is a reason to show it. Leaving it railed would
+  // make the next map click look like it did nothing.
+  const _p = document.getElementById("panel");
+  if (_p) _p.classList.remove("rail");$("#panel").classList.add("open");}
 function skeleton(){
   $("#pTitle").textContent="Analysing…";$("#pSub").textContent="Reading real environmental data…";
   $("#pBody").innerHTML=`<div class="hero" style="border:0;background:transparent;box-shadow:none;padding:4px 0"><div class="skel" style="width:96px;height:96px;border-radius:50%"></div><div style="flex:1"><div class="skel" style="height:18px;width:60%"></div><div class="skel" style="height:12px;width:90%;margin-top:8px"></div></div></div><div class="mgrid" style="margin-top:16px">${Array(6).fill('<div class="skel" style="height:78px"></div>').join("")}</div>`;
@@ -1586,10 +1949,35 @@ function rangeOK(lat, lon) {
   return null;
 }
 
+/* The combobox contract, in one place.
+ *
+ * #q declares role="combobox" with aria-expanded and aria-autocomplete, which
+ * is a promise to a screen reader: I will tell you when the list opens, and I
+ * will name the row you are on. The markup made that promise and nothing ever
+ * kept it — aria-expanded sat at "false" through every search, the rows had no
+ * ids to point at, and arrow-keys moved a highlight that was visible only to
+ * people who could see it. Sighted keyboard use worked; nobody else could
+ * choose a place at all.
+ */
+function acAria(open, activeId, status) {
+  const q = $("#q");
+  if (q) {
+    q.setAttribute("aria-expanded", open ? "true" : "false");
+    if (activeId) q.setAttribute("aria-activedescendant", activeId);
+    else q.removeAttribute("aria-activedescendant");
+  }
+  if (status !== undefined) {
+    const s = $("#acStatus");
+    // Notes carry markup (<b>Bopal</b>); a live region wants the words.
+    if (s) s.textContent = String(status || "").replace(/<[^>]*>/g, "");
+  }
+}
+
 function acHide() {
   GVS.open = false; GVS.sel = -1;
   const el = $("#acList");
   if (el) { el.classList.remove("show"); el.innerHTML = ""; }
+  acAria(false, null, "");
 }
 
 function acRender(rows, note) {
@@ -1598,10 +1986,13 @@ function acRender(rows, note) {
   GVS.items = rows;
   GVS.sel = -1;
   el.innerHTML =
-    (note ? '<div class="ac-note">' + note + "</div>" : "") +
+    // A listbox may only contain options, so the note is marked as scenery
+    // and its words go to the status line instead.
+    (note ? '<div class="ac-note" role="presentation">' + note + "</div>" : "") +
     (rows.length
       ? rows.map((r, i) =>
-          '<div class="ac" role="option" data-i="' + i + '">' +
+          '<div class="ac" role="option" id="ac-opt-' + i + '"' +
+            ' aria-selected="false" data-i="' + i + '">' +
             '<div class="ac-ic">' + (r.icon || acIcon(r.kind)) + "</div>" +
             '<div class="ac-tx"><div class="n">' + esc(r.name) + "</div>" +
             (r.meta ? '<div class="m">' + esc(r.meta) + "</div>" : "") + "</div>" +
@@ -1610,6 +2001,11 @@ function acRender(rows, note) {
       : "");
   el.classList.add("show");
   GVS.open = true;
+  acAria(true, null,
+         note ? note
+              : rows.length + (rows.length === 1 ? " place found"
+                                                 : " places found") +
+                ", use the arrow keys to choose");
   el.querySelectorAll(".ac").forEach(node => {
     node.onmousedown = ev => { ev.preventDefault(); acChoose(+node.dataset.i); };
     node.onmouseenter = () => acHighlight(+node.dataset.i);
@@ -1635,9 +2031,14 @@ function acHighlight(i) {
   GVS.sel = i;
   const el = $("#acList");
   if (!el) return;
-  el.querySelectorAll(".ac").forEach((n, k) => n.classList.toggle("on", k === i));
+  el.querySelectorAll(".ac").forEach((n, k) => {
+    n.classList.toggle("on", k === i);
+    n.setAttribute("aria-selected", k === i ? "true" : "false");
+  });
   const on = el.querySelector(".ac.on");
   if (on && on.scrollIntoView) on.scrollIntoView({ block: "nearest" });
+  // Point the input at the row, which is how a screen reader knows to read it.
+  acAria(true, on ? on.id : null);
 }
 
 function acChoose(i) {
@@ -1670,8 +2071,11 @@ function acDist(lat, lon) {
             Math.cos(c.lat * Math.PI / 180) * Math.cos(lat * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
   const km = 2 * R * Math.asin(Math.sqrt(a));
   if (km < 1) return Math.round(km * 1000) + " m";
-  if (km < 1000) return Math.round(km) + " km";
-  return Math.round(km / 1000) + "k km";
+  // "1k km" for anything past 1,000 threw away the digit that mattered:
+  // Bengaluru and Kolkata are both roughly "1k km" from Ahmedabad and a
+  // reader searching across India could not tell them apart. Earth tops out
+  // at 20,000 km, so the full number is never long.
+  return Math.round(km).toLocaleString("en-IN") + " km";
 }
 
 /* Nominatim ranks by its own relevance, which for a bare "bopal" can put a
@@ -1913,8 +2317,91 @@ window.addEventListener("DOMContentLoaded",()=>{
   $$(".viewbtn").forEach(b=>b.onclick=()=>setView(b.dataset.view));
   $("#zoomIn").onclick=()=>map.zoomIn();
   $("#zoomOut").onclick=()=>map.zoomOut();
-  $("#locBtn").onclick=()=>navigator.geolocation&&navigator.geolocation.getCurrentPosition(p=>{map.setView([p.coords.latitude,p.coords.longitude],15);analyse(p.coords.latitude,p.coords.longitude);},()=>toast("Location unavailable"));
-  $("#pClose").onclick=()=>$("#panel").classList.remove("open");
+  /* "My location", with the two silent failures closed.
+
+     The old one-liner was `navigator.geolocation && getCurrentPosition(ok, err)`.
+     Two ways that button did nothing at all, with no message:
+
+       no geolocation API - the && short-circuits and the click is swallowed;
+       a fix that never arrives - getCurrentPosition's default timeout is
+       INFINITE, so on a handset indoors with permission granted and no signal
+       the error callback is never reached either.
+
+     Both matter more on the Android build than on a desktop: a phone inside a
+     municipal office is precisely the second case. A 12 s cap turns a dead
+     button into one that says what happened.
+
+     enableHighAccuracy stays off deliberately. Centring the map on a ward does
+     not need a GPS-grade fix; the coarse one is faster, works indoors, costs
+     less battery, and matches the COARSE_LOCATION permission the app asks for
+     rather than quietly wanting more than it declared. */
+  $("#locBtn").onclick = () => {
+    if (!navigator.geolocation) {
+      toast("This browser will not share a location");
+      return;
+    }
+    toast("Finding your location…");
+    navigator.geolocation.getCurrentPosition(
+      p => { map.setView([p.coords.latitude, p.coords.longitude], 15);
+             analyse(p.coords.latitude, p.coords.longitude); },
+      e => toast(e && e.code === 1
+                 ? "Location permission was refused"
+                 : e && e.code === 3
+                   ? "Could not get a location fix — try again outdoors"
+                   : "Location unavailable"),
+      { timeout: 12000, maximumAge: 60000, enableHighAccuracy: false });
+  };
+  /* Collapse, do not close.
+
+     Closing threw the report away: the reader had to find the same point on
+     the map again to get it back, and the readings behind it are network
+     calls. The rail keeps the panel mounted with its title legible sideways,
+     so one click restores exactly what was there. Clicking anywhere on the
+     rail expands it; the X only ever collapses. */
+  const _panel = $("#panel");
+  $("#pClose").onclick = () => {
+    _panel.classList.remove("rail");
+    _panel.classList.remove("open");
+    if (window.gvwFitSoon) gvwFitSoon();
+  };
+
+  /* Collapse to a rail, next to the close. Keeps the panel mounted with its
+     title readable sideways, which matters because the readings behind it are
+     several network calls to rebuild. */
+  const _min = document.createElement("button");
+  _min.className = "close gv-minbtn";
+  _min.type = "button";
+  _min.title = "Collapse to a strip";
+  _min.setAttribute("aria-label", "Collapse the report");
+  _min.innerHTML = '<svg viewBox="0 0 24 24" width="16" fill="none" stroke="currentColor" ' +
+                   'stroke-width="2.4"><path d="M9 6l6 6-6 6"/></svg>';
+  _min.onclick = e => {
+    e.stopPropagation();
+    // A floated panel has no edge to rail against, so there it just closes.
+    if (_panel.classList.contains("gvl-moved")) { _panel.classList.remove("open"); return; }
+    _panel.classList.add("rail");
+    if (window.gvwFitSoon) gvwFitSoon();
+  };
+  const _phh = _panel.querySelector(".ph");
+  if (_phh) _phh.appendChild(_min);
+  const _rail = document.createElement("button");
+  _rail.className = "railtab";
+  _rail.type = "button";
+  _rail.title = "Expand the report";
+  _rail.setAttribute("aria-label", "Expand the report");
+  _rail.innerHTML = '<svg viewBox="0 0 24 24" width="16" fill="none" stroke="currentColor" ' +
+                    'stroke-width="2.4"><path d="M15 6l-6 6 6 6"/></svg>';
+  _rail.onclick = () => { _panel.classList.remove("rail"); if (window.gvwFitSoon) gvwFitSoon(); };
+  const _ph = _panel.querySelector(".ph");
+  if (_ph) _ph.appendChild(_rail);
+  // The whole rail is a target, not just the little chevron: a 46 px strip is
+  // an awkward thing to hit precisely, and there is nothing else in it.
+  _panel.addEventListener("click", e => {
+    if (!_panel.classList.contains("rail")) return;
+    if (e.target.closest(".railtab")) return;      // already handled
+    _panel.classList.remove("rail");
+    if (window.gvwFitSoon) gvwFitSoon();
+  });
   $("#themeBtn").onclick=()=>{
     const dark=document.documentElement.getAttribute("data-theme")!=="dark";
     applyTheme(dark?"dark":"light",true);
@@ -1973,6 +2460,22 @@ window.addEventListener("DOMContentLoaded",()=>{
   display:flex; flex-direction:column;
   border-right:1px solid var(--glass-brd);
 }
+/* Same rail treatment as the report panel. The dock holds the area readings,
+   which are expensive to fetch - collapsing should not discard them. */
+#gvDock.on.rail{ transform:translateX(calc(-100% + 46px)); }
+#gvDock.on.rail > *{ opacity:0; pointer-events:none; transition:opacity .16s; }
+#gvDock.on.rail::after{
+  content:"Panel"; position:absolute; top:52px; left:0; right:0; text-align:center;
+  writing-mode:vertical-rl; font:800 10px 'Sora',sans-serif; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--ink-soft); pointer-events:none;
+}
+#gvDock.on.rail::before{
+  content:""; position:absolute; inset:0; cursor:pointer; pointer-events:auto; z-index:3;
+}
+@media (max-width:820px){
+  #gvDock{ width:min(var(--gv-dock-w),96vw); }
+  #gvDock.on.rail{ transform:translateX(calc(-100% + 40px)); }
+}
 #gvDock.on{ transform:translateX(0); }
 
 .gv-dockh{
@@ -1988,7 +2491,14 @@ window.addEventListener("DOMContentLoaded",()=>{
 .gv-dockclose{
   margin-left:auto; flex:none; width:32px; height:32px; border:0; border-radius:10px;
   background:var(--bg2); display:flex; align-items:center; justify-content:center;
+  cursor:pointer; color:var(--ink-soft); transition:color .14s, background .14s;
 }
+.gv-dockclose:hover{ color:var(--ink); background:var(--line); }
+/* The header now holds two of these. Only the first takes the auto margin,
+   or flex pushes them to opposite ends of the row. */
+.gv-dockh .gv-dockclose ~ .gv-dockclose{ margin-left:6px; }
+#gvLayoutReset{ opacity:.72; }
+#gvLayoutReset:hover{ opacity:1; color:var(--brand-solid); }
 
 .gv-tabs{ display:flex; gap:2px; padding:8px 10px; border-bottom:1px solid var(--line); overflow-x:auto; scrollbar-width:none; }
 .gv-tabs::-webkit-scrollbar{ display:none; }
@@ -2257,6 +2767,9 @@ code{ font:700 11.5px ui-monospace,Menlo,Consolas,monospace; background:var(--bg
 .gv-total-lab{ font:800 10.5px 'Manrope',sans-serif; letter-spacing:.13em; text-transform:uppercase; color:var(--ink-soft); }
 .gv-total-amt{ font:800 40px 'Sora',sans-serif; letter-spacing:-.035em; line-height:1.05; margin:5px 0 3px; }
 .gv-total-sub{ font-size:11.5px; font-weight:700; color:var(--ink-soft); }
+.gv-overage{ margin-top:9px; padding:9px 11px; border-radius:11px; font-size:11.5px;
+  font-weight:600; line-height:1.55; background:rgba(245,166,35,.14);
+  border:1px solid rgba(245,166,35,.4); color:var(--ink); }
 
 .gv-catbars{ margin-bottom:14px; }
 .gv-catbar{ margin-bottom:9px; }
@@ -2615,6 +3128,23 @@ const RAIN_GAP = [
   { lat: 28.61, lon: 77.21, city: "Delhi",     pct: -16 },
   { lat: 13.08, lon: 80.27, city: "Chennai",   pct: -30 }
 ];
+/* The provenance note behind the rainfall figure, about the city on screen.
+
+   This used to be a fixed sentence quoting Ahmedabad's check — "757 mm/yr
+   modelled vs 750 published, a 1% difference" — and it was shown wherever the
+   reader happened to be. Someone looking at Chennai was reassured by a 1%
+   match while the number in front of them was 30% low. Rainfall sets the
+   irrigation budget, so understating it makes a scheme look cheaper and more
+   viable than it is: the dangerous direction to be wrong in. */
+function RAIN_PROV() {
+  const local = (typeof GV !== "undefined" && GV.rainGapNote) ? GV.rainGapNote() : "";
+  return "Open-Meteo ERA5 over 1991–2020, the WMO standard normal period. " +
+    (local ||
+     "Checked against published IMD normals for the cities this ships with; " +
+     "this point is not near one of them, so no local check applies") +
+    ". Reanalysis, not gauge data. The 5-year window used here previously read 45% high.";
+}
+
 GV.rainGapNote = function () {
   const a = GV.aoi;
   if (!a) return "";
@@ -2693,6 +3223,11 @@ GV.CFG = {
   },
 
   MAX_AOI_FEATURES: 2500,        // Overpass safety valve (100 km2 is a lot of geometry)
+  // Point features are cheap - a signal is a coordinate, not a polyline - so
+  // they get their own headroom rather than competing with road geometry for
+  // the budget above. Bengaluru has 776 signals inside 100 km2; sharing the
+  // road cap left it reporting zero.
+  MAX_AOI_POINTS: 6000,
   OVERPASS_TIMEOUT: 90000,
   /* Interactive budget for the area census. 90 s x 4 attempts was a
      ~6 minute worst case behind a spinner; this bounds it to ~25 s and
@@ -3473,14 +4008,33 @@ async function loadTraffic(aoi) {
   // Geometry query, restricted to roads that actually carry through
   // traffic. Residential streets are excluded at this radius or the
   // response is tens of megabytes.
+  /* Roads and point features are asked for SEPARATELY, each with its own
+     budget.
+
+     They used to be one union under a single `out geom qt 2500`, and that cap
+     is a limit on the whole result, not on the roads. In a city with more than
+     2,500 arterial ways inside 100 km² the roads consumed the entire budget
+     and every node was cut off, so Bengaluru reported "0 signals" against 776
+     that are actually mapped — and signal and junction density is one of the
+     three inputs this congestion model claims to use. `qt` sorts by quadtile,
+     so what survived was an arbitrary corner of the area rather than a sample
+     of it.
+
+     Two out statements in one request: same round trip, same queue, but the
+     nodes can no longer be starved by the ways. */
   const q = `[out:json][timeout:80];
 (
   way(around:${r},${la},${lo})[highway~"^(motorway|trunk|primary|secondary)(_link)?$"];
+);
+out geom qt ${GV.CFG.MAX_AOI_FEATURES};`;
+
+  const qPts = `[out:json][timeout:80];
+(
   node(around:${r},${la},${lo})[highway=traffic_signals];
   node(around:${r},${la},${lo})[railway=level_crossing];
   node(around:${r},${la},${lo})[highway=motorway_junction];
 );
-out geom qt ${GV.CFG.MAX_AOI_FEATURES};`;
+out body qt ${GV.CFG.MAX_AOI_POINTS};`;
 
   /* Through the SHARED queue, not a raw getJSON: this used to bypass
      overpassFetch entirely, so it ignored the 1.2 s spacing every other
@@ -3491,8 +4045,18 @@ out geom qt ${GV.CFG.MAX_AOI_FEATURES};`;
                                        { deadlineMs: GV.CFG.OVERPASS_UI_DEADLINE_MS });
   if (!j || !j.elements) return null;
 
+  /* The point features come separately, and their absence is survivable.
+     Roads are the model; signals and level crossings sharpen it. If this
+     second call fails the panel still works, one input short, rather than
+     the whole tab failing because a node query timed out. */
+  let jp = null;
+  try {
+    jp = await window.overpassFetch(qPts, GV.CFG.OVERPASS_UI_MS,
+                                    { deadlineMs: GV.CFG.OVERPASS_UI_DEADLINE_MS });
+  } catch (e) { jp = null; }
+
   const ways = [], signals = [], crossings = [], ramps = [];
-  for (const el of j.elements) {
+  for (const el of j.elements.concat((jp && jp.elements) || [])) {
     if (el.type === "way" && el.geometry && el.geometry.length > 1) {
       const t = el.tags || {};
       const cls = (t.highway || "").replace(/_link$/, "") + (/_link$/.test(t.highway || "") ? "_link" : "");
@@ -3630,8 +4194,14 @@ async function renderTraffic() {
 
   if (!GV.traffic.data || GV.traffic.data.aoi !== GV.aoi) {
     GV.traffic.data = await loadTraffic(GV.aoi);
-    GV.traffic.bn = GV.traffic.data ? findBottlenecks(GV.traffic.data) : [];
-    if (GV.CFG.TOMTOM_KEY && GV.traffic.bn) await attachLiveFlow(GV.traffic.bn);
+  }
+  // Derive the bottlenecks from whatever data we now hold, however it got
+  // here - fetched just now, or warmed when the place was picked. Deriving
+  // this inside the fetch branch meant pre-warmed data produced no list at
+  // all, and the panel threw on it.
+  if (GV.traffic.data && !GV.traffic.bn) {
+    GV.traffic.bn = findBottlenecks(GV.traffic.data);
+    if (GV.CFG.TOMTOM_KEY && GV.traffic.bn.length) await attachLiveFlow(GV.traffic.bn);
   }
   if (!GV.traffic.data) {
     /* A button labelled "Try again" put the retry on the reader, when the
@@ -3704,8 +4274,10 @@ function paintTraffic() {
     }).addTo(GV.traffic.layer);
   }
 
-  // Bottleneck pins.
-  for (const b of GV.traffic.bn) {
+  // Bottleneck pins. `|| []` because a caller can legitimately paint before
+  // the list is derived, and a missing list means "none to draw yet", not a
+  // crash that takes the whole panel down.
+  for (const b of (GV.traffic.bn || [])) {
     const c = (GV.traffic.mode === "now" && b.live != null && isSameHour(hour)) ? b.live : congestionAt(b.base, hour, day);
     const m = L.marker([b.lat, b.lon], { icon: bottleneckMarker(b, c), riseOnHover: true }).addTo(GV.traffic.layer);
     m.bindTooltip(
@@ -3742,7 +4314,7 @@ function drawTrafficPanel() {
       <div class="gv-tbig">${network}<span>/100</span></div>
       <div>
         <b>${congWord(network)}</b> across the network
-        <p>${scored.length} bottlenecks found in ${GV.aoi.km2} km&sup2; \u00B7 ${fmt(GV.traffic.data.ways.length)} road segments \u00B7 ${fmt(GV.traffic.data.signals.length)} signals</p>
+        <p>${scored.length} bottlenecks found in ${GV.aoi.km2} km&sup2; \u00B7 ${fmt(GV.traffic.data.ways.length)}${GV.traffic.data.ways.length >= GV.CFG.MAX_AOI_FEATURES ? "+" : ""} road segments \u00B7 ${fmt(GV.traffic.data.signals.length)} signals${GV.traffic.data.ways.length >= GV.CFG.MAX_AOI_FEATURES ? ` <em class="gv-cap">\u2014 the road query stops at ${fmt(GV.CFG.MAX_AOI_FEATURES)}, so this is a floor and the bottlenecks below are drawn from that subset</em>` : ""}</p>
       </div>
     </div>
 
@@ -3911,6 +4483,21 @@ const ELEMENTS = [
   { id: "tap",         cat: "Services",  name: "Drinking water point",  unit: "each", rate: 32000, icon: "water", perm: 1.0,  water: 0,   maint: 2400, life: 15, note: "" },
   { id: "toilet",      cat: "Services",  name: "Toilet block",          unit: "each", rate: 620000, icon: "roof", perm: 0.1, water: 0,   maint: 48000, life: 25, note: "" },
   { id: "compost",     cat: "Services",  name: "Composting bay",        unit: "each", rate: 38000, icon: "leaf",  perm: 0.9,  water: 0,   maint: 3600, life: 12, note: "Turns leaf litter into the soil amendment you'd otherwise buy." },
+  { id: "paver_perm", cat: "Ground",    name: "Permeable paver block", unit: "m2",  rate: 950,   icon: "path",   perm: 0.60, water: 0,    maint: 30,  life: 20, note: "Interlocking block on a sand bed. Takes light vehicles and still lets water through, which ordinary paving does not." },
+  { id: "track",      cat: "Ground",    name: "Jogging track",         unit: "m2",  rate: 1100,  icon: "track",  perm: 0.35, water: 0,    maint: 65,  life: 10, note: "Murram or synthetic. The single most used thing in most Indian neighbourhood parks." },
+  { id: "amphi",      cat: "Ground",    name: "Stepped seating",       unit: "m2",  rate: 2600,  icon: "amphi",  perm: 0.10, water: 0,    maint: 45,  life: 30, note: "Doubles as an amphitheatre and as retaining structure on a slope." },
+  { id: "kerb",       cat: "Ground",    name: "Kerb and edging",       unit: "m",   rate: 520,   icon: "path",   perm: 0,    water: 0,    maint: 18,  life: 25, note: "Keeps mulch and soil off the paving. Cheap, and its absence is why beds wash out." },
+  { id: "miyawaki",   cat: "Planting",  name: "Miyawaki dense block",  unit: "m2",  rate: 1800,  icon: "leaf",   perm: 0.90, water: 900,  maint: 140, life: 50, note: "3-4 native saplings per m\u00B2 in amended soil. Closes canopy in 3-5 years and needs no irrigation after that, but the first three years are expensive." },
+  { id: "greenwall",  cat: "Planting",  name: "Green screen",          unit: "m2",  rate: 3200,  icon: "shrub",  perm: 0,    water: 700,  maint: 320, life: 12, note: "Climbers on a frame. Screens a boundary wall or a service yard where there is no ground to plant in." },
+  { id: "percolation",cat: "Water",     name: "Percolation trench",    unit: "m",   rate: 1800,  icon: "water",  perm: 1.0,  water: 0,    maint: 90,  life: 20, note: "Gravel-filled trench that puts roof and path runoff back into the ground instead of into the storm drain." },
+  { id: "sump",       cat: "Water",     name: "Irrigation sump + pump",unit: "each", rate: 165000, icon: "water", perm: 0,   water: 0,    maint: 9000, life: 15, note: "Stores tanker or borewell water so irrigation does not depend on supply timing." },
+  { id: "borewell",   cat: "Water",     name: "Borewell with recharge",unit: "each", rate: 185000, icon: "water", perm: 0,   water: 0,    maint: 7000, life: 20, note: "Only with a recharge pit alongside it. A borewell without one is a withdrawal with no deposit." },
+  { id: "court",      cat: "Furniture", name: "Multi-purpose court",   unit: "each", rate: 450000, icon: "court", perm: 0.05, water: 0,   maint: 22000, life: 15, note: "Badminton, basketball or volleyball on one marked slab." },
+  { id: "cycle",      cat: "Furniture", name: "Cycle stand",           unit: "each", rate: 26000, icon: "bench",  perm: 0,    water: 0,    maint: 900, life: 15, note: "Holds about ten cycles." },
+  { id: "signage",    cat: "Services",  name: "Interpretive signage",  unit: "each", rate: 18000, icon: "sign",   perm: 0,    water: 0,    maint: 800, life: 10, note: "Species names and a site map. Cheap, and it is what turns a planting into something people learn from." },
+  { id: "bin",        cat: "Services",  name: "Waste segregation bay", unit: "each", rate: 12000, icon: "bin",    perm: 0,    water: 0,    maint: 2400, life: 8, note: "Wet, dry and reject. Sized for one bay per 60 m of path." },
+  { id: "ramp",       cat: "Services",  name: "Accessible ramp",       unit: "each", rate: 22000, icon: "ramp",   perm: 0,    water: 0,    maint: 600, life: 25, note: "1:12 gradient with handrails. A park with steps at every entrance is a park half the ward cannot use." },
+  { id: "cctv",       cat: "Services",  name: "Solar CCTV pole",       unit: "each", rate: 58000, icon: "light",  perm: 0,    water: 0,    maint: 4200, life: 8, note: "Off-grid. Usage of public parks after dark tracks whether people feel watched over." },
   { id: "fence",       cat: "Services",  name: "Boundary fence",        unit: "m",   rate: 1250, icon: "fence",  perm: 1.0,  water: 0,   maint: 65,  life: 20, note: "" },
   { id: "gate",        cat: "Services",  name: "Entrance gate",         unit: "each", rate: 46000, icon: "fence", perm: 1.0, water: 0,   maint: 1800, life: 20, note: "" }
 ];
@@ -4268,7 +4855,7 @@ function drawStudioPanel() {
       <div><b>${fmt(round(d.plot.area_m2))} m&sup2;</b><span>${round(d.plot.area_m2 / 10000, 2)} ha plot</span></div>
       <div><b>${d.items.length}</b><span>elements</span></div>
       <button class="gv-mini" id="gvStreetView" title="See this plot from the road">Street view</button>
-      <button class="gv-mini" id="gvRedrawPlot">Redraw plot</button>
+      <button class="gv-mini" id="gvRedrawPlot" title="Clears the boundary and everything placed inside it, so you can draw a new plot">Redraw plot</button>
     </div>
 
     <div class="gv-toolgroup">
@@ -4322,7 +4909,27 @@ function drawStudioPanel() {
     setTool({ kind: e.unit === "each" ? "point" : e.unit === "m" ? "line" : "area", ref: e.id, el: e });
   });
   const l1 = $("#gv3dLaunch"); if (l1) l1.onclick = () => openBuilder();
-  $("#gvRedrawPlot").onclick = () => { GV.design.plot = null; GV.design.items = []; redrawDesign(); drawStudioPanel(); };
+  /* "Redraw plot" also deleted everything planted in it.
+     The label says plot. It nulled the boundary AND emptied every item, with
+     no confirmation and no message - twenty trees gone on one click of a
+     button whose name promises to redraw an outline. Delete, a strictly less
+     destructive action, asks first.
+     The work is in fact recoverable, because this path never calls
+     touchDesign() so the wipe is not autosaved and the last save still holds
+     the items. Nobody was told that either. */
+  $("#gvRedrawPlot").onclick = () => {
+    const n = (GV.design.items || []).length;
+    if (n && !confirm(
+        "Redrawing the plot also removes the " + n + " item" + (n === 1 ? "" : "s") +
+        " placed inside it." +
+        "\n\nThe version you last saved keeps them \u2014 you can" +
+        " reopen it from History. Continue?")) return;
+    GV.design.plot = null; GV.design.items = [];
+    redrawDesign(); drawStudioPanel();
+    toast(n ? "Plot cleared — draw a new one. The saved version still has the "
+              + n + " item" + (n === 1 ? "" : "s") + ", in History."
+            : "Plot cleared — draw a new one on the map");
+  };
   const _sv = $("#gvStreetView");
   if (_sv) _sv.onclick = () => GV.streetView();
   $("#gvFinish").onclick = finishDesign;
@@ -4342,7 +4949,13 @@ function elIcon(k) {
     play:  '<path d="M5 21V9l7-5 7 5v12"/><path d="M9 21v-6h6v6"/>',
     light: '<path d="M12 3v3M12 21v-6M8 9a4 4 0 018 0c0 3-2 3-2 6h-4c0-3-2-3-2-6z"/>',
     leaf:  '<path d="M4 20C4 10 12 4 20 4c0 8-6 16-16 16z"/><path d="M4 20l9-9"/>',
-    fence: '<path d="M4 20V8l2-3 2 3v12M14 20V8l2-3 2 3v12M2 12h20M2 16h20"/>'
+    fence: '<path d="M4 20V8l2-3 2 3v12M14 20V8l2-3 2 3v12M2 12h20M2 16h20"/>',
+    track: '<ellipse cx="12" cy="12" rx="9" ry="5.5"/><ellipse cx="12" cy="12" rx="5" ry="2.5"/>',
+    amphi: '<path d="M3 19h18M5 19v-3h14v3M7 16v-3h10v3M9 13v-3h6v3"/>',
+    court: '<rect x="3" y="5" width="18" height="14" rx="1.5"/><path d="M12 5v14M3 12h4M17 12h4"/>',
+    sign:  '<path d="M12 21V10M6 4h10l3 3-3 3H6z"/>',
+    bin:   '<path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/>',
+    ramp:  '<path d="M3 19h18M3 19L17 8M17 8v11"/>'
   }[k] || '<circle cx="12" cy="12" r="7"/>';
   return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round">${p}</svg>`;
 }
@@ -4603,16 +5216,94 @@ function computeCost(d, ctx) {
   const sp = speciesList();
   const wf = waterFactor(ctx);
   const lines = [];
-  const add = (cat, item, qty, unit, rate, note) => {
+  // Direct cost of the individual trees only - saplings, pits, guards, stakes
+  // and the labour to put them in. Deliberately NOT the "Planting" category,
+  // which also carries area-based planting like a Miyawaki block or a shrub
+  // massing; see the per_tree note below for what that confusion cost.
+  let treeDirect = 0;
+  const add = (cat, item, qty, unit, rate, note, isTree) => {
     if (!qty) return;
-    lines.push({ cat, item, qty: round(qty, qty < 10 ? 1 : 0), unit, rate: round(rate), amount: qty * rate, note });
+    const amount = qty * rate;
+    if (isTree) treeDirect += amount;
+    lines.push({ cat, item, qty: round(qty, qty < 10 ? 1 : 0), unit, rate: round(rate), amount, note });
   };
 
   /* --- site preparation, from the plot -------------------------------- */
   const area = d.plot ? d.plot.area_m2 : 0;
-  add("Site preparation", "Clearing and grubbing", area, "m\u00B2", 12);
-  add("Site preparation", "Rough grading and levelling", area, "m\u00B2", 38);
-  add("Site preparation", "Topsoil spreading, 150 mm", area * 0.6, "m\u00B2", 55, "Only over planted ground, not paving");
+
+  /* Topsoil goes under planting, so it is measured from the planting that is
+     actually in the design.
+
+     This line used to be a flat 60% of the plot with the note "Only over
+     planted ground, not paving" attached to it - a note describing a
+     calculation that was not being done. A paved plaza was charged topsoil
+     for 60% of its area and a design that was nothing but lawn was charged
+     for 60% of that too. On a hectare the error runs to lakhs either way, on
+     the third largest line in site prep.
+
+     Where no ground element has been placed yet the old 60% stands in, and
+     the note says it is standing in rather than measuring. */
+  const GROUND_PLANTED = { lawn: 1, meadow: 1, mulch: 1, shrub: 1, miyawaki: 1 };
+  const GROUND_PAVED = { path_stone: 1, path_gravel: 1, paver_perm: 1, track: 1, amphi: 1 };
+  let plantedM2 = 0, pavedM2 = 0, groundPlaced = 0;
+  for (const it of d.items) {
+    if (it.k === "tree") continue;
+    const e = ELEMENTS.find(x => x.id === it.ref);
+    if (!e || e.unit !== "m2") continue;
+    if (GROUND_PLANTED[e.id]) { plantedM2 += it.qty; groundPlaced++; }
+    else if (GROUND_PAVED[e.id]) { pavedM2 += it.qty; groundPlaced++; }
+  }
+  // Tree pits still need soil even where they sit in bare ground. 4 m2 is the
+  // pit plus its watering basin at the avenue-grade sizes this costs.
+  const treePitM2 = d.items.filter(i => i.k === "tree").length * 4;
+  /* The 60% stand-in is for an EMPTY design only.
+
+     Gating it on ground surfaces alone was still wrong: a design of 70 trees
+     and no lawn has 280 m2 of pits to fill, not 5,960 m2 of topsoil, and it
+     was charged for the latter. Anything actually placed - surfaces, trees,
+     or both - is measured; the assumption applies only when there is nothing
+     to measure at all. */
+  const anythingPlaced = groundPlaced > 0 || treePitM2 > 0;
+
+  /* Clearing and grading had the same fault topsoil was fixed for, and it was
+     the more expensive half: both billed the whole plot unconditionally. On a
+     one-hectare plot holding 60 trees and nothing else that is 9,933 m² of
+     clearing and grubbing plus 9,933 m² of rough grading — about 4.96 lakh of
+     a 10.87 lakh scheme, 46% of the project, for earthworks no contractor
+     would carry out. You do not level a hectare to dig sixty pits.
+
+     So each is measured against the ground it actually applies to:
+
+       clearing   the worked footprint — surfaces plus pits. Scrub is removed
+                  where people and machines go, not across untouched ground.
+       grading    surfaces only. Pits are excavated and backfilled under their
+                  own line in Planting; grading them too bills the same earth
+                  twice.
+
+     With nothing placed the old whole-plot figure stands in, and says so — an
+     empty plot is a park not yet designed, and a planner sizing a budget for
+     one does want the full-site number. */
+  const clearM2 = Math.min(area, plantedM2 + pavedM2 + treePitM2);
+  const gradeM2 = Math.min(area, plantedM2 + pavedM2);
+  add("Site preparation", "Clearing and grubbing",
+      anythingPlaced ? clearM2 : area, "m²", 12,
+      anythingPlaced
+        ? "Measured over the worked ground — surfaces plus 4 m² per tree pit"
+        : "Nothing placed yet, so this assumes the whole plot is cleared");
+  add("Site preparation", "Rough grading and levelling",
+      anythingPlaced ? gradeM2 : area, "m²", 38,
+      anythingPlaced
+        ? "Only under the surfaces being built; tree pits are excavated under Planting"
+        : "Nothing placed yet, so this assumes the whole plot is graded");
+
+  const topsoilM2 = anythingPlaced
+    ? Math.min(area, plantedM2 + treePitM2)
+    : area * 0.6;
+  add("Site preparation", "Topsoil spreading, 150 mm", topsoilM2, "m²", 55,
+      anythingPlaced
+        ? "Measured from the planted ground in this design plus 4 m² per tree pit"
+        : "Nothing placed yet, so this assumes 60% of the plot ends up planted");
+
   add("Site preparation", "Survey and setting out", 1, "job", Math.max(18000, area * 3.5));
 
   /* --- planting -------------------------------------------------------- */
@@ -4626,17 +5317,17 @@ function computeCost(d, ctx) {
     if (!s) continue;
     add("Planting", s.name + " sapling", n, "no.", s.sapling,
         s.bot + " · 6–8 ft avenue grade. Forest Department polybag stock is Rs 1–3 " +
-        "and reaches the same size in ~3 years — worth it behind a fence, not on a roadside.");
+        "and reaches the same size in ~3 years — worth it behind a fence, not on a roadside.", true);
     saplingTotal += n * s.sapling;
     estWater += n * s.water * 3;   // three-year establishment
   }
   const nTrees = trees.length;
   if (nTrees) {
-    add("Planting", "Pit excavation and backfill", nTrees, "no.", PLANT_OPS.pit);
-    add("Planting", "Soil amendment and manure", nTrees, "no.", PLANT_OPS.amend);
-    add("Planting", "Tree guard", nTrees, "no.", PLANT_OPS.guard, "MS guard; bamboo cuts this to about \u20B9350");
-    add("Planting", "Staking and tying", nTrees, "no.", PLANT_OPS.stake);
-    add("Planting", "Planting labour", nTrees, "no.", PLANT_OPS.plant_labour);
+    add("Planting", "Pit excavation and backfill", nTrees, "no.", PLANT_OPS.pit, null, true);
+    add("Planting", "Soil amendment and manure", nTrees, "no.", PLANT_OPS.amend, null, true);
+    add("Planting", "Tree guard", nTrees, "no.", PLANT_OPS.guard, "MS guard; bamboo cuts this to about \u20B9350", true);
+    add("Planting", "Staking and tying", nTrees, "no.", PLANT_OPS.stake, null, true);
+    add("Planting", "Planting labour", nTrees, "no.", PLANT_OPS.plant_labour, null, true);
   }
 
   /* --- everything else you drew or placed ----------------------------- */
@@ -4689,12 +5380,35 @@ function computeCost(d, ctx) {
   // of the three-year establishment that the trees drive. Dividing the
   // whole project by the tree count would charge each tree for the
   // toilet block, which is how "trees cost a lakh each" numbers happen.
-  const plantingDirect = (cats["Planting"] || 0);
   const estTree = nTrees ? (cats["Establishment (3 yr)"] || 0) * clamp(nTrees * 3000 / Math.max(totalWaterL, 1), 0, 1) : 0;
-  const treeAttrib = (plantingDirect + estTree) * (1 + R.contingency + R.design_fee) * (1 + R.gst);
+  const treeAttrib = (treeDirect + estTree) * (1 + R.contingency + R.design_fee) * (1 + R.gst);
+
+  /* A share cannot exceed the whole. If it does, the attribution is reading
+     something it should not - which is exactly how this line came to report
+     24,287 per tree on a 47.6 lakh scheme, by taking the entire "Planting"
+     category including a 397 m2 Miyawaki block. Complaining in the console is
+     not a fix, but it turns an invisible wrong number into a visible one the
+     next time the categories move. */
+  if (treeAttrib > grand + 1) {
+    console.warn("Green Vision costing: per-tree attribution (" + Math.round(treeAttrib) +
+                 ") exceeds the project total (" + Math.round(grand) +
+                 "). Something outside the tree lines is being charged to the trees.");
+  }
+
+  /* Does the design physically fit?
+
+     Nothing stopped a reader placing 1.5 hectares of surface inside a
+     one-hectare plot, and the costing added it all up without comment - a
+     quote for a park that cannot be built. This does not block anything,
+     because a plot boundary can legitimately be adjusted afterwards; it
+     states the overage so the number is not quoted in ignorance of it. */
+  const surfacedM2 = plantedM2 + pavedM2;
+  const overageM2 = area ? Math.max(0, surfacedM2 - area) : 0;
 
   return {
     lines, cats, direct, contingency, design, gst, grand,
+    planted_m2: plantedM2, paved_m2: pavedM2, topsoil_m2: topsoilM2,
+    surfaced_m2: surfacedM2, overage_m2: overageM2,
     per_m2: area ? grand / area : 0,
     // ATTRIBUTABLE, not the project divided by the tree count - see above.
     // The interface used to label this "per tree, all in", which reads as
@@ -5131,6 +5845,7 @@ function drawCostPanel() {
       <span class="gv-total-lab">Estimated cost to build</span>
       <div class="gv-total-amt">${inr(c.grand)}</div>
       <div class="gv-total-sub">${inrFull(c.grand)} \u00B7 ${inrFull(round(c.per_m2))}/m&sup2;${c.nTrees ? " \u00B7 " + inrFull(round(c.per_tree)) + " per tree planted" : ""}</div>
+    ${c.overage_m2 > 1 ? `<div class="gv-overage">The surfaces in this design cover <b>${fmt(round(c.surfaced_m2))} m&sup2;</b> inside a <b>${fmt(round(c.area))} m&sup2;</b> plot — ${fmt(round(c.overage_m2))} m&sup2; more than fits. The cost below includes all of it, so either the plot or the layout needs adjusting before this is quoted.</div>` : ""}
     </div>
 
     <div class="gv-catbars">
@@ -5497,7 +6212,17 @@ function openGalDesign(id) {
     closeSheet(); openDock("studio");
     if (copy.plot) window.map.fitBounds(L.polygon(copy.plot.ring).getBounds().pad(0.3));
   };
-  $("#gvDl").onclick = () => download((d.name || "design").replace(/\W+/g, "-") + ".json", JSON.stringify([d], null, 2));
+  /* Name the file after something that identifies it.
+     Designs the studio autosaves carry no name, so every export landed as
+     design.json - and a planner comparing three schemes for three wards ends
+     up with design.json, design(1).json and design(2).json, indistinguishable
+     without opening each one. The place is always known, because the design
+     cannot exist without a plot. */
+  $("#gvDl").onclick = () => {
+    const base = (d.name || d.place || d.city || "design")
+      .replace(/\W+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60) || "design";
+    download(base + ".json", JSON.stringify([d], null, 2));
+  };
   const del = $("#gvDel");
   if (del) del.onclick = () => {
     if (!confirm("Delete this design? It can't be undone.")) return;
@@ -5596,7 +6321,10 @@ function openSavedDesign(id) {
   if (!d) { toast("That design is no longer saved"); return; }
   GV.design = JSON.parse(JSON.stringify(d));
   const a = d.aoi || (d.plot ? { lat: d.plot.ring[0][0], lon: d.plot.ring[0][1], km2: 100 } : null);
-  if (a) { GV.aoi = makeAOI(a.lat, a.lon); GV._gen++; GV.ctx = null; drawAOI(GV.aoi, false); }
+  if (a) { GV.aoi = makeAOI(a.lat, a.lon); GV._gen++; GV.ctx = null; drawAOI(GV.aoi, false);
+           // Everything the reader will want next starts here, not when
+           // they open the tab that needs it.
+           if (window.warmAOI) warmAOI(); }
   openDock("studio");
   if (d.plot && window.map) window.map.fitBounds(L.polygon(d.plot.ring).getBounds().pad(0.3));
   toast("Reopened \u201C" + (d.name || "Untitled") + "\u201D");
@@ -5637,6 +6365,12 @@ function buildShell() {
           <h3 id="gvDockTitle">GreenVision Studio</h3>
           <div class="gv-docksub" id="gvDockSub"></div>
         </div>
+        <button class="gv-dockclose" id="gvDockRail" title="Collapse to a strip" aria-label="Collapse panel">
+          <svg viewBox="0 0 24 24" width="16" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M15 6l-6 6 6 6"/></svg>
+        </button>
+        <button class="gv-dockclose" id="gvLayoutReset" title="Reset every panel to its default size and place" aria-label="Reset layout">
+          <svg viewBox="0 0 24 24" width="16" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 12a9 9 0 1 0 3-6.7M3 4v5h5"/></svg>
+        </button>
         <button class="gv-dockclose" id="gvDockClose" aria-label="Close panel">
           <svg viewBox="0 0 24 24" width="16" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M6 6l12 12M18 6L6 18"/></svg>
         </button>
@@ -5659,6 +6393,42 @@ function buildShell() {
 
   $("#gvAuthBtn").onclick = openAuth;
   $("#gvDockClose").onclick = closeDock;
+  const lr = $("#gvLayoutReset");
+  if (lr) lr.onclick = e => { e.stopPropagation(); GVLAY.resetAll(); };
+  const dr = $("#gvDockRail");
+  if (dr) dr.onclick = e => { e.stopPropagation(); railDock(); };
+  gvlSidebarResize($("#gvDock"), "left", "--gv-dock-w", "dock");
+  gvlSidebarResize($("#panel"), "right", "--gv-panel-w", "panel");
+  // ...and let them leave their edge entirely. Dragging by the header floats
+  // the panel; double-clicking the header puts it back against the side it
+  // came from. Both sidebars, the report, the legends, the worklist and the
+  // assistant are the same mechanism, so there is one thing to learn.
+  gvlMakeMovable($("#gvDock"), { key: "dockPos", handle: ".gv-dockh",
+                                 resize: "both", minW: 180, minH: 220 });
+  gvlMakeMovable($("#panel"), { key: "panelPos", handle: ".ph",
+                                resize: "both", minW: 180, minH: 220 });
+  // The assistant is built later than this, so bind it when it appears rather
+  // than here, where the element does not exist yet.
+  const bindAssistant = () => {
+    const gvaP = $("#gvaPanel");
+    if (gvaP && !gvaP.__gvlBound) {
+      gvlMakeMovable(gvaP, { key: "assistant", handle: ".gva-h",
+                             resize: "both", minW: 240, minH: 220 });
+      return true;
+    }
+    return !!(gvaP && gvaP.__gvlBound);
+  };
+  if (!bindAssistant()) {
+    let tries = 0;
+    const t = setInterval(() => { if (bindAssistant() || ++tries > 40) clearInterval(t); }, 250);
+  }
+  $("#gvDock").addEventListener("click", e => {
+    const d = $("#gvDock");
+    if (!d.classList.contains("rail")) return;
+    e.stopPropagation();
+    d.classList.remove("rail");
+    if (window.gvwFitSoon) gvwFitSoon();
+  }, true);
   $("#gvSheetClose").onclick = closeSheet;
   $("#gvSheetWrap").addEventListener("click", e => { if (e.target.id === "gvSheetWrap") closeSheet(); });
   $$("#gvTabs button").forEach(b => b.onclick = () => openDock(b.dataset.tab));
@@ -5689,6 +6459,8 @@ function openDock(tab) {
 function _openDock(tab) {
   const d = $("#gvDock");
   d.classList.add("on");
+  d.classList.remove("rail");
+  if (window.gvwFitSoon) gvwFitSoon();
   document.body.classList.add("gv-dock-on");
   const reopen = $("#gvDockOpen");
   if (reopen) reopen.classList.remove("show");
@@ -5715,7 +6487,22 @@ function _openDock(tab) {
   else if (tab === "history") drawHistory();
   else if (tab === "gallery") drawGallery();
 }
+/* Collapse the dock to a rail. The X beside this closes it outright; this
+   keeps it mounted, because the 100 km2 readings behind it are several
+   network calls to reassemble. */
+function railDock() {
+  const d0 = $("#gvDock");
+  if (!d0 || !d0.classList.contains("on")) return;
+  if (d0.classList.contains("gvl-moved")) { closeDock(); return; }
+  d0.classList.add("rail");
+  if (window.GVP && GVP.legend) priLegend(true);
+  if (window.gvwFitSoon) gvwFitSoon();
+  stopDraw(); clearTraffic();
+}
+
 function closeDock() {
+  const d0 = $("#gvDock");
+  if (d0) d0.classList.remove("rail");
   document.body.classList.remove("gv-dock-on");
   // Leave a way back in. Without this the panel was a one-way door: every
   // tab behind it became unreachable until the next map click.
@@ -5742,6 +6529,71 @@ function spread(st, unit) {
   const range = st.max - st.min;
   return `<b>${st.mean}${unit || ""}</b>${range > 0 ? `<em>${st.min}\u2013${st.max} across the area</em>` : ""}`;
 }
+
+/* ---------- warm everything the moment a place is picked ----------------
+
+   The app used to load each panel when its tab was opened. Click a place and
+   the point report appears; open Area and wait for the 100 km2 read; open
+   Traffic and wait again; open Studio and wait a third time for the obstacle
+   fetch before it can even site a plot. Three waits the reader pays for one
+   at a time, each of which could have started the moment they chose the
+   place.
+
+   So it starts now. One generation counter guards all of it: a second click
+   supersedes the first, and every result checks the generation it was born
+   under before it writes anything, so a slow answer for the previous place
+   cannot land on the current one.
+
+   Deliberately fire-and-forget, and deliberately not awaited by anything on
+   the click path. The point report must not get slower because the traffic
+   model is also loading; every one of these has its own panel that already
+   knows how to show a loading state, and warming only changes WHEN the work
+   starts, never what the reader is shown while it runs.
+
+   Failures are swallowed on purpose. A warm-up that throws is a warm-up that
+   did not help; it must never turn into an error the reader sees, because
+   they did not ask for this work yet. The panel they eventually open will
+   retry and report properly. */
+GV.warm = { gen: 0 };
+
+function warmAOI() {
+  if (!GV.aoi) return;
+  const gen = ++GV.warm.gen;
+  const aoi = GV.aoi;
+  const quiet = (label, fn) => {
+    try {
+      Promise.resolve(fn()).catch(e => console.debug("warm " + label + ":", e));
+    } catch (e) { console.debug("warm " + label + ":", e); }
+  };
+
+  // 1. The 100 km2 read behind the Area tab and the right-hand panel. This is
+  //    the slow one - the OSM census dominates it - so it goes first.
+  quiet("area", () => drawAreaPanel());
+
+  // 2. The traffic model. Same Overpass path, so the request serialiser will
+  //    queue it behind the census rather than competing with it; the win is
+  //    that it is queued NOW instead of when the tab is clicked.
+  quiet("traffic", async () => {
+    if (GV.traffic.data && GV.traffic.aoiKey === aoiKey(aoi)) return;
+    const d = await loadTraffic(aoi);
+    if (gen !== GV.warm.gen) return;          // superseded by a newer place
+    GV.traffic.data = d;
+    // Derive everything the panel needs here too. A warm-up that leaves half
+    // the state for the panel to finish creates a code path that ONLY runs
+    // when warmed, and that is where this went wrong the first time.
+    GV.traffic.bn = d ? findBottlenecks(d) : [];
+    GV.traffic.aoiKey = aoiKey(aoi);
+    if (dockTab === "traffic") drawTrafficPanel();
+  });
+
+  // 3. What the studio must not build on. Without this the first "design
+  //    something here" pays for the obstacle fetch before it can place
+  //    anything, which is the longest single wait in the product.
+  quiet("sites", () => fetchObstacles(aoi.lat, aoi.lon));
+}
+window.warmAOI = warmAOI;
+
+function aoiKey(a) { return a ? round(a.lat, 4) + "/" + round(a.lon, 4) : ""; }
 
 async function drawAreaPanel() {
   if (!GV.aoi) {
@@ -5811,9 +6663,9 @@ function renderArea(ctx) {
       <div class="gv-m"><span>Tree canopy</span>${canopy != null ? `<b>${canopy}%</b><em>satellite, whole area</em>` : `<b>\u2014</b><em>imagery unavailable</em>`}${prov(canopy != null ? "measured" : "absent")}</div>
       <div class="gv-m"><span>PM2.5</span>${spread(wa.pm25, " \u00B5g/m\u00B3")}${prov(wa.pm25 ? "measured" : "absent")}</div>
       <div class="gv-m"><span>Temperature</span>${spread(wa.temp, "\u00B0C")}${prov(wa.temp ? "measured" : "absent")}</div>
-      <div class="gv-m"><span>Rainfall</span>${cl ? `<b>${fmt(cl.rain_mm_yr)} mm/yr</b><em>1991\u20132020, the WMO standard normal</em>` : `<b>\u2014</b>`}${prov(cl ? "modelled" : "absent", "Open-Meteo ERA5 over 1991\u20132020, the WMO standard normal period. Verified against the IMD published normal for Ahmedabad: 757 mm/yr modelled vs 750 mm/yr published \u2014 a 1% difference. The 5-year window used here previously read 45% high.")}</div>
+      <div class="gv-m"><span>Rainfall</span>${cl ? `<b>${fmt(cl.rain_mm_yr)} mm/yr</b><em>1991\u20132020, the WMO standard normal</em>` : `<b>\u2014</b>`}${prov(cl ? "modelled" : "absent", RAIN_PROV())}</div>
       <div class="gv-m"><span>Days over 40\u00B0C</span>${cl ? `<b>${cl.hot_days_yr}/yr</b><em>peak ${cl.max_temp}\u00B0C \u00B7 1991\u20132020</em>` : `<b>\u2014</b>`}${prov(cl ? "modelled" : "absent", "Open-Meteo ERA5 archive")}</div>
-      <div class="gv-m"><span>Bare, plantable ground</span>${veg ? `<b>${round(veg.bare_frac * 100)}%</b><em>of the area</em>` : `<b>\u2014</b>`}${prov(veg ? "modelled" : "absent")}</div>
+      <div class="gv-m"><span>Not vegetated</span>${veg ? `<b>${round(veg.bare_frac * 100)}%</b><em>roofs and roads included \u2014 not a plantable area</em>` : `<b>\u2014</b>`}${prov(veg ? "modelled" : "absent", "The share of sampled cells whose greenness index, read from the visible bands of the basemap tiles, comes out below 0.05 — near-bare. It is a COUNT OF CELLS, not one minus the canopy figure above, which is a mean across all cells: the two measure different things and do not add up to 100%. A handful of strongly green cells can lift that mean while most of the ward still reads bare. It is everything that does not read as vegetation, which in a built-up ward is mostly roof and carriageway. It is NOT an estimate of plantable ground: only a site survey establishes that, and the planting programme asks you for a realisable share rather than assuming one.")}</div>
     </div>
 
     ${census ? `
@@ -5904,6 +6756,8 @@ function hookHost() {
         GV.aoi = makeAOI(lat, lon);
         GV.ctx = null;
         GV.traffic.data = null;
+        GV.traffic.bn = null;      // derived from the data; stale without it
+        GV.traffic.aoiKey = null;
         if (GV.traffic.layer && window.map) { window.map.removeLayer(GV.traffic.layer); GV.traffic.layer = null; }
         drawAOI(GV.aoi, !dockTab || dockTab === "area");
         /* Start fetching what is already built here, now, in the background.
@@ -5922,6 +6776,13 @@ function hookHost() {
         // what the reader is looking at. The site data is not needed until
         // they ask for a design, which is never in the next two seconds.
         setTimeout(() => fetchObstacles(lat, lon).catch(() => {}), 2000);
+        // Traffic too. It was the one panel with no warm-up at all: the road
+        // network and signals were fetched when the tab was opened, so a
+        // reader who wanted congestion paid the whole Overpass latency then,
+        // having already waited it out once for the census. It shares the
+        // same serialised queue, so this cannot starve the census - it only
+        // moves the start of the work from tab-open to place-picked.
+        if (window.warmAOI) setTimeout(() => warmAOI(), 2500);
         openDock(dockTab || "area");
       }
       // Suppress the host's click handler while drawing in the Studio.
@@ -6074,13 +6935,6 @@ function resolveSpecies(name) {
 
 GV._sites = { key: null, obstacles: null, loading: null };
 
-/* Radius of the obstacle fetch, and therefore the hard limit on how far a
-   plot may be sited. Measured at 1,200 m over Bodakdev: ~1.1 MB, 2,714
-   features, 2.6 s warm. Wider than this and Overpass takes 100 s+, which
-   even a prefetch cannot hide. */
-const SITE_SEARCH_R = 1200;
-const SITE_ROAD_SETBACK = 7;    // metres either side of a road centreline
-const SITE_EDGE_BUFFER = 4;     // metres of clearance around every obstacle
 
 function siteKey(lat, lon) { return round(lat, 4) + "/" + round(lon, 4); }
 
@@ -6582,8 +7436,21 @@ function actPlant(mix, spacing_m) {
 
   // Interleave the mix so species alternate across the plot instead of
   // arriving in blocks — mixed planting is the point of a mix.
+  //
+  // `mix` is the one argument that arrives as raw JSON from a 1.5B model, and
+  // a small model writes {"species":"Neem","count":60} where the schema asks
+  // for [{...}] often enough to matter. That used to reach .map() and throw a
+  // TypeError the reader saw verbatim — "(mix || []).map is not a function" —
+  // which reads like the app is broken rather than like one field was shaped
+  // wrong. A single entry is an unambiguous intention, so accept it; anything
+  // that is neither an array nor an entry is refused by name.
   const queue = [];
-  const want = (mix || []).map(m => ({
+  const rows = Array.isArray(mix) ? mix
+             : (mix && typeof mix === "object" && "species" in mix) ? [mix]
+             : mix == null ? []
+             : null;
+  if (rows === null) return { placed: 0, missing: [], badMix: typeof mix };
+  const want = rows.filter(m => m && typeof m === "object").map(m => ({
     s: resolveSpecies(m.species), left: Math.max(0, m.count | 0), name: m.species
   }));
   const missing = want.filter(w => !w.s).map(w => w.name);
@@ -8024,11 +8891,30 @@ function updateHud() {
   const d = builderDesign();
   const nTrees = B.objects.filter(o => o.def.kind === "tree").length;
   let cost = null; try { cost = GV.engines.computeCost(d, GV.ctx || {}); } catch(e) {}
+
+  /* Say whose cost this is.
+     The builder keeps its own object list; it is a separate 3D layout, not a
+     view of the plan drawn on the map. Open it over an existing design and it
+     honestly has nothing in it - but the HUD said "Elements 0 · Trees 0 · Est.
+     cost 12.17 L" while the Cost tab two clicks away said 11.25 L for 24
+     trees, and a reader has no way to tell which number is about what. It
+     reads like the work vanished.
+     Nothing is lost: the plan on the map is autosaved and stays in History.
+     Saving here writes a NEW design and makes it the active one. Both of
+     those are fine; neither was said anywhere. */
+  const outside = (GV.design && GV.design.items) ? GV.design.items.length : 0;
+  const note = (!B.objects.length && outside)
+    ? `<p class="gv3d-hudempty">This is a separate 3D layout and starts empty.
+       The ${outside}-item plan you drew on the map is saved and unchanged \u2014
+       it is in History. Saving here creates a new design alongside it.</p>`
+    : (B.objects.length ? "" :
+       `<p class="gv3d-hudempty">Pick a tool on the left and click the ground to start planting.</p>`);
+
   host.innerHTML = `
     <div class="gv3d-hudrow"><span>Elements</span><b>${B.objects.length}</b></div>
     <div class="gv3d-hudrow"><span>Trees</span><b>${nTrees}</b></div>
-    <div class="gv3d-hudrow gv3d-hudcost"><span>Est. cost</span><b>${cost ? GV.util.inr(cost.grand) : "\u2014"}</b></div>
-    ${B.objects.length ? "" : `<p class="gv3d-hudempty">Pick a tool on the left and click the ground to start planting.</p>`}`;
+    <div class="gv3d-hudrow gv3d-hudcost"><span>This 3D layout</span><b>${cost ? GV.util.inr(cost.grand) : "\u2014"}</b></div>
+    ${note}`;
 }
 
 /* ---------- review inside the overlay ---------- */
@@ -8079,8 +8965,16 @@ function builderSave() {
   if (i >= 0) all[i] = d; else all.push(d);
   GV.util.store.set("designs", all);
   GV.util.logHistory("saved", d);
+  // Switching the active design is right - the reader just chose to save this
+  // one - but doing it silently, when a different plan was active a moment
+  // ago, reads as though that plan was overwritten. It was not: it is its own
+  // entry in storage and reachable from History.
+  const prev = GV.design;
+  const replaced = prev && prev.id !== d.id && (prev.items || []).length;
   GV.design = d;
-  toast("Saved \u2014 find it in History and Library");
+  toast(replaced
+    ? "Saved as a new design. The " + prev.items.length + "-item plan you had open is still in History."
+    : "Saved \u2014 find it in History and Library");
 }
 
 
@@ -8110,8 +9004,15 @@ function builderSave() {
    ===================================================================== */
 
 const GVP = window.GVP = {
-  layer: null, data: null, legend: null, active: false
+  layer: null, data: null, legend: null, active: false,
+  // Default ON for both: a planner opening this view should see the shortlist
+  // and be able to name the cells in it, not have to discover two checkboxes.
+  topOnly: true, showLabels: true
 };
+
+/* How many cells the map, the badges and the worklist treat as "the
+   programme". One number, so the three cannot disagree with each other. */
+const GVW_TOP_N = 20;
 
 /* Where to look when the page is served rather than opened.
 
@@ -8144,8 +9045,22 @@ function priColor(score){
 
 function priStyle(f){
   const s = f.properties.priority_score;
-  return { color:"#fff", weight:1.5, opacity:.9,
-           fillColor:priColor(s), fillOpacity:.62 };
+  // Unscored cells are not "low priority", they are unknown. Drawing them in
+  // the cool end of the ramp said the opposite, so they get a plain grey
+  // hatch-free fill that belongs to no part of the scale.
+  if(s == null){
+    return { color:"#94a3b8", weight:1, opacity:.5, dashArray:"3 4",
+             fillColor:"#94a3b8", fillOpacity:.10 };
+  }
+  // "Top N only" fades the rest rather than removing it: a planner still needs
+  // to see that the shortlist sits inside a bigger city, and a hexagon that
+  // vanishes reads as "no data here" - which is a different claim entirely.
+  const inTop = !GVP.topOnly || f.properties.rank <= GVW_TOP_N;
+  return { color: inTop ? "#fff" : "rgba(255,255,255,.25)",
+           weight: inTop ? 1.5 : 0.6,
+           opacity: inTop ? .9 : .35,
+           fillColor: priColor(s),
+           fillOpacity: inTop ? .68 : .13 };
 }
 
 function fmtDelta(v, digits){
@@ -8160,6 +9075,18 @@ function priSpecies(raw){
 }
 
 /* ---------- the per-cell report ---------- */
+/* Append the accuracy section to whatever report is currently rendered.
+   Async, so it lands a moment after the report rather than delaying it. */
+function gvaccAppend(){
+  if(!window.GVACC || !GVACC.section) return;
+  GVACC.section().then(function(html){
+    if(!html) return;
+    const body = document.getElementById("pBody");
+    if(!body || body.querySelector(".acc-inline")) return;
+    body.insertAdjacentHTML("beforeend", html);
+  }).catch(function(){ /* no engine, no section: the report stands alone */ });
+}
+
 function priReport(props){
   const sp = priSpecies(props.species);
   const score = Math.round((props.priority_score||0)*100);
@@ -8231,6 +9158,7 @@ function priReport(props){
       'Plan this cell</button></div>';
 
   openPanel();
+  gvaccAppend();
 
   const btn = $("#gvpDesign");
   if(btn) btn.onclick = function(){
@@ -8270,25 +9198,126 @@ function priRender(gj){
   }).addTo(map);
 
   try { map.fitBounds(GVP.layer.getBounds(), {padding:[40,40]}); } catch(e){}
+  priDrawLabels();
   priLegend(true);
   toast(gj.features.length + " ranked cells from the engine");
+}
+
+/* What the ranking says, in numbers, before anyone clicks anything.
+
+   The view used to open as 146 coloured hexagons and a colour ramp. A colour
+   ramp tells a planner which cell is worse than which; it does not tell them
+   how much land is in play, how many trees that is, what it would cost, or
+   which of the four criteria is actually driving the top of the list. Those
+   are the first four questions anyone with a budget asks, and all four are
+   already computable from data on screen. So they are on screen. */
+function priSummary(){
+  const feats = (GVP.data && GVP.data.features) || [];
+  const scored = feats.filter(function(f){ return f.properties.priority_score != null; });
+  if(!scored.length) return null;
+
+  const a = (window.GVW && GVW.assume) || GVW_DEFAULTS;
+  const perHa = 10000 / (a.spacing_m * a.spacing_m);
+  const survival = Math.max(1, a.survival_pct) / 100;
+  const top = scored.slice().sort(function(x, y){
+    return x.properties.rank - y.properties.rank; }).slice(0, GVW_TOP_N);
+
+  let ha = 0, quantified = 0;
+  const drivers = {};
+  for(const f of top){
+    const pr = f.properties;
+    const ring = f.geometry && f.geometry.coordinates && f.geometry.coordinates[0];
+    const km2 = gvwAreaKm2(ring);
+    if(km2 != null && pr.plantable_space != null){
+      ha += km2 * 100 * pr.plantable_space * (a.realisable_pct / 100);
+      quantified++;
+    }
+    const c = pr.components;
+    if(c){
+      let bk = null, bv = -Infinity;
+      for(const k in c) if(c[k] > bv){ bv = c[k]; bk = k; }
+      if(bk) drivers[bk] = (drivers[bk] || 0) + 1;
+    }
+  }
+  const trees = Math.round(ha * perHa / survival);
+  const order = Object.keys(drivers).sort(function(x, y){ return drivers[y] - drivers[x]; });
+  return {
+    ranked: scored.length, total: feats.length, n: top.length, quantified: quantified,
+    ha: ha, trees: trees, cost: trees * a.cost_per_tree,
+    drivers: order.map(function(k){
+      return { label: GVW_COMP_LABEL[k] || k, n: drivers[k] }; })
+  };
+}
+
+/* Numbered badges on the highest-ranked cells.
+
+   Reading a rank off a colour ramp is guesswork - #1 and #6 are the same red.
+   A planner pointing at a map in a meeting needs to be able to say "that one
+   is number three", so the number is on it. Only the cells in the programme
+   are badged: 146 of these would be a mess, and the ones past the budget are
+   not what the conversation is about.
+
+   Purely a label. It carries the engine's own rank and changes no score. */
+GVP.labels = null;
+
+function priDrawLabels(){
+  if(GVP.labels){ map.removeLayer(GVP.labels); GVP.labels = null; }
+  if(!GVP.showLabels) return;
+  const feats = (GVP.data && GVP.data.features) || [];
+  const top = feats.filter(function(f){ return f.properties.priority_score != null; })
+    .sort(function(x, y){ return x.properties.rank - y.properties.rank; })
+    .slice(0, GVW_TOP_N);
+  if(!top.length) return;
+  const marks = [];
+  for(const f of top){
+    const ring = f.geometry && f.geometry.coordinates && f.geometry.coordinates[0];
+    if(!ring) continue;
+    let x = 0, y = 0;
+    for(const q of ring){ x += q[0]; y += q[1]; }
+    const pr = f.properties;
+    marks.push(L.marker([y / ring.length, x / ring.length], {
+      interactive: false,        // clicks belong to the hexagon underneath
+      keyboard: false,
+      icon: L.divIcon({
+        className: "pri-badge-wrap",
+        html: '<span class="pri-badge" style="background:' + priColor(pr.priority_score) + '">' +
+              pr.rank + "</span>",
+        iconSize: [26, 26], iconAnchor: [13, 13]
+      })
+    }));
+  }
+  GVP.labels = L.layerGroup(marks).addTo(map);
 }
 
 function priLegend(show){
   if(GVP.legend){ GVP.legend.remove(); GVP.legend=null; }
   if(!show) return;
   const el = document.createElement("div");
-  el.className = "glass";
-  // The studio dock occupies the left edge when open; a legend under it is
-  // a legend nobody can read.
-  const dockOpen = document.body.classList.contains("gv-dock-on");
-  el.style.cssText = "position:absolute;left:" + (dockOpen ? 444 : 14) + "px;" +
-    "bottom:22px;z-index:1100;padding:12px 14px;transition:left .18s;" +
-    "border-radius:14px;font:600 11.5px 'Manrope',sans-serif;color:var(--ink);pointer-events:none;";
+  /* Layout comes from .gv-prileg in the stylesheet, deliberately.
+
+     The dock occupies the left edge when it is open, and a legend underneath
+     it is a legend nobody can read. That used to be handled by reading a body
+     class here and hard-coding 444px; the rule now offsets by --gv-il, so it
+     follows a resized dock too instead of only the default width.
+
+     It was assigned here as an inline cssText, which meant "Reset layout"
+     wiped it - that button clears inline geometry on every movable panel, so
+     the one panel whose geometry WAS the inline style came back as a
+     full-width block in the corner. It also had pointer-events:none, to keep
+     the legend from swallowing map clicks; it swallowed its own instead, so
+     the drag bar could not be grabbed, neither checkbox could be ticked and
+     the button could not be pressed.
+
+     The width there is a starting width, not a cap: the resize grip writes an
+     inline width over it, and a saved one is restored over that. Nothing
+     bounded it before, so the longest sentence inside set the box - which is
+     how a colour key ended up 700px wide with its fine print off the edge. */
+  el.className = "glass gv-prileg";
   const rows = [[.85,"Critical"],[.72,"High"],[.57,"Moderate"],[.42,"Low"],[.2,"Least"]];
+  // No heading here: the drag bar added below already reads PLANTING PRIORITY,
+  // and two identical titles stacked on top of each other was the first thing
+  // the eye hit.
   el.innerHTML =
-    '<div style="font:700 10.5px \'Sora\',sans-serif;letter-spacing:.1em;text-transform:uppercase;' +
-    'color:var(--ink-soft);margin-bottom:8px">Planting priority</div>' +
     rows.map(function(r){
       return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">' +
              '<i style="width:13px;height:13px;border-radius:3px;background:' + priColor(r[0]) +
@@ -8297,13 +9326,57 @@ function priLegend(show){
     '<div style="margin-top:8px;padding-top:7px;border-top:1px solid var(--line);font-weight:600;' +
     'color:var(--ink-soft);font-size:10.5px;max-width:150px;line-height:1.45">' +
     "Click a cell for the engine's reasoning</div>" +
+    // The headline figures used to sit here, and between them, the duplicate
+    // title and the two toggles the legend ran the height of the map. They
+    // have moved into the planting programme, next to the four assumptions
+    // that produce them — which is the only place a reader can act on them.
+    '<label class="gl-tog"><input type="checkbox" id="priTopOnly"' +
+      (GVP.topOnly ? " checked" : "") + "> Show only the top " + GVW_TOP_N + "</label>" +
+    '<label class="gl-tog"><input type="checkbox" id="priLabels"' +
+      (GVP.showLabels ? " checked" : "") + "> Number them on the map</label>" +
     // The colours say where. The worklist is where a planner turns that into
     // an area, a quantity, a cost and a list they can hand over.
     '<button class="gvw-open" id="priWork">Open planting programme</button>';
+  el.insertAdjacentHTML("afterbegin",
+    '<div class="gl-drag" title="Drag to move · double-click to reset">' +
+      '<span>Planting priority</span>' +
+      '<button class="gl-min" title="Collapse">\u2212</button>' +
+    "</div>");
   document.getElementById("map").appendChild(el);
   GVP.legend = el;
+  gvlMakeMovable(el, { key: "priLegend", handle: ".gl-drag", resize: "both", minW: 210 });
+  const mn = el.querySelector(".gl-min");
+  if(mn) mn.onclick = function(){
+    el.classList.toggle("gl-collapsed");
+    mn.textContent = el.classList.contains("gl-collapsed") ? "+" : "\u2212";
+  };
   const pw = el.querySelector("#priWork");
   if(pw) pw.onclick = function(){ GVW.toggle("priority"); };
+  const to = el.querySelector("#priTopOnly");
+  if(to) to.onchange = function(){
+    GVP.topOnly = to.checked;
+    priRender(GVP.data);            // restyle; the ranking is untouched
+  };
+  const lb = el.querySelector("#priLabels");
+  if(lb) lb.onchange = function(){ GVP.showLabels = lb.checked; priDrawLabels(); };
+}
+
+/* The headline block. Every figure here is either the engine's or arithmetic
+   on the assumptions the worklist exposes, and it says which. */
+function priSummaryHTML(){
+  const su = priSummary();
+  if(!su) return "";
+  const drv = su.drivers.slice(0, 2).map(function(d){
+    return d.label.toLowerCase() + " in " + d.n; }).join(", ");
+  return '<div class="gl-sum">' +
+    '<div class="gl-sum-h">Top ' + su.n + " of " + su.ranked + " ranked cells</div>" +
+    '<div class="gl-sum-row"><b>' + gvwNum(su.ha, 0) + "</b> ha plantable</div>" +
+    '<div class="gl-sum-row"><b>' + gvwNum(su.trees) + "</b> trees</div>" +
+    '<div class="gl-sum-row"><b>' + gvwRupees(su.cost) + "</b> indicative</div>" +
+    (drv ? '<div class="gl-sum-why">Driven by ' + drv + " of them</div>" : "") +
+    '<div class="gl-sum-fine">Area, trees and cost are modelled on the four ' +
+      "assumptions below \u2014 not measurements. Change one and these move.</div>" +
+  "</div>";
 }
 
 /* ---------- loading ---------- */
@@ -8444,9 +9517,17 @@ async function priNoDataNotice(show){
   document.getElementById("map").appendChild(el);
   GVP.noData = el;
 
-  const j = await gvEngineGet("/api/cities", 6000);
+  let j = await gvEngineGet("/api/cities", 6000);
+  if(!j || !j.cities){
+    // No Python to ask - a static deploy, or the Android build, where there
+    // is no server at all. The baked bundle carries the same list, and this
+    // notice is the one place a reader most needs it: they are standing
+    // somewhere the app cannot answer for and deserve to be told where it can.
+    j = await getJSON("engine/cities.json", {}, 6000);
+  }
   if(!GVP.noData) return;                       // reader moved on already
-  const list = (j && j.cities || []).filter(c => c.ready);
+  // `ready` is a live-server field; a baked entry is ready by definition.
+  const list = (j && j.cities || []).filter(c => c.ready !== false);
   const box = GVP.noData.querySelector(".nd-list");
   if(!list.length){ box.textContent = "Could not reach the engine to ask which cities it serves."; return; }
   box.innerHTML = "<b>It runs here:</b>" + list.map(c =>
@@ -8811,7 +9892,15 @@ function gvwCols() {
     { k: "ha", h: "Plantable ha", w: 108, num: true,
       get: function (r) { return r.ha; },
       cell: function (r) { return r.ha == null ? '<span class="gvw-un">—</span>' : gvwNum(r.ha, 1); } },
-    { k: "trees", h: "Trees", w: 92, num: true,
+    /* "Trees to plant", not "trees". The figure carries the survival uplift:
+       plantable ha x stems/ha DIVIDED BY the survival share, so that the
+       spacing is what stands at the end rather than what went in the ground.
+       Labelled just "Trees" against a header quoting "1,111 stems/ha", a
+       reader multiplying those two got 18,345 where the column says 26,206 -
+       43% apart, on the number the indicative cost is calculated from. */
+    { k: "trees", h: "Trees to plant", w: 104, num: true,
+      title: "Plantable ha x stems/ha, divided by the expected survival share " +
+             "— what goes in the ground so the spacing is what survives.",
       get: function (r) { return r.trees; }, cell: function (r) { return gvwNum(r.trees); } },
     { k: "cost", h: "Indicative cost", w: 120, num: true,
       get: function (r) { return r.cost; }, cell: function (r) { return gvwRupees(r.cost); } }
@@ -8848,7 +9937,9 @@ function gvwRender() {
 
   const head = cols.map(function (c) {
     return '<th data-k="' + c.k + '" class="' + (c.num ? "n " : "") +
-      (c.k === GVW.sortKey ? "s" : "") + '" style="min-width:' + c.w + 'px">' + c.h +
+      (c.k === GVW.sortKey ? "s" : "") + '"' +
+      (c.title ? ' title="' + esc(c.title) + '"' : "") +
+      ' style="min-width:' + c.w + 'px">' + c.h +
       (c.k === GVW.sortKey ? (GVW.sortDir > 0 ? " ↑" : " ↓") : "") + "</th>";
   }).join("");
 
@@ -8928,7 +10019,10 @@ function gvwStamp() {
     "ARITHMETIC ON ASSUMPTIONS, not measurements: realisable share of non-vegetated land " +
     a.realisable_pct + "%, spacing " + a.spacing_m + " m (" +
     Math.round(10000 / (a.spacing_m * a.spacing_m)) + " stems/ha), expected survival " +
-    a.survival_pct + "%, cost " + a.cost_per_tree + " INR per tree. Replace all four with a " +
+    a.survival_pct + "%, cost " + a.cost_per_tree + " INR per tree. The trees column is " +
+    "what to PLANT: stems/ha divided by the survival share (" +
+    Math.round(10000 / (a.spacing_m * a.spacing_m) / (a.survival_pct / 100)) +
+    "/ha), so the spacing is what stands at the end. Replace all four with a " +
     "local schedule of rates and a site survey before quoting.";
 }
 
@@ -9093,7 +10187,7 @@ function gvwBuild() {
     if (b) {
       if (b.dataset.a === "csv") gvwExportCSV();
       else if (b.dataset.a === "geo") gvwExportGeoJSON();
-      else GVW.close();
+      else GVW.close(true);
       return;
     }
     if (e.target.matches('input[type="checkbox"][data-z]')) return;   // handled on change
@@ -9132,6 +10226,8 @@ function gvwBuild() {
   });
 
   document.body.appendChild(el);
+  gvlMakeMovable(el, { key: "worklist", handle: ".gvw-bar", resize: "height",
+                       minH: 200, grow: "up" });
   return el;
 }
 
@@ -9162,9 +10258,26 @@ function gvwAssumeUI() {
     "</div>";
 }
 
-GVW.close = function () {
+GVW.close = function (byUser) {
   GVW.open = false;
   if (GVW.node) { GVW.node.remove(); GVW.node = null; }
+  // Closing it by hand is a preference, and it sticks for the session. Closing
+  // it because the view changed is housekeeping and must not be mistaken for
+  // one, or the sheet would never come back.
+  if (byUser === true) GVW.dismissed = true;
+};
+
+/* Open the worklist when a view is entered, unless the reader has closed it.
+
+   It used to sit behind a button in the legend, which meant the view still
+   OPENED as a field of coloured hexagons - and a colour ramp on its own is
+   the thing this whole section exists to stop being. The numbers a planner
+   came for should be the first thing on screen, not the reward for finding a
+   button. */
+GVW.autoOpen = function (mode) {
+  if (GVW.dismissed) return;
+  if (GVW.open && GVW.mode === mode) return;
+  GVW.show(mode);
 };
 
 GVW.show = function (mode) {
@@ -9187,7 +10300,12 @@ GVW.show = function (mode) {
     mode === "priority" ? "Planting programme" : "Canopy watch list";
   GVW.node.querySelector(".gvw-sub2").textContent =
     have.length + " cells · the engine's ranking, unaltered · sort any column";
-  GVW.node.querySelector(".gvw-assume").innerHTML = mode === "priority" ? gvwAssumeUI() : "";
+  // The headline totals belong against the assumptions, not over the map: the
+  // four inputs that produce them are in this same block, so changing one and
+  // watching the total move is a single glance instead of a comparison across
+  // two floating panels.
+  GVW.node.querySelector(".gvw-assume").innerHTML =
+    mode === "priority" ? (priSummaryHTML() + gvwAssumeUI()) : "";
   GVW.node.querySelector('[data-a="geo"]').style.display = mode === "priority" ? "" : "none";
   gvwRender();
 };
@@ -9270,6 +10388,18 @@ GVW.toggle = function (mode) {
     "font-family:'Sora';font-weight:700;font-size:12.5px;padding:8px 12px;border-radius:11px;" +
     "cursor:pointer;}" +
   ".gvw-open:hover{filter:brightness(1.08);}" +
+  ".pri-badge-wrap{background:none;border:0;}" +
+  ".grn-badge{display:block;text-align:center;padding:2px 0;border-radius:6px;' +     'background:rgba(15,20,18,.82);color:#f5c46a;font:800 10.5px \'Sora\',sans-serif;' +     'border:1px solid rgba(245,196,106,.5);}" +
+  ".pri-badge{display:flex;align-items:center;justify-content:center;width:26px;height:26px;" +
+    "border-radius:50%;color:#fff;font:800 11.5px 'Sora',sans-serif;border:2px solid rgba(255,255,255,.9);" +
+    "box-shadow:0 2px 7px rgba(0,0,0,.4);}" +
+  ".gl-sum{margin:9px 0 4px;padding:10px 0 2px;border-top:1px solid var(--line);}" +
+  ".gl-sum-h{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;" +
+    "color:var(--ink-soft);margin-bottom:6px;}" +
+  ".gl-sum-row{font-size:12px;color:var(--ink-soft);line-height:1.65;}" +
+  ".gl-sum-row b{font-family:'Sora';font-size:14px;font-weight:800;color:var(--ink);}" +
+  ".gl-sum-why{font-size:11.5px;color:var(--ink-soft);margin-top:5px;font-weight:600;}" +
+  ".gl-sum-fine{font-size:10.5px;color:var(--ink-soft);opacity:.85;line-height:1.5;margin-top:6px;}" +
   ".gv-nodata{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:1100;width:min(420px,88vw);padding:20px 22px;border-radius:18px;text-align:left;}" +
   ".gv-nodata .nd-h{font-family:'Sora';font-size:17px;font-weight:800;margin-bottom:7px;}" +
   ".gv-nodata p{font-size:12.5px;color:var(--ink-soft);line-height:1.6;margin:0 0 13px;}" +
@@ -9281,6 +10411,572 @@ GVW.toggle = function (mode) {
     ".gvw-roll{gap:14px}.gvw-k span{font-size:17px}}" +
   '[data-theme="dark"] .gvw-flag{background:rgba(245,166,35,.18);color:#f5c46a;}' +
   '[data-theme="dark"] .gvw-flag.gvw-ok{background:rgba(18,185,129,.18);color:#5fd6a8;}';
+  document.head.appendChild(css);
+})();
+
+/* =====================================================================
+   16. HOW WRONG THIS IS — the accuracy card
+   =====================================================================
+   The product tells a city where to spend a planting budget on the
+   strength of a 12-month forecast, and until now it never said how good
+   that forecast is. That is the one number a reader is entitled to before
+   they act on any of the others.
+
+   Three things this card refuses to do, because they are the usual way
+   accuracy gets misreported:
+
+   IT DOES NOT QUOTE A PERCENTAGE. "94% accurate" is meaningless for a
+   regression — accurate to within what? The engine predicts a number, so
+   the honest statement of its error is an error bar in that number's own
+   units: AQI points, NDVI index. Those come from the engine's own
+   time-split backtest, where it predicts a month it was never shown and
+   is scored against what actually happened.
+
+   IT REPORTS THE SAMPLE SIZE. An error over 60 held-out tasks and an
+   error over 6 are not the same claim, and a card that shows only the
+   figure invites the reader to treat them as if they were.
+
+   IT NAMES WHAT HAS NO ACCURACY FIGURE AT ALL. Plantable area is a
+   1-minus-NDVI proxy; tree counts and costs are arithmetic on assumptions
+   the reader sets. None of those has been validated against anything, and
+   saying "±26 AQI points" beside them would let the reader assume the
+   whole card had been. So the card lists them, by name, as unmeasured.
+
+   It also reports the bake-off honestly. The trained neural challenger
+   scores NEGATIVE skill on this data — it is worse than a Theil–Sen trend
+   with a seasonal profile — so the engine keeps the statistical
+   forecaster. A bake-off that only ever announces wins is not a bake-off,
+   and a reader who assumes a neural net is driving the map should be
+   corrected by the interface rather than by the source.
+   ===================================================================== */
+
+const GVACC = window.GVACC = { node: null, cache: {}, open: true, busy: false };
+
+/* Keyed by city, because accuracy IS per city: Delhi's air is predicted to
+   ±107 AQI points and Chennai's to ±18, and one number for both would be a
+   fiction in whichever direction it leaned. */
+async function gvaccFor(){
+  const pt = gvHerePoint();
+  const key = pt ? pt.map(v => v.toFixed(2)).join(",") : "none";
+  if(GVACC.cache[key] !== undefined) return GVACC.cache[key];
+  let q = "";
+  if(pt) q = "?lat=" + pt[0].toFixed(5) + "&lon=" + pt[1].toFixed(5);
+  const h = await getJSON(gvEngineUrl("/api/health" + q), { cache: "no-cache" }, 7000);
+  const val = (h && h.accuracy) ? { city: h.city, acc: h.accuracy } : null;
+  GVACC.cache[key] = val;
+  return val;
+}
+
+/* "A mlp challenger" reads as a typo. Acronyms take the article their first
+   letter SOUNDS like, not the one it is spelled with. */
+function gvaccArticle(model){
+  const m = String(model || "neural").toUpperCase();
+  const vowelSound = /^[AEFHILMNORSX]/.test(m) && m.length <= 5 ? "An " : "A ";
+  return vowelSound + (model ? m : "neural");
+}
+
+function gvaccErrRow(label, value, unit, note){
+  return '<div class="acc-row"><span class="acc-l">' + label + "</span>" +
+    '<span class="acc-v">± ' + value + ' <i>' + unit + "</i></span>" +
+    (note ? '<span class="acc-n">' + note + "</span>" : "") + "</div>";
+}
+
+function gvaccHTML(d){
+  if(!d || !d.acc) {
+    return '<div class="acc-none">The engine is not reachable, so there is no ' +
+      "measured accuracy to show. The ranking on screen, if any, came from a " +
+      "baked export — its figures are real, but this build cannot re-verify them.</div>";
+  }
+  const a = d.acc, b = a.backtest;
+  let out = "";
+
+  if(b && b.mae){
+    const aqi = b.mae.aqi, ndvi = b.mae.ndvi;
+    out += '<div class="acc-h">Forecast error, measured</div>' +
+      '<div class="acc-sub">' + (b.iterations || "?") + " held-out tasks · " +
+      (b.horizon_months || "?") + "-month horizon · " + d.city + "</div>";
+    if(aqi != null) out += gvaccErrRow("Air quality", Math.round(aqi * 10) / 10, "US AQI points");
+    if(ndvi != null) out += gvaccErrRow("Canopy", ndvi.toFixed(3), "NDVI index");
+    if(b.skill_vs_baseline != null){
+      const sk = b.skill_vs_baseline;
+      out += '<div class="acc-skill ' + (sk > 0 ? "good" : "bad") + '">' +
+        (sk > 0 ? "Beats" : "Loses to") + " a naive trend by " + Math.abs(sk).toFixed(3) +
+        " normalised error" +
+        '<span class="acc-n">Same tasks, same split. Positive means the trained ' +
+        "model earned its place.</span></div>";
+    }
+  } else {
+    out += '<div class="acc-none">This city has no stored backtest, so its ' +
+      "forecast error is unmeasured. It is not zero; it is unknown.</div>";
+  }
+
+  if(a.challenger){
+    const c = a.challenger;
+    out += '<div class="acc-h acc-h2">The bake-off</div>' +
+      '<div class="acc-sub">' + gvaccArticle(c.model) + " challenger was trained and " +
+      (c.adopted
+        ? "ADOPTED: it scored " + c.skill_combined + " on " + c.n_test + " held-out rows."
+        : "<b>rejected</b>: it scored " + c.skill_combined + " on " + c.n_test +
+          " held-out rows, which is worse than the baseline.") + "</div>" +
+      '<div class="acc-dep">Deployed: ' + (a.deployed_forecaster || "—") + "</div>";
+  }
+
+  out += '<div class="acc-h acc-h2">Not measured at all</div>' +
+    '<div class="acc-un">' +
+      "<b>Plantable area</b> is a 1-minus-NDVI proxy for most cells — the share " +
+      "of ground that is not vegetated, roads and roofs included. No survey has " +
+      "checked it.<br>" +
+      "<b>Trees and cost</b> are arithmetic on the four assumptions you set in the " +
+      "planting programme. They are as right as those numbers are.<br>" +
+      "<b>Rainfall</b> is ERA5 reanalysis, which runs 5–30% below published IMD " +
+      "normals depending on the city — furthest out on the coast." +
+    "</div>";
+  return out;
+}
+
+GVACC.render = async function(){
+  if(!GVACC.node || GVACC.busy) return;
+  GVACC.busy = true;
+  try {
+    const body = GVACC.node.querySelector(".acc-body");
+    if(body && GVACC.open) body.innerHTML = gvaccHTML(await gvaccFor());
+  } finally { GVACC.busy = false; }
+};
+
+/* Kept as a no-op so any older call site cannot throw. The card is no longer
+   a floating panel: its content is appended to the report panel instead, by
+   gvaccSection(), because a third fixed sidebar made the right-hand edge
+   unreadable. */
+GVACC.mount = function(){ return; };
+
+GVACC.refresh = function(){ GVACC.cache = {}; GVACC.render(); };
+
+(function(){
+  const css = document.createElement("style");
+  css.textContent =
+  ".acc-h{font:800 10px 'Sora',sans-serif;letter-spacing:.08em;text-transform:uppercase;" +
+    "color:var(--ink-soft);margin-bottom:3px;}" +
+  ".acc-h2{margin-top:16px;padding-top:13px;border-top:1px solid var(--line);}" +
+  ".acc-sub{font-size:11.5px;color:var(--ink-soft);line-height:1.55;margin-bottom:9px;}" +
+  ".acc-row{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px;padding:6px 0;" +
+    "border-bottom:1px solid var(--line);}" +
+  ".acc-l{font-size:12.5px;font-weight:700;flex:1;}" +
+  ".acc-v{font:800 15px 'Sora',sans-serif;color:var(--ink);}" +
+  ".acc-v i{font-style:normal;font-size:10.5px;font-weight:700;color:var(--ink-soft);}" +
+  ".acc-n{flex:1 1 100%;font-size:10.5px;color:var(--ink-soft);line-height:1.5;opacity:.9;}" +
+  ".acc-skill{margin-top:10px;font-size:12px;font-weight:700;line-height:1.5;}" +
+  ".acc-skill.good{color:#12b981;} .acc-skill.bad{color:var(--red);}" +
+  ".acc-dep{font-size:11px;color:var(--ink-soft);margin-top:6px;font-weight:600;}" +
+  ".acc-un{font-size:11px;color:var(--ink-soft);line-height:1.65;}" +
+  ".acc-un b{color:var(--ink);}" +
+  ".acc-none{font-size:11.5px;color:var(--ink-soft);line-height:1.6;}" +
+  "";
+  document.head.appendChild(css);
+})();
+
+/* =====================================================================
+   17. LAYOUT CONTROL — move it, resize it, put it back
+   =====================================================================
+   Every surface in this app had a position I chose and the reader could
+   not argue with: the legend sat bottom-left, the report was 400 px wide
+   on the right, the worklist spanned the bottom. On a 1280 laptop with
+   three of them open that is most of the map gone, and no amount of
+   picking better defaults fixes it, because the right answer depends on
+   what the reader is doing and on a screen I cannot see.
+
+   So the defaults stay, and they stop being final:
+
+     DRAG a panel by its header to put it anywhere.
+     RESIZE it from its edge or corner.
+     DOUBLE-CLICK the header to send it back to where it started.
+
+   Positions persist per surface, so a planner who arranges the app for
+   their monitor gets that arrangement back tomorrow.
+
+   Two rules the implementation follows, both learned from getting them
+   wrong first:
+
+   A dragged panel is CLAMPED so at least 60 px of its header stays on
+   screen. Free dragging lets a panel be lost off the edge with no way
+   back except clearing storage, which is a worse bug than the crowding
+   this feature exists to fix.
+
+   A stored position is VALIDATED against the current window before it is
+   applied. A layout arranged on a 2560 px monitor, restored on a 1280 px
+   laptop, would otherwise place half the panels off-screen — so anything
+   that no longer fits is dropped back to its default rather than
+   restored faithfully into the void.
+   ===================================================================== */
+
+const GVLAY = window.GVLAY = { stores: {}, dragging: null };
+
+const GVLAY_MIN_VISIBLE = 60;      // px of a panel that must stay reachable
+
+/* Where the two sidebars actually end, published as --gv-il / --gv-ir so the
+   map's chrome can stay between them.
+
+   Measuring beats tracking state. The panel has four of them — open, closed,
+   railed to 46px, and dragged loose — and the dock is resizable, so a class
+   hook per state would have to be kept in step at every call site and was
+   already out of step at three of them. The edges are the truth; read them.
+
+   A panel dragged off its edge floats over the map and insets nothing: it is
+   no longer a wall, and pushing the toolbar around to avoid one would move
+   the search box every time somebody repositioned a window. */
+function gvInsetOf(el, side){
+  if(!el) return 0;
+  if(el.classList.contains("gvl-moved")) return 0;
+  const cs = getComputedStyle(el);
+  if(cs.display === "none" || cs.visibility === "hidden" || +cs.opacity < 0.05) return 0;
+  const r = el.getBoundingClientRect();
+  if(r.width < 2) return 0;
+  const inset = side === "left" ? r.right : innerWidth - r.left;
+  // Slid off-screen, or somehow spanning the window: neither is a wall.
+  if(!(inset > 0) || inset > innerWidth * 0.75) return 0;
+  return Math.round(inset);
+}
+
+function gvSyncInsets(){
+  const de = document.documentElement;
+  de.style.setProperty("--gv-il",
+    gvInsetOf(document.getElementById("gvDock"), "left") + "px");
+  de.style.setProperty("--gv-ir",
+    gvInsetOf(document.getElementById("panel"), "right") + "px");
+  /* And the top, because the toolbar is not a fixed height: it wraps to two
+     rows on a narrow window, and a legend sized against the one-row height
+     then slid under it. */
+  const tb = document.getElementById("toolbar");
+  const h = tb ? Math.round(tb.getBoundingClientRect().bottom) : 68;
+  de.style.setProperty("--gv-it", (h > 0 && h < innerHeight ? h + 14 : 82) + "px");
+
+  /* How wide a legend may be: the strip between the sidebars, less the zoom
+     column on the right and the gaps either side of both. Below the floor
+     there is no honest width left, so the legends show their title bar only.
+     LEG_FLOOR is where the five colour rows stop being readable. */
+  const LEG_FLOOR = 130, GUTTERS = 14 + 14 + 42 + 14;   // left, gap, zoom, gap
+  const il = parseFloat(de.style.getPropertyValue("--gv-il")) || 0;
+  const ir = parseFloat(de.style.getPropertyValue("--gv-ir")) || 0;
+  const free = Math.round(innerWidth - il - ir - GUTTERS);
+  de.style.setProperty("--gv-free", Math.max(0, free) + "px");
+  document.body.classList.toggle("gv-cramped", free < LEG_FLOOR);
+}
+window.gvSyncInsets = gvSyncInsets;
+
+/* The sidebars slide, so their edge during the 340ms is not where they land.
+   Re-read on the class change (so the chrome starts moving together with
+   them) and again when the slide finishes (so it lands exactly right). */
+(function(){
+  const start = () => {
+    const dock = document.getElementById("gvDock");
+    const panel = document.getElementById("panel");
+    [dock, panel].forEach(el => {
+      if(!el) return;
+      el.addEventListener("transitionend", ev => {
+        if(ev.propertyName === "transform" || ev.propertyName === "width") gvSyncInsets();
+      });
+    });
+    if(window.MutationObserver){
+      const mo = new MutationObserver(gvSyncInsets);
+      [dock, panel].forEach(el => {
+        if(el) mo.observe(el, { attributes: true, attributeFilter: ["class", "style"] });
+      });
+    }
+    addEventListener("resize", gvSyncInsets);
+    gvSyncInsets();
+  };
+  if(document.readyState === "loading") addEventListener("DOMContentLoaded", start);
+  else start();
+})();
+
+function gvlLoad(key){
+  try {
+    const raw = localStorage.getItem("gv.layout." + key);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) { return null; }
+}
+
+function gvlSave(key, val){
+  try {
+    if(val === null) localStorage.removeItem("gv.layout." + key);
+    else localStorage.setItem("gv.layout." + key, JSON.stringify(val));
+  } catch (e) { /* private window: the layout is simply not remembered */ }
+}
+
+/* Is a stored geometry still usable on THIS window? */
+function gvlFits(g){
+  if(!g) return false;
+  if(g.w != null && (g.w < 180 || g.w > innerWidth)) return false;
+  if(g.h != null && (g.h < 120 || g.h > innerHeight)) return false;
+  if(g.left != null && (g.left > innerWidth - GVLAY_MIN_VISIBLE || g.left + (g.w || 200) < GVLAY_MIN_VISIBLE)) return false;
+  if(g.top != null && (g.top > innerHeight - GVLAY_MIN_VISIBLE || g.top < -8)) return false;
+  return true;
+}
+
+/* Make `el` draggable by `handle` and, optionally, resizable.
+
+   opts.key     storage key; omit to make the change session-only
+   opts.handle  the grab area (defaults to el)
+   opts.resize  "both" | "width" | "height" | none
+   opts.onChange called after any geometry change (so a map can invalidate) */
+function gvlMakeMovable(el, opts){
+  opts = opts || {};
+  if(!el || el.__gvlBound) return;
+  el.__gvlBound = true;
+  const key = opts.key;
+  const handle = opts.handle ? (typeof opts.handle === "string" ? el.querySelector(opts.handle) : opts.handle) : el;
+  if(!handle) return;
+
+  handle.classList.add("gvl-handle");
+  el.classList.add("gvl-movable");
+  // The grips are absolutely positioned inside, so they need a positioned
+  // ancestor — but only a static panel needs promoting. fixed and absolute
+  // are already containing blocks, and overwriting them moves the panel.
+  if(getComputedStyle(el).position === "static") el.style.position = "relative";
+
+  const changed = () => { if(opts.onChange) try { opts.onChange(); } catch(e){} };
+
+  function applyGeom(g){
+    if(!g) return;
+    if(g.left != null){
+      el.style.position = "fixed";
+      el.style.left = g.left + "px";
+      el.style.top = g.top + "px";
+      el.style.right = "auto";
+      el.style.bottom = "auto";
+      el.style.transform = "none";     // a moved panel is no longer slid in
+      el.classList.add("gvl-moved");
+    }
+    if(g.w != null) el.style.width = g.w + "px";
+    if(g.h != null) el.style.height = g.h + "px";
+  }
+
+  // Restore, but only if it still makes sense here.
+  if(key){
+    const g = gvlLoad(key);
+    if(g && gvlFits(g)) applyGeom(g);
+    else if(g) gvlSave(key, null);     // stale layout from another screen
+  }
+
+  function record(){
+    if(!key) return;
+    const r = el.getBoundingClientRect();
+    gvlSave(key, {
+      left: el.classList.contains("gvl-moved") ? Math.round(r.left) : null,
+      top:  el.classList.contains("gvl-moved") ? Math.round(r.top)  : null,
+      w: el.style.width ? Math.round(r.width) : null,
+      h: el.style.height ? Math.round(r.height) : null
+    });
+  }
+
+  /* ---- drag ---- */
+  handle.addEventListener("pointerdown", function(e){
+    // Never steal a click from something interactive inside the header.
+    if(e.target.closest("button, input, select, textarea, a, label, .gvl-grip")) return;
+    if(e.button !== 0) return;
+    const r = el.getBoundingClientRect();
+    const dx = e.clientX - r.left, dy = e.clientY - r.top;
+    const w = r.width, h = r.height;
+    GVLAY.dragging = el;
+    el.classList.add("gvl-dragging");
+
+    function move(ev){
+      let L = ev.clientX - dx, T = ev.clientY - dy;
+      // Keep a grabbable strip on screen, always.
+      L = Math.max(GVLAY_MIN_VISIBLE - w, Math.min(L, innerWidth - GVLAY_MIN_VISIBLE));
+      T = Math.max(0, Math.min(T, innerHeight - GVLAY_MIN_VISIBLE));
+      el.style.position = "fixed";
+      el.style.left = L + "px"; el.style.top = T + "px";
+      el.style.right = "auto"; el.style.bottom = "auto";
+      el.style.transform = "none";
+      el.style.width = w + "px";
+      el.classList.add("gvl-moved");
+    }
+    function up(ev){
+      handle.removeEventListener("pointermove", move);
+      handle.removeEventListener("pointerup", up);
+      try { handle.releasePointerCapture(ev.pointerId); } catch(_){}
+      el.classList.remove("gvl-dragging");
+      GVLAY.dragging = null;
+      record(); changed();
+    }
+    handle.addEventListener("pointermove", move);
+    handle.addEventListener("pointerup", up);
+    try { handle.setPointerCapture(e.pointerId); } catch (_) {}
+    e.preventDefault();
+  });
+
+  /* ---- double-click the header to put it back ---- */
+  handle.addEventListener("dblclick", function(e){
+    if(e.target.closest("button, input, select, textarea, a, label")) return;
+    el.classList.remove("gvl-moved");
+    el.style.position = ""; el.style.left = ""; el.style.top = "";
+    el.style.right = ""; el.style.bottom = ""; el.style.transform = "";
+    el.style.width = ""; el.style.height = "";
+    if(key) gvlSave(key, null);
+    changed();
+    if(window.toast) toast("Panel reset to its default place");
+  });
+
+  /* ---- resize ---- */
+  if(opts.resize){
+    const grip = document.createElement("div");
+    grip.className = "gvl-grip gvl-grip-" + opts.resize;
+    grip.title = "Drag to resize";
+    el.appendChild(grip);
+    grip.addEventListener("pointerdown", function(e){
+      if(e.button !== 0) return;
+      const r = el.getBoundingClientRect();
+      const x0 = e.clientX, y0 = e.clientY, w0 = r.width, h0 = r.height;
+      // Which way does dragging right make it bigger? A panel pinned to the
+      // right edge grows when the grip moves LEFT.
+      const rightPinned = opts.grow === "left";
+      function move(ev){
+        if(opts.resize === "both" || opts.resize === "width"){
+          const d = (ev.clientX - x0) * (rightPinned ? -1 : 1);
+          el.style.width = Math.max(opts.minW || 240,
+                            Math.min(w0 + d, innerWidth - 40)) + "px";
+        }
+        if(opts.resize === "both" || opts.resize === "height"){
+          el.style.height = Math.max(opts.minH || 160,
+                             Math.min(h0 + (ev.clientY - y0), innerHeight - 40)) + "px";
+          el.style.maxHeight = "none";
+        }
+        changed();
+      }
+      function up(ev){
+        grip.removeEventListener("pointermove", move);
+        grip.removeEventListener("pointerup", up);
+        try { grip.releasePointerCapture(ev.pointerId); } catch(_){}
+        record(); changed();
+      }
+      grip.addEventListener("pointermove", move);
+      grip.addEventListener("pointerup", up);
+      try { grip.setPointerCapture(e.pointerId); } catch (_) {}
+      e.preventDefault(); e.stopPropagation();
+    });
+    grip.addEventListener("dblclick", function(e){
+      e.stopPropagation();
+      el.style.width = ""; el.style.height = ""; el.style.maxHeight = "";
+      record(); changed();
+    });
+  }
+}
+window.gvlMakeMovable = gvlMakeMovable;
+
+/* Put every surface back where it started. */
+/* A drag edge on the two docked sidebars.
+
+   They are pinned to opposite edges of the window, so their widths are CSS
+   custom properties rather than inline styles - the rail transforms are
+   written in percentages of that width and would fight an inline width. */
+function gvlSidebarResize(el, side, varName, key){
+  if(!el || el.__gvlEdge) return;
+  el.__gvlEdge = true;
+  const grip = document.createElement("div");
+  grip.className = "gvl-grip gvl-grip-width " + (side === "left" ? "gvl-right" : "gvl-left");
+  grip.title = "Drag to resize \u00b7 double-click to reset";
+  el.appendChild(grip);
+
+  /* How small and how large a sidebar may be dragged.
+
+     180px was too timid at both ends: a reader who wanted the map back could
+     not shrink the studio below a third of a laptop screen, and one reading a
+     long brief could not give it more than 80%. 150 still fits the narrowest
+     control in either sidebar, and below that the rail (46px) is the honest
+     way to get out of the way rather than a squeezed panel nothing fits in. */
+  const MIN_W = 150, MAX_FRAC = 0.92;
+  const maxW = () => Math.round(innerWidth * MAX_FRAC);
+
+  const stored = gvlLoad(key);
+  if(stored && stored.w && stored.w >= MIN_W && stored.w <= maxW()){
+    document.documentElement.style.setProperty(varName, stored.w + "px");
+  }
+
+  grip.addEventListener("pointerdown", function(e){
+    if(e.button !== 0) return;
+    const w0 = el.getBoundingClientRect().width, x0 = e.clientX;
+    document.body.style.userSelect = "none";
+    function move(ev){
+      const d = (ev.clientX - x0) * (side === "left" ? 1 : -1);
+      const w = Math.max(MIN_W, Math.min(w0 + d, maxW()));
+      document.documentElement.style.setProperty(varName, w + "px");
+      if(window.gvwFit) gvwFit();
+    }
+    function up(ev){
+      grip.removeEventListener("pointermove", move);
+      grip.removeEventListener("pointerup", up);
+      try { grip.releasePointerCapture(ev.pointerId); } catch(_){}
+      document.body.style.userSelect = "";
+      gvlSave(key, { w: Math.round(el.getBoundingClientRect().width) });
+      if(window.map) map.invalidateSize();
+      if(window.gvwFitSoon) gvwFitSoon();
+    }
+    grip.addEventListener("pointermove", move);
+    grip.addEventListener("pointerup", up);
+        // Capture is an optimisation, not a requirement: it keeps the
+        // drag alive if the pointer leaves the grip. It throws for a
+        // pointer the element does not own, and calling it BEFORE the
+        // move listeners were attached meant one throw aborted the
+        // whole drag silently - the grip looked alive and did nothing.
+    try { grip.setPointerCapture(e.pointerId); } catch (_) {}
+    e.preventDefault();
+  });
+  grip.addEventListener("dblclick", function(e){
+    e.stopPropagation();
+    document.documentElement.style.removeProperty(varName);
+    gvlSave(key, null);
+    if(window.map) map.invalidateSize();
+    if(window.gvwFitSoon) gvwFitSoon();
+  });
+}
+
+GVLAY.resetAll = function(){
+  ["priLegend", "greenLegend", "worklist", "dock", "panel",
+   "dockPos", "panelPos", "assistant"].forEach(function(k){
+    gvlSave(k, null);
+  });
+  document.querySelectorAll(".gvl-movable").forEach(function(el){
+    el.classList.remove("gvl-moved");
+    el.style.position = ""; el.style.left = ""; el.style.top = "";
+    el.style.right = ""; el.style.bottom = ""; el.style.transform = "";
+    el.style.width = ""; el.style.height = ""; el.style.maxHeight = "";
+  });
+  document.documentElement.style.removeProperty("--gv-dock-w");
+  document.documentElement.style.removeProperty("--gv-panel-w");
+  if(window.map) setTimeout(function(){ map.invalidateSize(); }, 60);
+  if(window.toast) toast("Layout reset");
+};
+
+(function(){
+  const css = document.createElement("style");
+  css.textContent =
+  ".gvl-handle{cursor:grab;touch-action:none;}" +
+  ".gvl-dragging{cursor:grabbing!important;user-select:none;box-shadow:0 26px 60px rgba(0,0,0,.42)!important;transition:none!important;}" +
+  ".gvl-moved{transition:none!important;transform:none!important;border-radius:16px;box-shadow:0 22px 54px rgba(0,0,0,.34);}" +
+  ".gvl-moved#gvDock,.gvl-moved#panel{bottom:auto!important;height:min(78vh,720px);border-left:1px solid var(--glass-brd);border-right:1px solid var(--glass-brd);overflow:hidden;}" +
+  ".gvl-dragging *{user-select:none;}" +
+  // No position here. The grips need a positioned ancestor, but this sheet is
+  // injected after the stylesheet, so at equal specificity ".gvl-movable"
+  // beat every panel selected by class: ".gvw{position:fixed;left:16px;
+  // right:16px;bottom:16px}" became relative, its anchoring turned into flow
+  // offsets, and the planting programme sat 16px off the top of the window
+  // and 16px past its right edge. Panels selected by id were untouched, which
+  // is why only one panel looked wrong. gvlMakeMovable now promotes to
+  // relative only when the panel really is static, which is the case the rule
+  // was written for.
+  // The grips. Deliberately visible on hover rather than always: a permanent
+  // handle on every panel is visual noise for the majority who never resize.
+  ".gvl-grip{position:absolute;z-index:30;opacity:.30;transition:opacity .15s,background .15s;touch-action:none;}" +
+  ".gvl-movable:hover .gvl-grip{opacity:.7;}" +
+  ".gvl-grip:hover{opacity:1!important;}" +
+  ".gvl-grip-both{right:2px;bottom:2px;width:20px;height:20px;cursor:nwse-resize;" +
+    "background:linear-gradient(135deg,transparent 46%,var(--ink-soft) 46%,var(--ink-soft) 54%,transparent 54%," +
+    "transparent 71%,var(--ink-soft) 71%,var(--ink-soft) 79%,transparent 79%);}" +
+  ".gvl-grip-width{top:0;bottom:0;width:12px;cursor:ew-resize;background:linear-gradient(90deg,transparent 35%,var(--brand-solid) 35%,var(--brand-solid) 65%,transparent 65%);}" +
+  ".gvl-grip-height{left:0;right:0;height:12px;cursor:ns-resize;background:linear-gradient(180deg,transparent 35%,var(--brand-solid) 35%,var(--brand-solid) 65%,transparent 65%);}" +
+  ".gvl-grip-width.gvl-right{right:-6px;} .gvl-grip-width.gvl-left{left:-6px;}" +
+  ".gvl-grip-height.gvl-top{top:-3px;}" +
+  "@media (pointer:coarse){.gvl-grip{opacity:.5;} .gvl-grip-both{width:22px;height:22px;}}";
   document.head.appendChild(css);
 })();
 
@@ -9487,7 +11183,15 @@ const A_TOOLS = {
 
   "studio.autoplant": async a => {
     const res = GV.act.plant(a.mix || [], a.spacing_m || 8);
-    if (!res.placed) throw new Error("nothing could be placed — is there a plot?");
+    // Say which of the two went wrong. "Nothing could be placed" sent the
+    // reader looking for a plot that was sitting there the whole time.
+    if (res.badMix) throw new Error("the species mix came through as a " +
+      res.badMix + ", not a list of {species, count} — ask again naming the " +
+      "species and how many");
+    if (res.noPlot) throw new Error("there is no plot yet — draw one, or ask " +
+      "me to site one, and then plant into it");
+    if (!res.placed) throw new Error("nothing could be placed — the plot may " +
+      "be too small for this spacing, or no species matched");
     let msg = "planted " + res.placed + " trees";
     if (res.placed < res.requested) {
       msg += " (plot fits " + res.placed + " of " + res.requested + " at this spacing)";
@@ -9568,12 +11272,19 @@ function aCompareTable(rows) {
     line("Air (US AQI)", "aqi", "", true) +
     line("PM2.5", "pm25", " µg/m³", true) +
     line("Canopy", "canopy", "%", false) +
-    line("Bare ground", "bare", "%", false) +
+    line("Not vegetated", "bare", "%", false) +
     line("Rainfall", "rain", " mm", false) +
+    /* This footnote said "2020-2024" long after the pipeline moved to the
+       1991-2020 WMO standard normal, and called the 1-minus-NDVI figure "bare
+       ground ... more room to plant" - the same two claims corrected in the
+       area panel and in the assistant's own sources answer, missed here
+       because the comparison table renders from its own string. */
     '</table><p class="gva-fine">Air and canopy read live across ' +
     'a ' + (GV.CFG.AOI_KM2) + ' km² perimeter at each point. Rainfall is ERA5 ' +
-    'reanalysis over 2020–2024, not a gauge record. "Better" on bare ground ' +
-    'means more room to plant, not a healthier place.</p></div>';
+    'reanalysis over 1991–2020, the WMO standard normal period — model output, ' +
+    'not a gauge record, and 5–30% under published IMD normals depending on the ' +
+    'city. "Not vegetated" counts roofs and roads as well as open ground, so a ' +
+    'higher figure is not a promise of somewhere to plant.</p></div>';
 }
 
 async function aExec(actions) {
@@ -9824,6 +11535,41 @@ async function aProbe() {
   aRenderStatus();
 }
 
+/* Probe again, for a while, instead of deciding at second three.
+
+   aProbe ran exactly once at startup with a 2.5 s timeout per candidate. The
+   server it is looking for spends its first twenty seconds loading a local
+   OpenStreetMap index, so a page opened at the same moment as the server -
+   which is what the desktop launcher does - probed, found nothing, and marked
+   itself offline for the rest of the session. Everything downstream then took
+   the fallback path: the assistant said it was offline, the ranking came from
+   a baked export, and the feature census went to the public Overpass instance
+   and got throttled, all while a working engine sat on the next port.
+
+   Retries stop at the first success and stop entirely after the last delay.
+   This is a startup race, not a health monitor - an engine that goes away
+   later is a different problem, and the panels that need it already report
+   its absence when they ask. */
+const ENGINE_PROBE_RETRIES_MS = [3000, 8000, 20000, 45000];
+
+async function aProbeUntilFound() {
+  await aProbe();
+  for (const wait of ENGINE_PROBE_RETRIES_MS) {
+    if (GVA.online) return;
+    await new Promise(r => setTimeout(r, wait));
+    await aProbe();
+    if (GVA.online) {
+      // Anything that already gave up on the engine can now have it. The
+      // ranking is the one that matters: it is drawn from a baked export
+      // until this point, and the live engine may have a newer one.
+      if (window.GVP && GVP.active) { GVP.data = null; GVP.setActive(true); }
+      if (window.GVACC) GVACC.cache = {};
+      return;
+    }
+  }
+}
+window.aProbeUntilFound = aProbeUntilFound;
+
 /* =====================================================================
    16. LANGUAGE — the whole interface, not just the labels
    =====================================================================
@@ -9860,9 +11606,30 @@ const LANG_DIR = "data/i18n/";
 const NO_TR = "code,pre,script,style,textarea,.gva-msg,.gva-cmp,[data-no-i18n]," +
               "#acList,.gv-gcard h4,.gv-histrow";
 
+/* The same exclusions do not apply to ATTRIBUTES.
+ *
+ * NO_TR exists to protect CONTENT: what a user typed, an H3 cell id, a shell
+ * command, an assistant reply full of measured numbers and botanical names.
+ * `textarea` is on that list because its text node is the user's own words.
+ *
+ * But an attribute is never user content. placeholder, title and aria-label
+ * are interface chrome the author wrote, and blocking them alongside the text
+ * left the assistant's own placeholder - "Ask about this place, or tell me to
+ * build something…" - in English inside an otherwise Hindi interface, purely
+ * because the element it sits on happens to be a textarea. The dictionary had
+ * the string; nothing was ever going to use it.
+ *
+ * So attributes keep only the exclusions that are about authored intent, not
+ * about the element type. */
+const NO_TR_ATTR = ".gva-msg,.gva-cmp,[data-no-i18n],#acList";
+
 async function langList() {
   if (GVL.list) return GVL.list;
-  const j = await getJSON(LANG_DIR + "index.json", {}, 8000);
+  /* Revalidate. This file changes when a language is added or a dictionary
+     lands, which is a deploy, not a session - and a browser holding the old
+     copy is why the "not translated yet" markers did not appear the first
+     time they were added. An unchanged file still costs only a 304. */
+  const j = await getJSON(LANG_DIR + "index.json", { cache: "no-cache" }, 8000);
   GVL.list = (j && j.languages) ||
              [{ code: "en", name: "English", native: "English", dir: "ltr" }];
   return GVL.list;
@@ -9872,11 +11639,42 @@ async function langDict(code) {
   if (code === "en") return null;                 // English is the source text
   // localStorage cache keeps a language switch instant after the first load,
   // and keeps the page working if the file server goes away mid-session.
+  let cached = null;
   try {
     const hit = localStorage.getItem(LANG_KEY + "." + code);
-    if (hit) return JSON.parse(hit);
+    if (hit) cached = JSON.parse(hit);
   } catch (e) {}
-  const j = await getJSON(LANG_DIR + code + ".json", {}, 10000);
+
+  if (cached) {
+    /* Serve the cache, then check the file behind it.
+
+       This used to return the cache and stop. The cache never expired and
+       nothing ever invalidated it, so a reader who had once opened Hindi kept
+       that exact dictionary for good: every correction and every added string
+       shipped afterwards reached new readers only. Twenty-nine strings I had
+       just translated stayed English on this page for that reason alone, and
+       the file on disk said otherwise, which is the hardest kind of wrong to
+       see.
+
+       Revalidating in the background keeps both things the cache was for -
+       switching is still instant, and a file server that has gone away still
+       leaves the page working - while letting a corrected dictionary actually
+       arrive. */
+    (async () => {
+      const fresh = await getJSON(LANG_DIR + code + ".json", { cache: "no-cache" }, 10000);
+      if (!fresh) return;                       // offline: the cache stands
+      const next = JSON.stringify(fresh);
+      if (next === JSON.stringify(cached)) return;
+      try { localStorage.setItem(LANG_KEY + "." + code, next); } catch (e) {}
+      if (GVL.code === code) {                  // still the language on screen
+        GVL.dict = fresh;
+        try { trNode(document.body); renderLangBtn(); } catch (e) {}
+      }
+    })();
+    return cached;
+  }
+
+  const j = await getJSON(LANG_DIR + code + ".json", { cache: "no-cache" }, 10000);
   if (j) {
     try { localStorage.setItem(LANG_KEY + "." + code, JSON.stringify(j)); }
     catch (e) { /* quota — the dictionary still works this session */ }
@@ -9886,6 +11684,28 @@ async function langDict(code) {
 
 /* ---------- the DOM pass ---------- */
 
+/* Whitespace the DOM has and the dictionary does not.
+
+   The intro paragraph is written `100&nbsp;km&sup2;` so the number never wraps
+   away from its unit. The browser hands that to a text node as U+00A0, while
+   the dictionary key - typed by a translator, or copied out of the English
+   source - carries an ordinary space. The two strings look identical in every
+   editor and are not equal, so the lookup missed and that paragraph stayed
+   English in all four translated languages while everything around it changed.
+
+   Nothing errors when this happens. The only symptom is one sentence in the
+   wrong language, which is why it survived: it is invisible to anyone reading
+   the English, and everyone reading the other four assumed it was untranslated
+   on purpose.
+
+   Normalising both sides costs a regex per lookup and removes the whole class:
+   non-breaking spaces, narrow no-break spaces, and runs of whitespace that
+   HTML would collapse anyway. */
+const _TR_WS = /[\s\u00a0\u202f\u2009]+/g;
+let _trNorm = null;                     // normalised key -> translation
+
+function trNormKey(t) { return t.replace(_TR_WS, " ").trim(); }
+
 function trString(s) {
   if (!GVL.dict) return null;
   const ui = GVL.dict.ui || {};
@@ -9893,9 +11713,31 @@ function trString(s) {
   if (!key) return null;
   const hit = ui[key];
   if (hit) return s.replace(key, hit);           // keep surrounding whitespace
+
+  /* Species common names live in their own block, and this only ever read
+     `ui`. So the assistant said "नीम (Neem)" - it looks its names up server
+     side - while the report panel two inches away said "Neem", from the same
+     dictionary, for the same tree.
+
+     Only a WHOLE text node is matched, never a substring, so this cannot
+     corrupt a sentence that happens to contain a species name; the panel puts
+     each name in its own <b>. Botanical names are untouched by design: they
+     are the unambiguous thing a nursery order is written against. */
+  const sp = (GVL.dict.species || {})[key];
+  if (sp) return s.replace(key, sp);
   // Try without a trailing ellipsis / arrow, which several labels carry.
   const bare = key.replace(/[…→\s]+$/, "");
   if (bare !== key && ui[bare]) return s.replace(bare, ui[bare]);
+
+  // Whitespace-insensitive pass, built once per dictionary.
+  if (!_trNorm || _trNorm.__for !== GVL.dict) {
+    _trNorm = Object.create(null);
+    _trNorm.__for = GVL.dict;
+    for (const k in ui) _trNorm[trNormKey(k)] = ui[k];
+  }
+  const norm = trNormKey(key);
+  const soft = _trNorm[norm] || _trNorm[trNormKey(bare)];
+  if (soft) return s.replace(key, soft);
   return null;
 }
 
@@ -9924,7 +11766,7 @@ function trNode(root) {
   // Attributes people actually read.
   const els = root.querySelectorAll ? root.querySelectorAll("[placeholder],[title],[aria-label]") : [];
   els.forEach(el => {
-    if (el.closest(NO_TR)) return;
+    if (el.closest(NO_TR_ATTR)) return;
     ["placeholder", "title", "aria-label"].forEach(attr => {
       const v = el.getAttribute(attr);
       if (!v) return;
@@ -10011,17 +11853,32 @@ async function openLangMenu() {
       (GVL.dict && GVL.dict.ui && GVL.dict.ui["Choose a language"]
         ? esc(GVL.dict.ui["Choose a language"]) : "Choose a language") +
     "</div>" +
-    list.map(l =>
-      '<button class="gvl-row' + (l.code === GVL.code ? " on" : "") +
-      '" data-code="' + l.code + '" data-no-i18n>' +
-        '<b>' + esc(l.native) + "</b><em>" + esc(l.name) + "</em>" +
+    list.map(l => {
+      // `translated` comes from data/i18n/index.json, which records whether
+      // that dictionary file actually exists.
+      const ready = l.translated !== false;
+      return '<button class="gvl-row' + (l.code === GVL.code ? " on" : "") +
+        (ready ? "" : " gvl-soon") +
+        '" data-code="' + l.code + '" data-no-i18n>' +
+        '<b>' + esc(l.native) + "</b><em>" + esc(l.name) +
+        (ready ? "" : " \u00b7 not translated yet") + "</em>" +
         (l.code === GVL.code
           ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
             'stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>' : "") +
-      "</button>").join("");
+      "</button>";
+    }).join("");
   document.body.appendChild(m);
   m.querySelectorAll(".gvl-row").forEach(r => {
-    r.onclick = () => { m.remove(); setLang(r.dataset.code, true); };
+    r.onclick = () => {
+      m.remove();
+      const row = list.find(l => l.code === r.dataset.code);
+      if (row && row.translated === false) {
+        // Still switch: the choice is remembered, so the interface follows
+        // the day that dictionary lands. But say what will happen now.
+        toast(row.native + " has no dictionary yet — the interface stays in English");
+      }
+      setLang(r.dataset.code, true);
+    };
   });
   const close = e => {
     if (!e.target.closest("#gvLangMenu") && !e.target.closest("#gvLangBtn")) {
@@ -10066,7 +11923,7 @@ async function initLang() {
   else renderLangBtn();
 }
 
-function gvBootUI(){ aBuild(); aProbe(); initLang(); }
+function gvBootUI(){ aBuild(); aProbeUntilFound(); initLang(); }
 if (document.readyState === "loading")
   document.addEventListener("DOMContentLoaded", gvBootUI);
 else gvBootUI();
