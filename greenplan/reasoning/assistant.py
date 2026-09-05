@@ -139,6 +139,14 @@ def _qty_phrase(e: dict[str, Any], lang: str = "en") -> str:
 _GLOSSARY = (r"ndvi|h3|hexagons?|mcda|priority score|multi.?criteria|memory loop|"
              r"in.?context|plantable|accuracy|theil|backtest|placeholder")
 
+# Intents whose answer is read off the ground under the reader: species
+# matching, the layout plan, the live report, the soil and water figures.
+# Asked together with a move, these have to wait for the move to land.
+_NEEDS_GROUND = frozenset({
+    "design", "plant", "species", "report", "air", "canopy", "water",
+    "soil", "empty_land", "heat", "priority", "trend", "people",
+})
+
 _INTENTS: list[tuple[str, str]] = [
     ("greet",     r"^\s*(hi|hey|hello|yo|namaste|good (morning|afternoon|evening)|"
                   r"thanks|thank you|ok|okay|cool|nice)\b[\s!.]*$"),
@@ -635,6 +643,10 @@ class Ctx:
         self.km2 = _f(aoi.get("km2")) or 100.0
         self.place = str(raw.get("place") or "").strip()
         self.view = str(raw.get("view") or "").strip()
+        # Set by the client when it is re-asking after a move it was told to
+        # make. Without it a request that names a place would ask for the move
+        # again on every pass and never reach an answer.
+        self.moved = bool(raw.get("moved"))
 
         r = raw.get("readings") if isinstance(raw.get("readings"), dict) else {}
         self.aqi = _f(r.get("aqi"))
@@ -733,10 +745,42 @@ class Assistant:
         lead: list[dict[str, Any]] = []
         if intent not in ("goto", "compare", "greet", "help", "unknown"):
             place = extract_place(message)
-            if place and not parse_latlon(message):
+            # On the second pass the move has already happened, so neither the
+            # search nor the "Moving to ... first" sentence belongs: repeating
+            # them costs another geocode and another full read of the same
+            # ground, and tells the reader they are going somewhere they have
+            # already arrived.
+            if place and not parse_latlon(message) and not ctx.moved:
                 lead = [{"tool": "map.search", "args": {"query": place}},
                         {"tool": "dock.open", "args": {"tab": "area"}}]
                 ctx.place = ctx.place or place
+
+                # Answer AFTER arriving, for anything that reads the ground.
+                #
+                # "design a 1 hectare park in vastrapur", asked from Delhi,
+                # used to compose the whole design here and ship it as
+                # actions: the species were matched against Delhi's AQI 180
+                # and 664 mm of rain, the headline said "at Raisina Hill, New
+                # Delhi", and the browser then planted that Delhi mix in
+                # Ahmedabad. Every number real, every number about the place
+                # the reader had just left.
+                #
+                # So when a move is required and the answer depends on local
+                # readings, this returns the move alone plus a request for the
+                # client to ask again once it has arrived. The second pass
+                # carries the new context and composes the design against the
+                # ground it will actually stand on. `moved` breaks the loop.
+                if intent in _NEEDS_GROUND and not ctx.moved:
+                    return {
+                        "reply": self.t("compound.lead", place=place),
+                        "actions": lead + [{"tool": "assistant.continue",
+                                            "args": {"message": message}}],
+                        "cards": [],
+                        "intent": intent,
+                        "lang": self.lang,
+                        "dir": i18n.direction(self.lang),
+                        "source": self.e.reasoning_label(),
+                    }
         log.info("assistant intent=%s lang=%s msg=%r", intent, self.lang,
                  (message or "")[:120])
         fn = getattr(self, "_do_" + intent, None) or self._do_report

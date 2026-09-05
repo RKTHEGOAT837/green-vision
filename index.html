@@ -2053,13 +2053,30 @@ function acChoose(i) {
 
 /* One place for "put the map here and read it", so the search bar, the
    assistant and a deep link all behave identically. */
+/* Returns a promise that settles when the new place has actually been read.
+ *
+ * This used to fire analyse() into a setTimeout and return immediately, which
+ * is fine for a click but wrong for anything the assistant sequences behind
+ * it. "design a 1 hectare park in vastrapur" is one request with two actions:
+ * move, then design. The move returned as soon as the animation started, the
+ * design ran against the AOI still in memory, and the park was laid out in
+ * Delhi - 781 km from the place the reader named, while the map showed
+ * Vastrapur. The reply even said so, "Laying out a park at Raisina Hill, New
+ * Delhi", and the sentence above it said "Moving to vastrapur first".
+ *
+ * Awaiting the read costs a few seconds on a compound request and makes the
+ * second action operate on the place the first one moved to. */
 function acGo(lat, lon, zoom, label) {
-  if (!map) return;
+  if (!map) return Promise.resolve(null);
   map.flyTo([lat, lon], zoom || 15, { duration: 0.9 });
   if (label) toast("Showing " + label);
   // Let the fly settle before the readings start; analyse() is network-bound
   // and the AOI circle looks wrong if it lands mid-animation.
-  setTimeout(() => analyse(lat, lon), 420);
+  return new Promise(resolve => {
+    setTimeout(() => {
+      Promise.resolve(analyse(lat, lon)).then(resolve, resolve);
+    }, 420);
+  });
 }
 window.gvGoTo = acGo;
 
@@ -11091,7 +11108,9 @@ const A_TOOLS = {
 
   "map.goto": async a => {
     if (!isFinite(a.lat) || !isFinite(a.lon)) return null;
-    window.gvGoTo(a.lat, a.lon, a.zoom || 15);
+    // Awaited, so an action sequenced behind this one runs on the place
+    // this one moved to rather than the one it left.
+    await window.gvGoTo(a.lat, a.lon, a.zoom || 15);
     return "moved the map";
   },
 
@@ -11155,7 +11174,7 @@ const A_TOOLS = {
     const inp = document.getElementById("q");
     if (inp) inp.value = r.name;
     acRemember(r);
-    window.gvGoTo(r.lat, r.lon, r.zoom || 15);
+    await window.gvGoTo(r.lat, r.lon, r.zoom || 15);
     return "found " + r.name;
   },
 
@@ -11339,7 +11358,7 @@ async function aExec(actions) {
 
 /* ---------- transport ---------- */
 
-async function aSend(text) {
+async function aSend(text, opts) {
   const msg = String(text || "").trim();
   if (!msg || GVA.busy) return;
   GVA.busy = true;
@@ -11354,7 +11373,13 @@ async function aSend(text) {
     const r = await fetch(gvEngineUrl(ASSIST_URL), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: msg, context: GV.act.snapshot(),
+      body: JSON.stringify({ message: msg,
+                             // `moved` tells the engine this is the second
+                             // pass of a request that named a place: the
+                             // move has landed, so answer here instead of
+                             // asking for the move again.
+                             context: Object.assign({}, GV.act.snapshot(),
+                                                    (opts && opts.moved) ? { moved: true } : null),
                              lang: (window.GVL && GVL.code) || "en" })
     });
     if (r.ok) j = await r.json();
@@ -11391,6 +11416,20 @@ async function aSend(text) {
   const bubble = aAdd("bot", aMd(j.reply || ""));
   if (j.dir === "rtl") bubble.dir = "rtl";
   const res = await aExec(j.actions);
+
+  /* "assistant.continue": the engine moved us somewhere before it could
+     answer, and asked to be asked again now that we are there.
+
+     Composing the answer before the move is what put a park designed for
+     Delhi's air and rainfall onto ground in Ahmedabad, under a headline
+     naming Delhi. The move is awaited inside aExec, so by this point the
+     readings are the new ones. One hop only - the flag stops it looping. */
+  const cont = (j.actions || []).find(a => a.tool === "assistant.continue");
+  if (cont && !(opts && opts.moved)) {
+    GVA.busy = false;
+    await aSend(cont.args && cont.args.message || msg, { moved: true });
+    return;
+  }
 
   /* If a plot was sited during those actions, say where it went and why.
      The engine wrote its reply BEFORE the site search ran, so it cannot
