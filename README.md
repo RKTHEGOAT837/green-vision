@@ -19,7 +19,8 @@
 [![Bengaluru](https://img.shields.io/badge/Bengaluru-133%20cells-1f6f4a)](#the-cities)
 [![Chennai](https://img.shields.io/badge/Chennai-84%20cells-1f6f4a)](#the-cities)
 
-Built for the **India AI Impact Festival 2026**.
+Built for the **Intel® AI Global Impact Festival**. Selected to be showcased
+on the Festival Stage, 13–17 years category.
 
 **Ahmedabad · Delhi · Mumbai · Bengaluru · Chennai** ship with real data —
 632 hexagonal cells, 42 months of satellite and air-quality history each.
@@ -334,6 +335,6 @@ NASA MOD13Q1 · Open-Meteo · ISRIC SoilGrids · Esri World Imagery
 
 <div align="center">
 
-**🌳 Green Vision** — India AI Impact Festival 2026
+**🌳 Green Vision** — Intel® AI Global Impact Festival
 
 </div>
