@@ -154,6 +154,67 @@ jobs:
           "$RES/engine/python/bin/python3" -c "import openvino, numpy, pandas, h3; print('packaged engine OK')"
           ls -la desktop/release/*.zip
 
+      # ACTUALLY RUN IT.
+      #
+      # Everything above proves the app was assembled. None of it proves it
+      # opens - and the author has no Mac, so without this step the first
+      # person to find out whether a mac build launches is whoever
+      # downloads it. This runner IS a Mac and has a window server, so it
+      # can do the one test that matters: start the app, wait for the
+      # engine it spawns to answer, ask the engine a real question, and
+      # photograph the screen.
+      - name: Launch it and prove the engine answers
+        id: smoke
+        run: |
+          set -eux
+          APP=$(find desktop/release -maxdepth 2 -name "*.app" -type d | head -1)
+          "$APP/Contents/MacOS/GreenVision" --no-sandbox > /tmp/gv-app.log 2>&1 &
+          APP_PID=$!
+
+          # The engine is a Python process the app starts for itself. It
+          # loads a 42-month panel before it answers, so this waits rather
+          # than probing once.
+          OK=""
+          for i in $(seq 1 60); do
+            sleep 5
+            for PORT in 8000 8010 8020 8030 8040; do
+              if curl -fsS --max-time 3 "http://127.0.0.1:$PORT/api/health" -o /tmp/gv-health.json; then
+                OK="$PORT"; break 2
+              fi
+            done
+            kill -0 $APP_PID 2>/dev/null || { echo "the app exited on its own"; break; }
+          done
+
+          if [ -z "$OK" ]; then
+            echo "::error::the app did not bring up an engine"
+            tail -50 /tmp/gv-app.log || true
+            exit 1
+          fi
+
+          echo "engine answered on port $OK"
+          python3 -c "import json;d=json.load(open('/tmp/gv-health.json'));print('ok',d.get('ok'),'| city',d.get('city'),'| llm',(d.get('assistant_llm') or {}).get('present'))"
+
+          # A real question, through the real endpoint, against the engine
+          # inside the .app.
+          curl -fsS --max-time 120 -X POST "http://127.0.0.1:$OK/api/assistant"             -H "content-type: application/json"             -d '{"message":"what is green vision","lang":"en","context":{"aoi":{"lat":23.03,"lon":72.5,"km2":100},"place":"Bopal, Ahmedabad","readings":{}}}'             -o /tmp/gv-reply.json
+          python3 -c "import json;d=json.load(open('/tmp/gv-reply.json'));print('intent',d.get('intent'));print((d.get('reply') or '')[:160])"
+
+          # What it looks like, so a person can see it rather than take the
+          # exit code on trust.
+          screencapture -x /tmp/gv-screen.png || echo "::warning::no screenshot"
+          kill $APP_PID 2>/dev/null || true
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mac-smoke-test-${{ inputs.version }}
+          path: |
+            /tmp/gv-screen.png
+            /tmp/gv-app.log
+            /tmp/gv-health.json
+            /tmp/gv-reply.json
+          if-no-files-found: warn
+
       - uses: actions/upload-artifact@v4
         with:
           name: greenvision-mac-beta-${{ inputs.version }}
