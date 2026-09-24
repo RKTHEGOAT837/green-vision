@@ -211,11 +211,29 @@ jobs:
             tail -40 /tmp/gv-engine-direct.log || true
             exit 1
           fi
+          # And make sure it is GONE before the app is asked to start one.
+          #
+          # The first version of this left the hand-started engine running
+          # on a port the app's own wait loop then scans. The loop found it
+          # within five seconds, declared success, screenshotted a desktop
+          # the app had not had time to draw on, and killed the app - so the
+          # half of this test that matters was never actually run, and it
+          # passed. A test that cannot fail is not a test.
           kill "$(cat /tmp/gv-engine.pid)" 2>/dev/null || true
-          sleep 3
+          for i in $(seq 1 20); do
+            curl -fsS --max-time 2 http://127.0.0.1:8040/api/health -o /dev/null || break
+            sleep 2
+          done
+          if curl -fsS --max-time 2 http://127.0.0.1:8040/api/health -o /dev/null; then
+            echo "::error::could not stop the hand-started engine; the app test would be meaningless"
+            exit 1
+          fi
+          rm -f /tmp/gv-health.json
 
           "$APP/Contents/MacOS/GreenVision" --no-sandbox > /tmp/gv-app.log 2>&1 &
           APP_PID=$!
+          # Give it a moment to draw before anything is asked of it.
+          sleep 20
 
           # The engine is a Python process the app starts for itself. It
           # loads a 42-month panel before it answers, so this waits rather
@@ -237,7 +255,8 @@ jobs:
             exit 1
           fi
 
-          echo "engine answered on port $OK"
+          echo "the app started its own engine, on port $OK"
+          grep -q "\[engine\]" /tmp/gv-app.log             || echo "::warning::the app answered but printed no engine log"
           python3 -c "import json;d=json.load(open('/tmp/gv-health.json'));print('ok',d.get('ok'),'| city',d.get('city'),'| llm',(d.get('assistant_llm') or {}).get('present'))"
 
           # A real question, through the real endpoint, against the engine
