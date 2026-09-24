@@ -112,11 +112,31 @@ jobs:
       # Unsigned, like the Windows build. CSC_IDENTITY_AUTO_DISCOVERY=false
       # stops electron-builder hunting for a certificate that is not there
       # and failing the build over its absence.
+      - name: Disk before the build
+        run: df -h /
+
+      # zip, not dmg.
+      #
+      # hdiutil could not make the disk image on the runner: the app is
+      # about 1.9 GB an architecture once the engine and the language model
+      # are inside it, and building two of those plus a read-write image of
+      # each exhausted the space `hdiutil create` needs for scratch. It
+      # failed with an input/output error writing the volume icon, then
+      # could not even detach the half-made volume.
+      #
+      # A zip of the .app is the same application and needs no disk image at
+      # all: unzip it, drag it to Applications. A dmg is nicer to receive
+      # and can come back when this is not a beta - it is presentation, and
+      # presentation is not worth being the reason there is no mac build.
       - name: Build the app
         working-directory: desktop
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
         run: npx electron-builder --mac --publish never
+
+      - name: Disk after the build
+        if: always()
+        run: df -h /
 
       # Proof it assembled, before anybody downloads it: the engine has to
       # be inside the .app, and its interpreter has to run from there.
@@ -129,12 +149,10 @@ jobs:
           test -f "$RES/studio/index.html"
           test -x "$RES/engine/python/bin/python3"
           "$RES/engine/python/bin/python3" -c "import openvino, numpy, pandas, h3; print('packaged engine OK')"
-          ls -la desktop/release/*.dmg desktop/release/*.zip || true
+          ls -la desktop/release/*.zip
 
       - uses: actions/upload-artifact@v4
         with:
           name: greenvision-mac-beta-${{ inputs.version }}
-          path: |
-            desktop/release/*.dmg
-            desktop/release/*.zip
+          path: desktop/release/*.zip
           if-no-files-found: error
