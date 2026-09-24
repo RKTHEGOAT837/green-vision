@@ -65,8 +65,20 @@ function readEnv(env) {
      account is what their access consists of. The open edition runs its
      whole analysis from an engine and a map index on the reader's own
      disk, so taking the account away there leaves a working planner. */
+  /* The PAGE, not a versioned filename.
+
+     This used to name the asset directly -
+     .../releases/latest/download/GreenVision-Managed-1.2.2-x64.exe - and
+     `latest/download/<name>` only resolves while an asset of that exact
+     name is still in the newest release. The moment 1.3.0 shipped, that
+     URL began returning 404, and it is the link inside every invitation
+     email: a colleague invited to the managed build would have been sent
+     to a dead download with no way to tell it from a broken account.
+
+     managed.html reads the release from the GitHub API and resolves the
+     managed asset itself, so it cannot go stale on the next release. */
   DOWNLOAD_MANAGED = env.DOWNLOAD_MANAGED ||
-    "https://github.com/RKTHEGOAT837/green-vision-releases/releases/latest/download/GreenVision-Managed-1.2.2-x64.exe";
+    "https://rkthegoat837.github.io/green-vision-releases/managed.html";
 }
 
 function randomToken() {
@@ -357,8 +369,12 @@ function mailFor(kind, { name, link, profile, note, edition, subject, intro, ste
           Green Vision works out where a city should plant trees, and what it would cost.
           Air quality, canopy loss, traffic bottlenecks, soil and a 25-year projection, on one map.</p>
         </td></tr>
-        ${BUTTON(edition === "managed" ? DOWNLOAD_MANAGED : DOWNLOAD,
-                 "Download for Windows &nbsp;&middot;&nbsp; 178 MB")}
+        ${/* No size on the button. It said "178 MB" for every build that
+              ever shipped, including the 1.2 GB one, and a figure that is
+              wrong by a factor of seven is worse than no figure - the
+              download page states the real size, from the release itself. */
+          BUTTON(edition === "managed" ? DOWNLOAD_MANAGED : DOWNLOAD,
+                 "Download for Windows")}
         <tr><td style="padding:14px 28px 0;">
           <p style="margin:0 0 8px;font-size:13px;font-weight:700;color:#0f2a22;">Your account</p>
           <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 14px;background:#f7faf8;border-radius:10px;padding:10px 12px;width:100%;">${rows}</table>
