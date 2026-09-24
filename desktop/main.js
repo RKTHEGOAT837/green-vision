@@ -21,6 +21,18 @@
 
 "use strict";
 
+/* Say what went wrong, wherever it goes wrong.
+
+   Electron does not print an unhandled rejection from a promise handler,
+   and app.whenReady().then(...) is a promise handler - so a throw in
+   startup produced total silence: an app in the dock with no window, no
+   engine and nothing in the log to say why. Whatever else these two lines
+   catch, they mean a failure leaves evidence. */
+process.on("uncaughtException", e =>
+  console.error("[fatal] " + (e && e.stack || e)));
+process.on("unhandledRejection", e =>
+  console.error("[fatal] unhandled rejection: " + (e && e.stack || e)));
+
 const { app, BrowserWindow, shell, dialog, ipcMain, Menu, Notification } = require("electron");
 const path = require("path");
 const fs = require("fs");
@@ -180,7 +192,24 @@ app.whenReady().then(() => {
   auth.init({ accounts, onSignedIn: u => {
     if (mainWindow) mainWindow.webContents.send("gv:signed-in", u);
   }});
-  createWindow();
+
+  /* The window failing must not take the engine down with it.
+
+     This was a bare `createWindow()` inside a promise handler, so anything
+     it threw became an unhandled rejection: no window, no engine, no
+     message, and an app sitting in the dock doing nothing. That is exactly
+     what the first mac build did, and it took a launch test on a real Mac
+     to see it - on Windows the same code has never thrown, so the fragility
+     was invisible.
+
+     The two are independent by nature: the engine is a local server and the
+     window is a view onto it. Starting the engine regardless means a window
+     failure costs the window, not the whole application. */
+  try {
+    createWindow();
+  } catch (e) {
+    console.error("[window] could not be created: " + (e && e.stack || e));
+  }
 
   /* The engine starts BEHIND the window, never in front of it. Waiting on a
      cold index load before showing anything is how a fast app is made to
