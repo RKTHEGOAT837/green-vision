@@ -219,7 +219,14 @@ jobs:
           # the app had not had time to draw on, and killed the app - so the
           # half of this test that matters was never actually run, and it
           # passed. A test that cannot fail is not a test.
+          # By what it IS, not by a pid caught through a subshell. `$!`
+          # inside `( ... & echo $! )` did not name the interpreter that
+          # ends up holding the port, so the kill missed and the guard
+          # below - correctly - refused to go on.
           kill "$(cat /tmp/gv-engine.pid)" 2>/dev/null || true
+          pkill -f "greenplan.server --port 8040" 2>/dev/null || true
+          sleep 3
+          pkill -9 -f "greenplan.server --port 8040" 2>/dev/null || true
           for i in $(seq 1 20); do
             curl -fsS --max-time 2 http://127.0.0.1:8040/api/health -o /dev/null || break
             sleep 2
