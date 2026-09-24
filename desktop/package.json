@@ -104,13 +104,6 @@
       "identity": null,
       "extraResources": [
         {
-          "from": "../dist_app",
-          "to": "studio",
-          "filter": [
-            "**/*"
-          ]
-        },
-        {
           "from": "engine",
           "to": "engine",
           "filter": [
