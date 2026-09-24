@@ -113,7 +113,9 @@
       ]
     },
     "dmg": {
-      "title": "Green Vision ${version} (beta)"
+      "title": "Green Vision ${version} beta",
+      "background": null,
+      "writeUpdateInfo": false
     }
   }
 }
