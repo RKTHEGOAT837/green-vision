@@ -54,8 +54,18 @@ function engineDir(app) {
     : path.join(__dirname, "engine");
 }
 
+/* The interpreter inside the bundle.
+
+   Windows ships an embeddable CPython, whose executable sits at the root of
+   the folder. macOS has no embeddable build, so the mac bundle carries a
+   relocatable venv instead, and a venv keeps its interpreter in bin/ under
+   a different name. Hard-coding python.exe meant a mac build could never
+   find its own engine: isBundled() would return false, nothing would start,
+   and the app would open to a studio with no analysis behind it. */
 function pythonExe(dir) {
-  return path.join(dir, "python", "python.exe");
+  return process.platform === "win32"
+    ? path.join(dir, "python", "python.exe")
+    : path.join(dir, "python", "bin", "python3");
 }
 
 function isBundled(app) {

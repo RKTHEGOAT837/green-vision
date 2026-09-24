@@ -98,10 +98,26 @@
         }
       ],
       "category": "public.app-category.productivity",
-      "icon": "build/icon.icns",
+      "icon": "build/icon.png",
       "artifactName": "GreenVision-${version}-mac-${arch}-beta.${ext}",
       "darkModeSupport": true,
-      "identity": null
+      "identity": null,
+      "extraResources": [
+        {
+          "from": "../dist_app",
+          "to": "studio",
+          "filter": [
+            "**/*"
+          ]
+        },
+        {
+          "from": "engine",
+          "to": "engine",
+          "filter": [
+            "**/*"
+          ]
+        }
+      ]
     },
     "dmg": {
       "title": "Green Vision ${version} (beta)"

@@ -1,18 +1,22 @@
 # Build the macOS beta of Green Vision.
 #
 # WHY THIS IS A WORKFLOW AND NOT A BUILD STEP ON THE DEV MACHINE.
-# The Windows installer ships a complete offline engine: an embeddable
-# CPython, the OpenVINO runtime DLLs, and a 2.6-million-feature map index.
-# Every one of those is a Windows binary. `electron-builder --mac` on a
-# Windows box would package the same folder into a .app, and the result
-# would launch to a dead engine - the studio would open and nothing would
-# analyse. A macOS build therefore needs a macOS machine to assemble a
-# macOS engine, which is what this runner is for.
+# The installer ships a complete offline engine: a CPython, the OpenVINO
+# runtime, a map index and a 1.2 GB INT4 language model. On Windows every
+# one of those is a Windows binary. `electron-builder --mac` on a Windows
+# box would package the same folder into a .app and the result would launch
+# to a dead engine - the studio would open and nothing would analyse. A
+# macOS build needs a macOS machine to assemble a macOS engine, which is
+# what this runner is for.
 #
-# HONEST STATUS. This workflow has never been run - it is written from the
-# Windows build's shape and the engine's own requirements files, and the
-# author has no Mac to test it on. Treat the first run as the test. The
-# steps most likely to need adjusting are marked BETA below.
+# WHAT THIS BUILD DOES NOT CARRY, and why the word beta is on it:
+#   * the local OSM index (75 MB) is not in the repository, so map reads
+#     fall back to the public Overpass mirrors - slower, and rate limited;
+#   * the language model is fetched here rather than committed, and if that
+#     download fails the app still runs with the model absent, which the
+#     assistant already handles;
+#   * nothing is code-signed or notarised, so macOS will refuse the first
+#     open until it is allowed through in System Settings.
 name: macOS beta
 
 on:
@@ -21,12 +25,16 @@ on:
       version:
         description: Version to build (must match desktop/package.json)
         required: true
-        default: 1.2.3
+        default: "1.3.0"
+      with_model:
+        description: Fetch and bundle the 1.2 GB language model
+        type: boolean
+        default: true
 
 jobs:
   build:
-    runs-on: macos-14          # Apple Silicon; the x64 slice cross-builds
-    timeout-minutes: 90
+    runs-on: macos-14          # Apple Silicon
+    timeout-minutes: 120
 
     steps:
       - uses: actions/checkout@v4
@@ -39,42 +47,89 @@ jobs:
         with:
           python-version: "3.12"
 
-      # BETA: the engine. The Windows build uses an embeddable CPython;
-      # macOS has no equivalent, so a relocatable venv is the closest
-      # thing. Everything the engine imports at runtime is listed here -
-      # deliberately not requirements.txt, which also carries the training
-      # and export stack the app never loads.
+      # The studio bundle. dist_app is not committed - it is generated from
+      # the trained outputs, which are - so it has to be baked here, with
+      # --keep-local-osm because this build runs beside its own engine.
+      - name: Bake the studio bundle
+        run: |
+          set -eux
+          python -m pip install --upgrade pip
+          python -m pip install numpy pandas h3 pyyaml python-dateutil requests
+          python scripts/build_static.py --out dist_app --keep-local-osm \
+            --cities config/city.yaml config/bengaluru.yaml config/chennai.yaml \
+                     config/delhi.yaml config/mumbai.yaml
+          test -f dist_app/index.html
+
+      # The engine. A relocatable venv is the closest macOS equivalent of
+      # the embeddable CPython the Windows build uses. Only what the engine
+      # imports at RUN time is installed - deliberately not
+      # requirements.txt, which also carries the training and export stack
+      # the app never loads.
       - name: Build the macOS engine bundle
         run: |
-          set -e
+          set -eux
           python -m venv --copies desktop/engine/python
-          desktop/engine/python/bin/python -m pip install --upgrade pip
-          desktop/engine/python/bin/python -m pip install \
-            numpy pandas h3 requests pyyaml python-dateutil openvino
-          # the engine's own modules and data travel from the repo
+          E=desktop/engine/python/bin/python3
+          $E -m pip install --upgrade pip
+          $E -m pip install numpy pandas h3 requests pyyaml python-dateutil openvino
+          # openvino-genai carries the LLM pipeline. It does not publish a
+          # wheel for every platform; when it is missing the assistant falls
+          # back to its deterministic answers, which is a supported state,
+          # so this must not fail the build.
+          $E -m pip install openvino-genai openvino-tokenizers || \
+            echo "::warning::openvino-genai has no wheel for this platform - the assistant will run without the language model"
           cp -R greenplan desktop/engine/greenplan
           cp -R config   desktop/engine/config
           cp -R data     desktop/engine/data
+          cp -R web      desktop/engine/web || true
           mkdir -p desktop/engine/models
-          cp -R models/ahmedabad models/intent desktop/engine/models/ 2>/dev/null || true
-          desktop/engine/python/bin/python -c "import openvino, numpy, pandas, h3; print('engine imports OK')"
+          cp -R models/ahmedabad models/bengaluru models/chennai models/delhi \
+                models/mumbai models/intent desktop/engine/models/ 2>/dev/null || true
+          $E -c "import openvino, numpy, pandas, h3; print('engine imports OK')"
+          $E -c "import sys; sys.path.insert(0,'desktop/engine'); import greenplan; print('greenplan imports OK')"
 
-      # BETA: the map index is ~700 MB and is NOT in the repo. Without it
-      # the app falls back to public Overpass, which works but is slower
-      # and rate-limited. Wire in a download here when there is somewhere
-      # to download it from.
-      - name: Note the missing OSM index
-        run: echo "macOS beta ships without the local OSM index; map reads fall back to Overpass."
+      # The language model, fetched rather than committed - it is 1.2 GB and
+      # does not belong in git. Its absence is a supported state, so a
+      # failure here is a warning and not a stop.
+      - name: Fetch the language model
+        if: inputs.with_model
+        continue-on-error: true
+        run: |
+          set -eux
+          python -m pip install huggingface_hub
+          python scripts/fetch_openvino_model.py
+          mkdir -p desktop/engine/models/openvino
+          cp -R models/openvino/* desktop/engine/models/openvino/
+          du -sh desktop/engine/models/openvino
+
+      - name: What is in the engine
+        run: du -sh desktop/engine desktop/engine/* | sort -h
 
       - name: Install desktop dependencies
         working-directory: desktop
         run: npm ci || npm install
 
+      # Unsigned, like the Windows build. CSC_IDENTITY_AUTO_DISCOVERY=false
+      # stops electron-builder hunting for a certificate that is not there
+      # and failing the build over its absence.
       - name: Build the app
         working-directory: desktop
         env:
-          CSC_IDENTITY_AUTO_DISCOVERY: "false"   # unsigned beta, as on Windows
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
         run: npx electron-builder --mac --publish never
+
+      # Proof it assembled, before anybody downloads it: the engine has to
+      # be inside the .app, and its interpreter has to run from there.
+      - name: Check the packaged app carries a working engine
+        run: |
+          set -eux
+          APP=$(find desktop/release -maxdepth 2 -name "*.app" -type d | head -1)
+          test -n "$APP"
+          RES="$APP/Contents/Resources"
+          test -f "$RES/studio/index.html"
+          test -x "$RES/engine/python/bin/python3"
+          "$RES/engine/python/bin/python3" -c "import openvino, numpy, pandas, h3; print('packaged engine OK')"
+          ls -la desktop/release/*.dmg desktop/release/*.zip || true
 
       - uses: actions/upload-artifact@v4
         with:

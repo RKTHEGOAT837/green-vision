@@ -34,7 +34,12 @@ ipcRenderer.on("gv:auth-error", (_e, msg) => emit("auth-error", msg));
 ].forEach(k => ipcRenderer.on("gv:menu:" + k, () => emit("menu", k)));
 
 contextBridge.exposeInMainWorld("__GV_DESKTOP__", {
-  platform: "windows",
+  /* What this build is actually running on, not what it was written for.
+     The page asks, and a mac build answering "windows" would have it
+     offering Windows-only affordances - the Explorer reveal, the Windows
+     location service - on a machine that has neither. */
+  platform: process.platform === "darwin" ? "mac"
+          : process.platform === "win32" ? "windows" : process.platform,
   /* The packaged version, from the argument main.js adds. The old value
      came from npm_package_version, which npm sets and an installed app
      never has - so every shipped copy reported "1.0.0" regardless, and an

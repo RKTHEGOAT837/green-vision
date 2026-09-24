@@ -280,6 +280,16 @@ const PS_LOCATE = [
 ].join("; ");
 
 ipcMain.handle("gv:locate", () => new Promise(resolve => {
+  /* Windows only, and honest about it.
+
+     System.Device.Location is a .NET Framework face onto the Windows
+     location service; there is no powershell.exe on a Mac and nothing
+     behind this on one. Saying so lets the page fall through to its next
+     source rather than waiting out a twelve-second timeout for a command
+     that was never going to run. */
+  if (process.platform !== "win32") {
+    return resolve({ ok: false, reason: "unsupported" });
+  }
   const { execFile } = require("child_process");
   let done = false;
   const finish = v => { if (!done) { done = true; resolve(v); } };
