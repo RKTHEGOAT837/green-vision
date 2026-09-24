@@ -33,7 +33,7 @@ import re
 import unicodedata
 from typing import Any
 
-from . import i18n
+from . import i18n, intent_model, llm_assistant
 from .species import SPECIES_KB
 
 log = logging.getLogger(__name__)
@@ -144,10 +144,21 @@ _GLOSSARY = (r"ndvi|h3|hexagons?|mcda|priority score|multi.?criteria|memory loop
 # Asked together with a move, these have to wait for the move to land.
 _NEEDS_GROUND = frozenset({
     "design", "plant", "species", "report", "air", "canopy", "water",
-    "soil", "empty_land", "heat", "priority", "trend", "people",
+    "soil", "empty_land", "heat", "priority", "trend", "people", "land",
 })
 
 _INTENTS: list[tuple[str, str]] = [
+    # Questions about the product itself. First, because "what is Green
+    # Vision", "who made this" and "is it free" otherwise fall through every
+    # rule below and come back as "I did not understand that" - the one
+    # question a newcomer is most likely to open with.
+    ("about",     r"\b(green ?vision)\b(?!.*\b(plant|design|cost|park)\b)|"
+                  r"\b(what|who|why)\b.{0,24}\b(this app|this tool|this thing|"
+                  r"you|made you|built you|behind this)\b|"
+                  r"\bwho (made|built|created|wrote)\b|"
+                  r"\b(is|are) (this|it) (free|open source|offline|safe|private)\b|"
+                  r"\b(work|works|run|runs) offline\b|"
+                  r"\bwhat can (you|this|it) do\b"),
     ("greet",     r"^\s*(hi|hey|hello|yo|namaste|good (morning|afternoon|evening)|"
                   r"thanks|thank you|ok|okay|cool|nice)\b[\s!.]*$"),
     ("help",      r"\b(help|what can you do|how do i use|commands?|examples?)\b"),
@@ -192,18 +203,51 @@ _INTENTS: list[tuple[str, str]] = [
                   r"establish\w*|failure rate)\b"),
     ("people",    r"\b(people|population|residents|who benefits|how many will use|"
                   r"footfall|community)\b"),
+    # "How many trees fit here?" is the first question anybody asks about a
+    # piece of ground, and it fell through to `unknown` - the assistant
+    # answered "I did not understand that" to the most natural question in
+    # the product. It sits AFTER `survival` and `people` on purpose: "how
+    # many will survive" and "how many people benefit" are their questions,
+    # not this one, and putting capacity first would have taken both.
+    ("capacity",  r"\b(how many|capacity|room for)\b[^?]{0,60}"
+                  r"\b(trees?|saplings?|shrubs?|plants?)\b|"
+                  r"\b(trees?|saplings?)\s+per\s+"
+                  r"(hectare|acre|ha|sq\.? ?m|square ?met\w+|m2|m\u00b2)\b|"
+                  r"\bhow many\b[^?]{0,40}\b(fit|hold|take|accommodate)\b"),
     ("sources",   r"\b(source|sources|where does (this|the) data|how do you know|"
                   r"how accurate|reliable|cite|citation|provenance)\b"),
     # "how much" is only a COST question when it is not asking how much
     # of something else. Without the lookahead, "how much rain does this
     # get" classified as cost, because this pattern is tested before
     # water. Caught by scripts/parity_check.py, which is why it exists.
+    # The panel now prices the ground, so questions about it are answerable.
+    # It sits before `cost` because "what does the land cost" is a question
+    # about the land, and `cost` would otherwise claim it and reply about the
+    # build - the one figure the land answer exists to hold separate. It sits
+    # after `empty_land` so "find empty land" is still a siting question.
+    ("land",      r"\b(who owns|ownership|freehold|leasehold|tenure|acquir\w+|"
+                  r"solatium|jantri|circle rate|guidance value|guideline value|"
+                  r"ready reckoner|stamp duty|ground rent|\brent\b|"
+                  r"land (cost|costs|price|value|rate|worth|"
+                  r"acquisition)|cost of the land|price of the land|"
+                  # "what is the land worth" is how a committee actually asks
+                  # it, and every spelling above missed it: the rules declined,
+                  # and the last-resort classifier guessed `explain`, so the
+                  # reader got the glossary menu instead of a valuation.
+                  r"value of the land|land is worth|worth of the land|"
+                  r"how much is (the|this) (land|plot|ground|site))\b"),
     ("cost",      r"\b(cost|costs|budget|price|expensive|rupees|inr|crore|lakh|"
                   r"bill of quantit\w*|boq)\b|"
                   r"\bhow much(?!\s+(?:rain|rainfall|water|co2|carbon|shade|"
                   r"canopy|green|greenery|land|space|area|room|time|sun|light))\b"),
     ("project",   r"\b(project\w*|forecast|future|\d+\s*years?|long ?term|by 20\d\d|25 ?year)\b"),
-    ("review",    r"\b(review|is (my|this) design|any good|score|critique|flaws?|problems? with)\b"),
+    # "any good" used to be a bare alternative here, and it is far too
+    # general a phrase to outrank a concrete subject. "Is the air any good
+    # round here?" was answered with a design review, because this pattern
+    # sits above the air one and matched two words out of seven. It now has
+    # to be about something reviewable.
+    ("review",    r"\b(review|is (my|this) design|score|critique|flaws?|problems? with)\b|"
+                  r"\b(design|plan|layout|park|scheme)\b[^.?!]*\bany good\b"),
     ("air",       r"\b(air|aqi|pollution|polluted|pm ?2\.?5|pm ?10|breathe|smog|no2|ozone)\b"),
     ("canopy",    r"\b(canopy|green ?cover|tree ?cover|vegetation|ndvi|how green|greenery)\b"),
     ("traffic",   r"\b(traffic|congestion|bottlenecks?|jams?|roads? are)\b"),
@@ -232,6 +276,8 @@ _COMPILED = [(name, re.compile(pat)) for name, pat in _INTENTS]
 # is the right instrument. Two hits are needed to classify on words alone; one
 # hit is enough when the message is also clearly about the current place.
 _FALLBACK_WORDS: dict[str, set[str]] = {
+    "about":     {"about", "app", "tool", "greenvision", "vision", "yourself",
+                  "offline", "free", "privacy", "private", "who", "made"},
     "species":   {"tree", "trees", "plant", "planting", "species", "sapling",
                   "saplings", "shrub", "grow", "grows", "native", "neem"},
     "design":    {"design", "park", "garden", "layout", "plan", "build",
@@ -262,8 +308,8 @@ _FALLBACK_WORDS: dict[str, set[str]] = {
 # Does the message refer to the place the reader is looking at? Enough, on its
 # own, to turn a single weak word match into a confident one.
 _HERE = re.compile(
-    r"(here|this (?:area|place|spot|zone|cell|city|neighbourhood|neighborhood)|"
-    r"nearby|near ?by|around (?:here|me|us)|my area|current)"
+    r"\b(here|this (?:area|place|spot|zone|cell|city|neighbourhood|neighborhood)|"
+    r"nearby|near ?by|around (?:here|me|us)|my area|current)\b"
 )
 
 
@@ -328,6 +374,48 @@ def _native_intent(n: str, lang: str) -> str | None:
     return best
 
 
+_AREA_RE = re.compile(
+    r"(\d[\d,]*(?:\.\d+)?)\s*"
+    r"(hectares?|ha|acres?|sq\.? ?m(?:etres?|eters?)?|square ?met(?:re|er)s?|"
+    r"m2|m\u00b2|sqm|sq\.? ?ft|square ?feet|sqft|ft2)\b", re.I)
+
+
+def parse_area_m2(msg):
+    """An area named in a sentence, in square metres, or None.
+
+    Indian planning documents mix all four units freely - a plot quoted in
+    square metres, a park in hectares, farmland in acres, a footprint in
+    square feet - so all four are understood rather than one being assumed."""
+    m = _AREA_RE.search(msg or "")
+    if not m:
+        # "trees per acre" names a unit without a number, and means one of
+        # them. Asking the reader to restate it as "1 acre" would be pedantry.
+        u1 = re.search(r"\bper\s+(hectare|ha|acre|sq\.? ?m(?:etre|eter)?s?|"
+                       r"square ?met(?:re|er)s?|m2|m\u00b2|sqm)\b", msg or "", re.I)
+        if not u1:
+            return None
+        u = re.sub(r"[\s.]", "", u1.group(1).lower())
+        if u.startswith("hectare") or u == "ha":
+            return 10000.0
+        if u.startswith("acre"):
+            return 4046.8564224
+        return 1.0
+    try:
+        n = float(m.group(1).replace(",", ""))
+    except ValueError:
+        return None
+    if n <= 0:
+        return None
+    u = re.sub(r"[\s.]", "", m.group(2).lower())
+    if u.startswith("hectare") or u == "ha":
+        return n * 10000.0
+    if u.startswith("acre"):
+        return n * 4046.8564224
+    if u in ("sqft", "squarefeet", "ft2"):
+        return n * 0.09290304
+    return n
+
+
 def classify(msg: str, lang: str = "en") -> str:
     n = _normalise(msg)
     if not n:
@@ -345,7 +433,20 @@ def classify(msg: str, lang: str = "en") -> str:
     best_n, best_k = max(scored)
     if best_n >= 2 or (best_n == 1 and _HERE.search(n)):
         return best_k
-    return "report" if _HERE.search(n) else "unknown"
+    if _HERE.search(n):
+        return "report"
+
+    # The trained classifier is consulted LAST and only here: every rule above
+    # has already declined, so the alternative to whatever it says is "I did
+    # not understand that". It answers in any of the languages the
+    # dictionaries cover, including phrasings nobody wrote a rule for, and
+    # stays silent below the confidence floor measured at training time.
+    # See intent_model.py for why it can never override a rule.
+    guess = intent_model.predict(msg)
+    if guess:
+        log.debug("intent classifier answered %s (%.2f) for %r", guess[0], guess[1], msg[:60])
+        return guess[0]
+    return "unknown"
 
 
 # ---------------------------------------------------------------------------
@@ -671,7 +772,22 @@ class Ctx:
         self.n_items = _i(d.get("n_items")) or 0
         self.n_trees = _i(d.get("n_trees")) or 0
         self.total_cost = _f(d.get("total_cost"))
+        # The ground. `total_cost` stays the BUILD cost, exactly as the panel
+        # headline does, so these are separate fields rather than a number
+        # that quietly changes meaning with tenure.
+        self.land_tenure = str(d.get("land_tenure") or "").strip() or None
+        self.land_rate_m2 = _f(d.get("land_rate_m2"))
+        self.land_rate_is_own = bool(d.get("land_rate_is_own_figure"))
+        self.land_instrument = str(d.get("land_instrument") or "").strip() or None
+        self.land_value = _f(d.get("land_value"))
+        self.land_payable = _f(d.get("land_payable"))
+        self.total_cost_with_land = _f(d.get("total_cost_with_land"))
+        self.ground_rent_annual = _f(d.get("ground_rent_annual"))
         self.review_score = _f(d.get("review_score"))
+        # The plot's own area, so "how many trees fit here?" can be answered
+        # about the ground actually drawn rather than a number in a sentence.
+        _plot = d.get("plot") if isinstance(d.get("plot"), dict) else {}
+        self.plot_area_m2 = _f(d.get("area_m2")) or _f(_plot.get("area_m2"))
 
     @property
     def has_point(self) -> bool:
@@ -684,6 +800,39 @@ class Ctx:
         if self.has_point:
             return f"{self.lat:.4f}, {self.lon:.4f}"
         return "this area"
+
+
+# ---------------------------------------------------------------------------
+# What the local model is allowed to route to
+# ---------------------------------------------------------------------------
+# Only intents that ANSWER FROM MEASUREMENTS and cannot change anything the
+# reader has not asked for. The model picks the question; the deterministic
+# handler still writes the answer, so a wrong pick costs a wrong answer to a
+# question that was asked, never a design placed somewhere nobody chose.
+#
+# Deliberately absent: design, plant, clear - anything that puts shapes on
+# the map. Those stay behind the regular expressions, which are literal
+# about what they match, because "it seemed to mean that" is not a good
+# enough reason to draw a park.
+_LLM_ROUTABLE: dict[str, str] = {
+    "air": "air quality, AQI, pollution, PM2.5 or smog here",
+    "canopy": "tree cover, greenery or shade already here",
+    "water": "rainfall, irrigation or how much watering trees need",
+    "soil": "soil, ground conditions, pH or what the earth is like",
+    "heat": "temperature, heat, how hot it gets, urban heat island",
+    "traffic": "congestion, junctions, roads or vehicle emissions",
+    "species": "which trees or species to plant",
+    "cost": "what something costs to build",
+    "land": "land value, land price, acquisition or tenure",
+    "carbon": "carbon captured, CO2, sequestration",
+    "survival": "whether trees will survive, mortality, establishment",
+    "maintenance": "upkeep, watering rounds, pruning after planting",
+    "timing": "when to plant, which season or month",
+    "priority": "which areas need trees most, ranking, where to start",
+    "report": "a general summary of this area",
+    "about": "what Green Vision is, who made it, how it works",
+    "help": "what the assistant can do",
+}
 
 
 # ---------------------------------------------------------------------------
@@ -734,16 +883,52 @@ class Assistant:
     # -- entry point --------------------------------------------------------
 
     def handle(self, message: str, context: dict[str, Any] | None,
-               lang: Any = None) -> dict[str, Any]:
+               lang: Any = None, memory: Any = None) -> dict[str, Any]:
         self.lang = i18n.normalise(lang)
+        # The whole snapshot, kept for the model's FACTS block: Ctx parses
+        # the handful of fields the deterministic handlers need, and the
+        # census, traffic and design figures the page also sends are exactly
+        # what a free-text question tends to be about.
+        self._ctx_raw = context if isinstance(context, dict) else {}
         ctx = Ctx(context)
         intent = classify(message, self.lang)
+
+        # A short follow-up carries its subject in the conversation, not in
+        # itself. "and peepal?", "what about 5000 sq m?", "in Bopal instead"
+        # all classify as `unknown` on their own, and the assistant replied
+        # "I did not understand that" to a question it had just answered a
+        # variant of.
+        #
+        # Deliberately narrow. It applies ONLY when the message did not
+        # classify at all, and only to a short one - six words is about where
+        # a fragment stops being a fragment and becomes a new question that
+        # deserves to be read on its own terms. Anything that classifies is
+        # left exactly as it was, so this can only rescue a failure.
+        if intent == "unknown" and memory:
+            try:
+                prev = next((t for t in reversed(list(memory))
+                             if isinstance(t, dict) and t.get("role") == "bot"
+                             and t.get("intent")), None)
+            except TypeError:
+                prev = None
+            if prev and len((message or "").split()) <= 6:
+                cand = str(prev.get("intent") or "")
+                # Never inherit a conversational intent: repeating a greeting
+                # or a help screen is not answering the follow-up.
+                if cand and cand not in ("greet", "help", "unknown"):
+                    intent = cand
 
         # A compound request - "near Rajpath Club find empty land" - names a
         # place AND asks something. Move there first, then answer the rest, so
         # the reader gets both halves instead of a failed geocode.
         lead: list[dict[str, Any]] = []
-        if intent not in ("goto", "compare", "greet", "help", "unknown"):
+        # A capacity question that already carries its own area is about a
+        # SIZE, not a location. Without this the compound-request path read
+        # "2000 sq m" as a place name and replied "Moving to **2000 sq m**
+        # first" before answering - a geocode for a quantity.
+        _self_contained = intent == "capacity" and parse_area_m2(message) is not None
+        if intent not in ("goto", "compare", "greet", "help", "unknown") \
+                and not _self_contained:
             place = extract_place(message)
             # On the second pass the move has already happened, so neither the
             # search nor the "Moving to ... first" sentence belongs: repeating
@@ -781,6 +966,17 @@ class Assistant:
                         "dir": i18n.direction(self.lang),
                         "source": self.e.reasoning_label(),
                     }
+        # Nothing matched. Before apologising, ask the local model which of
+        # the things this assistant can do the reader meant - the rules are
+        # literal and a question phrased sideways falls straight through
+        # them. The model chooses the QUESTION; the handler below still
+        # writes the answer from the panel, so the figures are unaffected by
+        # what it decides.
+        llm_routed = False
+        if intent == "unknown" and llm_assistant.available():
+            picked = llm_assistant.route(message, _LLM_ROUTABLE)
+            if picked and picked in _LLM_ROUTABLE:
+                intent, llm_routed = picked, True
         log.info("assistant intent=%s lang=%s msg=%r", intent, self.lang,
                  (message or "")[:120])
         fn = getattr(self, "_do_" + intent, None) or self._do_report
@@ -802,9 +998,31 @@ class Assistant:
         out["lang"] = self.lang
         out["dir"] = i18n.direction(self.lang)
         out["source"] = self.e.reasoning_label()
+        # Say when a sentence came from the local model rather than from the
+        # panel, and when the model chose the question. Both are things a
+        # reader is entitled to know without having to guess from the tone.
+        if out.pop("by_model", False):
+            out["written_by"] = "local-llm"
+        if llm_routed:
+            out["routed_by"] = "local-llm"
         return out
 
     # -- individual intents -------------------------------------------------
+
+    def _do_about(self, msg: str, ctx: Ctx) -> dict[str, Any]:
+        """What Green Vision is, in the reader's own language.
+
+        Answered from a fixed description, not from the map, because it is
+        the one question that has no measurement behind it. The figures it
+        does quote - the 100 km2 perimeter, the 42-month panel, the weights -
+        are the engine's own configuration, so they stay true as long as the
+        rest of this file does.
+        """
+        made = re.search(r"\bwho\b|\bmade\b|\bbuilt\b|\bcreated\b|\bbehind\b", msg, re.I)
+        reply = self.t("about.body")
+        if made:
+            reply = reply + "\n\n" + self.t("about.made")
+        return {"reply": reply, "actions": [], "cards": []}
 
     def _do_help(self, msg: str, ctx: Ctx) -> dict[str, Any]:
         return {"reply": self.t("help.body"), "actions": []}
@@ -814,6 +1032,24 @@ class Assistant:
         return {"reply": self.t(key, place=ctx.place), "actions": []}
 
     def _do_unknown(self, msg: str, ctx: Ctx) -> dict[str, Any]:
+        """Nothing matched, and the model could not name a question either.
+
+        Last stop before "I did not understand that": let the local model
+        answer in words, from the readings this engine has already taken and
+        nothing else. It is the only place in the assistant where a sentence
+        is written by a model rather than assembled from a measurement, and
+        it is reached only when the alternative is an apology.
+
+        The reply is labelled in the response - `source` says the local
+        model wrote it - so a reader can tell the two kinds of answer apart,
+        which matters more here than anywhere else in the app.
+        """
+        if llm_assistant.available():
+            facts = llm_assistant.facts_from(self._ctx_raw, ctx.place)
+            said = llm_assistant.answer(msg, facts, self.lang)
+            if said:
+                return {"reply": said, "actions": [], "cards": [],
+                        "by_model": True}
         return {"reply": self.t("unknown.body"), "actions": []}
 
     # ---- navigation -------------------------------------------------------
@@ -1178,6 +1414,39 @@ class Assistant:
         return {"reply": self.t("cost.body", n=ctx.n_items),
                 "actions": [{"tool": "dock.open", "args": {"tab": "cost"}}]}
 
+    def _do_land(self, msg: str, ctx: Ctx) -> dict[str, Any]:
+        """What the ground costs, and on what authority.
+
+        The app cannot know who holds the title - no cadastral layer ships
+        with it - so it does not guess. It answers the part it can: what the
+        land is worth at the state's own statutory rate, what tenure the
+        reader has selected, and what that makes payable. Saying "I do not
+        know who owns it, here is what it is worth" is a useful answer;
+        inventing an owner is not.
+        """
+        if not ctx.plot_m2:
+            return {"reply": self.t("land.none"),
+                    "actions": [{"tool": "dock.open", "args": {"tab": "studio"}}]}
+
+        inst = ctx.land_instrument or self.t("land.instrument_generic")
+        rate = _inr(ctx.land_rate_m2) if ctx.land_rate_m2 else "?"
+        value = _inr(ctx.land_value) if ctx.land_value else "?"
+        basis = self.t("land.basis_own" if ctx.land_rate_is_own else "land.basis_band")
+
+        if ctx.land_tenure == "acquire":
+            body = self.t("land.acquire", value=value,
+                          payable=_inr(ctx.land_payable or 0),
+                          total=_inr(ctx.total_cost_with_land or 0))
+        elif ctx.land_tenure == "lease":
+            body = self.t("land.lease", value=value,
+                          rent=_inr(ctx.ground_rent_annual or 0))
+        else:
+            body = self.t("land.owned", value=value)
+
+        return {"reply": self.t("land.body", body=body, rate=rate,
+                                instrument=inst, basis=basis),
+                "actions": [{"tool": "dock.open", "args": {"tab": "cost"}}]}
+
     def _do_project(self, msg: str, ctx: Ctx) -> dict[str, Any]:
         years = extract_years(msg) or 25
         if not ctx.n_items:
@@ -1305,6 +1574,47 @@ class Assistant:
         return {"reply": self.t("survival.body", n=n,
                                 lo=int(n * 0.6), hi=int(n * 0.85)),
                 "actions": [{"tool": "dock.open", "args": {"tab": "review"}}]}
+
+    def _do_capacity(self, msg: str, ctx: Ctx) -> dict[str, Any]:
+        """How many trees fit on a given area.
+
+        Three spacings rather than one number, because "how many trees fit"
+        has no single answer - it depends entirely on what is being built,
+        and quoting one figure hides that. 3 m is block plantation, 6 m is a
+        park somebody can walk through, 8 m is what a neem or peepal actually
+        needs at mature spread. These are the spacings the Studio places and
+        the cost panel prices, so the answer matches what the app will do.
+
+        The usable fraction is stated rather than silently applied: a park is
+        paths, seating and water as well as trees, and a gross figure quoted
+        as if it were all plantable is how a plan ends up a third over on
+        sapling count.
+        """
+        area = parse_area_m2(msg)
+        from_plot = False
+        if area is None and ctx.plot_area_m2:
+            area, from_plot = ctx.plot_area_m2, True
+        if area is None:
+            return {"reply": self.t("capacity.need_area"), "actions": []}
+
+        USABLE = 0.75
+        at = lambda sp: int(area / (sp * sp))
+        dense, park, avenue = at(3.0), at(6.0), at(8.0)
+        realistic = int(park * USABLE)
+        lo, hi = int(realistic * 0.60), int(realistic * 0.85)
+
+        ha = area / 10000.0
+        area_txt = ("%.2f ha (%s m\u00b2)" % (ha, format(int(round(area)), ","))
+                    if area >= 10000 else "%s m\u00b2" % format(int(round(area)), ","))
+        reply = self.t("capacity.body", area=area_txt,
+                       dense=format(dense, ","), park=format(park, ","),
+                       avenue=format(avenue, ","), realistic=format(realistic, ","),
+                       lo=format(lo, ","), hi=format(hi, ","),
+                       usable=int(USABLE * 100))
+        if from_plot:
+            reply = self.t("capacity.from_plot") + " " + reply
+        return {"reply": reply,
+                "actions": [{"tool": "dock.open", "args": {"tab": "studio"}}]}
 
     def _do_people(self, msg: str, ctx: Ctx) -> dict[str, Any]:
         # The page carries no population layer. Say so, and give the reader

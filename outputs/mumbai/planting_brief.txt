@@ -1,17 +1,17 @@
 GREENGRID PLANTING BRIEF — Mumbai
-Generated: 2026-09-03 16:30 UTC
+Generated: 2026-09-24 03:59 UTC
 Grid: H3 resolution 7 | Horizon: 12 months | Zones ranked: 142 | Top listed: 10
 
 TOP PRIORITY ZONES
 ============================================================
 #1  87608b036ffffff  (lat 18.9233, lon 72.8470)  score 0.945
     AQI 62 (+28 predicted yr-on-yr), NDVI 0.03 (-0.033/yr)
-    Plant: Siris, Neem, Shisham, Banyan
+    Plant: Siris, Neem, Shisham, Mahua
     Why: Priority score 0.945: predicted AQI change +28.0, NDVI trend -0.0331/yr with canopy at 0.03 and plantable-space 0.96. Species chosen for pollution tolerance and fit to available space.
 
 #2  87608b195ffffff  (lat 18.9995, lon 72.9361)  score 0.929
     AQI 62 (+28 predicted yr-on-yr), NDVI 0.06 (-0.036/yr)
-    Plant: Siris, Neem, Shisham, Banyan
+    Plant: Siris, Neem, Shisham, Mahua
     Why: Priority score 0.929: predicted AQI change +28.0, NDVI trend -0.0364/yr with canopy at 0.06 and plantable-space 0.90. Species chosen for pollution tolerance and fit to available space.
 
 #3  87608b1b0ffffff  (lat 18.9728, lon 72.9685)  score 0.890
@@ -22,12 +22,12 @@ TOP PRIORITY ZONES
 
 #4  87608b086ffffff  (lat 19.0713, lon 72.8188)  score 0.873
     AQI 67 (+28 predicted yr-on-yr), NDVI 0.16 (-0.034/yr)
-    Plant: Siris, Neem, Shisham, Banyan
+    Plant: Siris, Neem, Shisham, Mahua
     Why: Priority score 0.873: predicted AQI change +27.6, NDVI trend -0.0340/yr with canopy at 0.16 and plantable-space 0.73. Species chosen for pollution tolerance and fit to available space.
 
 #5  87608b015ffffff  (lat 18.9417, lon 72.7945)  score 0.859
     AQI 62 (+27 predicted yr-on-yr), NDVI 0.16 (-0.038/yr)
-    Plant: Siris, Neem, Shisham, Banyan
+    Plant: Siris, Neem, Shisham, Mahua
     Why: Priority score 0.859: predicted AQI change +27.0, NDVI trend -0.0376/yr with canopy at 0.16 and plantable-space 0.74. Species chosen for pollution tolerance and fit to available space.
 
 #6  87608b541ffffff  (lat 19.1126, lon 72.9201)  score 0.851
@@ -37,7 +37,7 @@ TOP PRIORITY ZONES
 
 #7  87608b543ffffff  (lat 19.1342, lon 72.9241)  score 0.850
     AQI 67 (+30 predicted yr-on-yr), NDVI 0.31 (-0.031/yr)
-    Plant: Siris, Neem, Shisham, Banyan
+    Plant: Siris, Neem, Shisham, Mahua
     Why: Priority score 0.850: predicted AQI change +30.0, NDVI trend -0.0311/yr with canopy at 0.31 and plantable-space 0.49. Species chosen for pollution tolerance and fit to available space.
 
 #8  87608b095ffffff  (lat 19.0928, lon 72.8229)  score 0.839

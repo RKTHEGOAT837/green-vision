@@ -1,0 +1,85 @@
+# Build the macOS beta of Green Vision.
+#
+# WHY THIS IS A WORKFLOW AND NOT A BUILD STEP ON THE DEV MACHINE.
+# The Windows installer ships a complete offline engine: an embeddable
+# CPython, the OpenVINO runtime DLLs, and a 2.6-million-feature map index.
+# Every one of those is a Windows binary. `electron-builder --mac` on a
+# Windows box would package the same folder into a .app, and the result
+# would launch to a dead engine - the studio would open and nothing would
+# analyse. A macOS build therefore needs a macOS machine to assemble a
+# macOS engine, which is what this runner is for.
+#
+# HONEST STATUS. This workflow has never been run - it is written from the
+# Windows build's shape and the engine's own requirements files, and the
+# author has no Mac to test it on. Treat the first run as the test. The
+# steps most likely to need adjusting are marked BETA below.
+name: macOS beta
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to build (must match desktop/package.json)
+        required: true
+        default: 1.2.3
+
+jobs:
+  build:
+    runs-on: macos-14          # Apple Silicon; the x64 slice cross-builds
+    timeout-minutes: 90
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # BETA: the engine. The Windows build uses an embeddable CPython;
+      # macOS has no equivalent, so a relocatable venv is the closest
+      # thing. Everything the engine imports at runtime is listed here -
+      # deliberately not requirements.txt, which also carries the training
+      # and export stack the app never loads.
+      - name: Build the macOS engine bundle
+        run: |
+          set -e
+          python -m venv --copies desktop/engine/python
+          desktop/engine/python/bin/python -m pip install --upgrade pip
+          desktop/engine/python/bin/python -m pip install \
+            numpy pandas h3 requests pyyaml python-dateutil openvino
+          # the engine's own modules and data travel from the repo
+          cp -R greenplan desktop/engine/greenplan
+          cp -R config   desktop/engine/config
+          cp -R data     desktop/engine/data
+          mkdir -p desktop/engine/models
+          cp -R models/ahmedabad models/intent desktop/engine/models/ 2>/dev/null || true
+          desktop/engine/python/bin/python -c "import openvino, numpy, pandas, h3; print('engine imports OK')"
+
+      # BETA: the map index is ~700 MB and is NOT in the repo. Without it
+      # the app falls back to public Overpass, which works but is slower
+      # and rate-limited. Wire in a download here when there is somewhere
+      # to download it from.
+      - name: Note the missing OSM index
+        run: echo "macOS beta ships without the local OSM index; map reads fall back to Overpass."
+
+      - name: Install desktop dependencies
+        working-directory: desktop
+        run: npm ci || npm install
+
+      - name: Build the app
+        working-directory: desktop
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"   # unsigned beta, as on Windows
+        run: npx electron-builder --mac --publish never
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: greenvision-mac-beta-${{ inputs.version }}
+          path: |
+            desktop/release/*.dmg
+            desktop/release/*.zip
+          if-no-files-found: error

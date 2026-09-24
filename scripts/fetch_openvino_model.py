@@ -75,8 +75,25 @@ def main() -> int:
     entry = CATALOGUE[args.model]
     dest = Path(args.out) / entry["repo"].split("/")[-1].lower()
 
-    if (dest / "openvino_model.xml").exists():
+    # Every part has to be there, not just the graph. An interrupted download
+    # leaves openvino_model.xml (2 MB) written and openvino_model.bin (~870 MB)
+    # missing, and checking only the .xml called that "already present" - so a
+    # re-run skipped the repair, the provider fell back to the offline engine
+    # at startup, and the app reported MockModel with nothing obviously wrong.
+    PARTS = ("openvino_model.xml", "openvino_model.bin",
+             "openvino_tokenizer.xml", "openvino_tokenizer.bin",
+             "openvino_detokenizer.xml", "openvino_detokenizer.bin")
+    absent = [p for p in PARTS if not (dest / p).exists()]
+    if not absent:
         print(f"already present: {dest}")
+    elif len(absent) < len(PARTS) and (dest / "openvino_model.xml").exists():
+        print(f"incomplete download in {dest} - missing {', '.join(absent)}")
+        print(f"re-fetching {entry['repo']} ({entry['size']})")
+        snapshot_download(
+            entry["repo"],
+            local_dir=str(dest),
+            allow_patterns=["*.xml", "*.bin", "*.json", "*.txt"],
+        )
     else:
         print(f"downloading {entry['repo']} ({entry['size']}) -> {dest}")
         snapshot_download(

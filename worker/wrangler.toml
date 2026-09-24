@@ -1,0 +1,59 @@
+# Green Vision account API on Cloudflare Workers.
+#
+# Why here and not Netlify: Netlify meters builds, bandwidth and function
+# invocations against one monthly credit allowance, and this project used all
+# of it - after which production deploys stopped and the published sites were
+# one step from suspension. A Worker gets 100,000 requests a day on the free
+# plan, reset daily, with no shared allowance to exhaust.
+#
+# Deploy:
+#   npx wrangler d1 create green-vision          # once, then paste the id below
+#   npx wrangler d1 execute green-vision --remote --file=schema.sql
+#   npx wrangler secret put BREVO_KEY            # and ADMIN_USER/ADMIN_PASS/INVITE_KEY
+#   npx wrangler deploy
+
+name = "green-vision-api"
+main = "src/index.js"
+compatibility_date = "2026-09-01"
+
+# The routes build absolute URLs into their own emails and pages, so the
+# Worker has to know where it is. These are plain values, not secrets.
+[vars]
+# The address Brevo has actually VERIFIED. Brevo accepts a send from any
+# address and then silently declines to deliver it unless that exact
+# sender is verified - the API returned 200 and nothing arrived, which is
+# the failure this line exists to prevent. Whatever is written here must
+# appear as Verified under Settings -> Senders, domains, IPs.
+#
+# This was rishabhkkhara@gmail.com, which worked but was the owner's own
+# mailbox: Gmail keeps self-addressed mail out of the Inbox, so the one
+# person who most needed to see a sign-in link never did. It is now a
+# support address that is nobody's personal inbox, and replies to it are
+# read rather than lost - see REPLY_TO below.
+SENDER_EMAIL  = "greenvision.support@gmail.com"
+SITE_URL      = "https://green-vision-india.netlify.app"
+DOWNLOAD_URL  = "https://rkthegoat837.github.io/green-vision-releases/"
+
+# Where the bytes are. The filename is part of the path even under
+# /releases/latest/, so this pins a VERSION: it said 1.0.0 after 1.0.1
+# shipped and had been returning 404 ever since. Bump it with the release,
+# or the update prompt hands people a dead link.
+DOWNLOAD_FILE = "https://github.com/RKTHEGOAT837/green-vision-releases/releases/latest/download/GreenVision-1.2.2-x64.exe"
+
+# The MANAGED edition - sign-in required. This is what invitations link to,
+# because revoking an account only removes access in the build where an
+# account IS the access. Bump BOTH of these with every release: the filename
+# is part of the /releases/latest/download/ path, so a stale one is a 404,
+# and this file sat on 1.0.2 for two releases doing exactly that.
+DOWNLOAD_MANAGED = "https://github.com/RKTHEGOAT837/green-vision-releases/releases/latest/download/GreenVision-Managed-1.2.2-x64.exe"
+
+# Storage. One key/value table - see schema.sql for why that shape rather
+# than a relational one.
+[[d1_databases]]
+binding       = "DB"
+database_name = "green-vision"
+database_id   = "e54e8cc0-58a6-4da8-8c60-04d28b08c23c"
+
+# Secrets are NOT here. `wrangler secret put NAME` stores them encrypted on
+# Cloudflare; putting them in this file would commit them to the repo:
+#   BREVO_KEY, ADMIN_USER, ADMIN_PASS, INVITE_KEY

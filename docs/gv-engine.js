@@ -297,6 +297,33 @@ GVE.extractPlace = function (msg) {
     rest = after.slice(loc.index + loc[0].length).trim();
   }
   let place = rest.split(PLACE_STOP)[0].replace(/^[\s,.\-]+|[\s,.\-]+$/g, "");
+
+  /* Drop a trailing generic noun, exactly as
+     greenplan/reasoning/assistant.py::extract_place does. "ahmedabad
+     vastrapur area" is how people write it and no gazetteer holds it;
+     "ahmedabad vastrapur" resolves.
+
+     This matters more than it looks. A failed geocode falls back to the last
+     word, and "area" is a village in Taiarapu-Ouest, French Polynesia - so
+     the map flew into the South Pacific and the reply described the
+     plantable ground there in good faith. That was fixed in the Python
+     assistant and never ported here, so the hosted build - which runs THIS
+     planner and no Python at all - still did it. parity_check.py caught it
+     on "show me the priority areas", where this returned "the priority
+     areas" as somewhere to fly to.
+
+     Bare words only: "Sector 17" and "Ward 12" are addresses and keep their
+     numbers. */
+  const TAIL = /\s+(area|areas|region|zone|locality|ward|district|side|part|parts|sector|neighbourhood|neighborhood|vicinity|surroundings)$/i;
+  for (let i = 0; i < 3; i++) {
+    const stripped = place.replace(TAIL, "").replace(/^[\s,.\-]+|[\s,.\-]+$/g, "");
+    if (stripped === place) break;
+    place = stripped;
+  }
+  // "show me the bopal area" leaves "the bopal", which reads badly in
+  // "Moving to **the bopal** first" and helps no gazetteer.
+  place = place.replace(/^(the|a|an)\s+/i, "").trim();
+
   if (!place || place.length < 2) return null;
   if (/^(the |a |an |some |me )*(green|satellite|map|priority|street|empty|bare|vacant|open|land|ground|space|park|trees?|air|soil|water|cost|place)( view| land| ground| space)?$/i.test(place)) return null;
   return place.slice(0, 120);

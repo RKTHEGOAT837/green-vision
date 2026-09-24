@@ -1,0 +1,4 @@
+{
+  "authUrl": "https://green-vision-api.greenvision-rk.workers.dev",
+  "_note": "Cloudflare Workers + D1. Two hosts were tried first and both ran out: Pipedream metered every request as a credit and DISABLED the workflow, after which every route returned its own 'Success!' HTML at HTTP 200 - a valid response that was not JSON, so the app behaved as though nothing saved. Netlify then exhausted a 300-credit monthly allowance covering builds, bandwidth and invocations together, which paused production deploys. A Worker gets 100,000 requests a day, reset daily, with no shared allowance to spend."
+}

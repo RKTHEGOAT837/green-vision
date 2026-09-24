@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 64" width="1360" height="256"
+     role="img" aria-label="Green Vision — Environmental Intelligence">
+  <title>Green Vision — Environmental Intelligence</title>
+  <!-- Horizontal lockup: mark, wordmark, and the strapline the app carries
+       in its own header.
+
+       The wordmark is live text with a fallback stack, NOT outlined paths.
+       That keeps it editable and searchable, and it is why the PNG exports
+       beside this file exist: they are rendered here, with the right fonts,
+       so anything going to print or to a stranger's machine uses those
+       rather than trusting the viewer to have Sora installed. -->
+  <defs>
+    <linearGradient id="gvGradL" x1="8" y1="12" x2="56" y2="60" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#12b981"/>
+      <stop offset="1" stop-color="#2f7ef0"/>
+    </linearGradient>
+  </defs>
+
+  <g transform="translate(8 8)">
+    <circle cx="24" cy="24" r="22" fill="url(#gvGradL)"/>
+    <path d="M24 9C17 11 13 17 13 24c0 8 11 15 11 15s11-7 11-15c0-7-4-13-11-15z"
+          fill="#fff" opacity=".92"/>
+    <path d="M24 15v18M24 20l-5-3M24 25l6-4M24 30l-5-3"
+          stroke="#0e9f6e" stroke-width="2" stroke-linecap="round" fill="none"/>
+  </g>
+
+  <text x="68" y="30" font-family="Sora, 'Segoe UI', system-ui, sans-serif"
+        font-size="23" font-weight="800" letter-spacing="-.5" fill="#0f2a22">Green Vision</text>
+  <text x="69" y="46" font-family="Manrope, 'Segoe UI', system-ui, sans-serif"
+        font-size="9.5" font-weight="700" letter-spacing="2.4" fill="#5c7168">ENVIRONMENTAL INTELLIGENCE</text>
+</svg>

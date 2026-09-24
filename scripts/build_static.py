@@ -45,6 +45,7 @@ import json
 import logging
 import math
 import pathlib
+import re
 import shutil
 import sys
 from pathlib import Path
@@ -98,7 +99,7 @@ def _write(path: Path, obj) -> int:
 
 
 def build(config: str, out_dir: Path, slug: str | None = None,
-          shared: bool = True) -> dict:
+          shared: bool = True, keep_local_osm: bool = False) -> dict:
     """Bake one city.
 
     `slug` puts the engine files in engine/<slug>/ instead of engine/, which is
@@ -211,13 +212,33 @@ def build(config: str, out_dir: Path, slug: str | None = None,
     # and only then try Overpass. Strip the local endpoint out of the baked
     # copy so the static build goes straight to the public instance.
     html = (ROOT / "index.html").read_text(encoding="utf-8")
-    before = html
-    html = html.replace('OVERPASS:["/api/osm", "https://overpass-api.de/api/interpreter"]',
-                        'OVERPASS:["https://overpass-api.de/api/interpreter"]')
-    if html == before:
-        log.warning("could not strip /api/osm from the static build — check CFG.OVERPASS")
+
+    # `keep_local_osm` is for the DESKTOP bundle, and the distinction is not a
+    # nicety. The Windows app was packaged from this same static output, so it
+    # shipped with the local endpoint stripped — and then, on a machine running
+    # greenplan.server with 2.6 million indexed features, every map read went
+    # to the public Overpass instance anyway. On a network where that host is
+    # slow or blocked the Traffic tab simply never loaded, and said OSM was
+    # throttling. The app is not a static host; it has an engine to talk to,
+    # and it must be allowed to.
+    if keep_local_osm:
+        log.info("  desktop build: /api/osm kept — the app can reach a local engine")
     else:
-        log.info("  static build: /api/osm removed, public Overpass only")
+        # Match the whole array however it is formatted, rather than one exact
+        # string. The previous literal match silently stopped working the
+        # moment a mirror was added to the list, and the build only warned.
+        m = re.search(r"OVERPASS:\s*\[[^\]]*\]", html)
+        if not m:
+            log.warning("could not strip /api/osm from the static build — check CFG.OVERPASS")
+        else:
+            eps = [e for e in re.findall(r'"([^"]+)"', m.group(0))
+                   if not e.startswith("/")]
+            html = html.replace(
+                m.group(0),
+                "OVERPASS:[" + ", ".join('"%s"' % e for e in eps) + "]", 1)
+            log.info("  static build: /api/osm removed, %d public mirror(s) left",
+                     len(eps))
+
     if not shared:
         # A per-city pass: the engine files above are all that differ.
         total = sum(sizes.values())
@@ -230,6 +251,19 @@ def build(config: str, out_dir: Path, slug: str | None = None,
         i18n_dst.mkdir(parents=True, exist_ok=True)
         for f in i18n_src.glob("*.json"):
             shutil.copy2(f, i18n_dst / f.name)
+
+    # The brand marks ship with the site because the transactional EMAILS
+    # need somewhere to point an <img> at. Mail clients block SVG and refuse
+    # data: URIs in images, so a real logo in an email has to be a hosted
+    # raster file - there is no self-contained option. These are small, they
+    # change roughly never, and _headers gives them a long cache.
+    brand_src, brand_dst = ROOT / "brand", out_dir / "brand"
+    if brand_src.is_dir():
+        brand_dst.mkdir(parents=True, exist_ok=True)
+        for pat in ("*.png", "*.svg"):
+            for f in sorted(brand_src.glob(pat)):
+                shutil.copy2(f, brand_dst / f.name)
+        log.info("  brand: %d files", len(list(brand_dst.iterdir())))
 
     web = ROOT / "web" / "gv-engine.js"
     if web.is_file():
@@ -247,6 +281,8 @@ def build(config: str, out_dir: Path, slug: str | None = None,
         "  Cache-Control: public, max-age=3600, must-revalidate\n"
         "/data/i18n/*\n"
         "  Cache-Control: public, max-age=3600, must-revalidate\n"
+        "/brand/*\n"
+        "  Cache-Control: public, max-age=604800, immutable\n"
         "/gv-engine.js\n"
         "  Cache-Control: public, max-age=600, must-revalidate\n"
         "/index.html\n"
@@ -265,6 +301,21 @@ def build(config: str, out_dir: Path, slug: str | None = None,
     (out_dir / "_redirects").write_text(
         "/*  /index.html  200\n", encoding="utf-8", newline="\n"
     )
+
+    # A DESKTOP bundle is never mirrored to docs/. docs/ is the live public
+    # web site, and this build deliberately keeps "/api/osm" in CFG.OVERPASS —
+    # a path that cannot exist on a static host, where the SPA fallback would
+    # answer it with a page of HTML at HTTP 200 and every map read would parse
+    # a document as JSON before giving up. Publishing the app's bundle to the
+    # web would break the web.
+    if keep_local_osm:
+        log.info("  desktop build: docs/ mirror skipped (that is the web site)")
+        total = sum(sizes.values())
+        log.info("wrote %s", out_dir)
+        for name, n in sorted(sizes.items(), key=lambda kv: -kv[1]):
+            log.info("  %-20s %8.1f KB", name, n / 1024)
+        log.info("  %-20s %8.1f KB", "TOTAL", total / 1024)
+        return _city_entry(eng, slug)
 
     # Mirror the build into docs/ so GitHub Pages can serve it straight from
     # the default branch. Pages needs .nojekyll or it silently drops any path
@@ -340,6 +391,13 @@ def main() -> None:
     ap = argparse.ArgumentParser(description="Bake the engine to static JSON")
     ap.add_argument("--config", default="config/city.yaml")
     ap.add_argument("--out", default="dist")
+    ap.add_argument("--keep-local-osm", action="store_true",
+                    help="keep \"/api/osm\" in CFG.OVERPASS. Use this for the "
+                         "DESKTOP bundle (dist_app), which runs beside a local "
+                         "greenplan.server and must be allowed to reach it. "
+                         "Leave it off for a static web host, where that path "
+                         "cannot exist and the SPA fallback would answer it "
+                         "with a page of HTML at HTTP 200.")
     ap.add_argument("--cities", nargs="*", metavar="CONFIG",
                     help="bake several cities into one bundle, each under "
                          "engine/<slug>/, plus an engine/cities.json manifest "
@@ -353,7 +411,7 @@ def main() -> None:
         out = ROOT / out
 
     if not args.cities:
-        build(args.config, out)
+        build(args.config, out, keep_local_osm=args.keep_local_osm)
         return
 
     # Multi-city. The shared files (index.html, gv-engine.js, i18n, the docs/
@@ -363,7 +421,8 @@ def main() -> None:
     cfgs = list(args.cities)
     for i, cfg in enumerate(cfgs):
         slug = _slug(load_config(ROOT / cfg if not Path(cfg).is_absolute() else cfg).city.name)
-        entries.append(build(cfg, out, slug=slug, shared=(i == len(cfgs) - 1)))
+        entries.append(build(cfg, out, slug=slug, shared=(i == len(cfgs) - 1),
+                             keep_local_osm=args.keep_local_osm))
 
     manifest = {"cities": sorted(entries, key=lambda e: e["name"])}
     _write(out / "engine" / "cities.json", manifest)
@@ -372,7 +431,7 @@ def main() -> None:
 
     # The mirror ran during the shared pass, before cities.json existed.
     docs = ROOT / "docs"
-    if docs.is_dir():
+    if docs.is_dir() and not args.keep_local_osm:
         import shutil as _sh
         _sh.copy2(out / "engine" / "cities.json", docs / "engine" / "cities.json")
         for e in entries:

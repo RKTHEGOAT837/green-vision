@@ -101,6 +101,11 @@ model:
   provider: openvino            # openvino | openrouter | nvidia | mock
   model_dir: models/openvino/qwen2.5-1.5b-instruct-int4-ov
   chat_template: chatml
+  # Run the trained network alongside the deployed forecaster, through the
+  # same OpenVINO runtime, and report both. It is NOT in charge: the engine
+  # deploys whichever model measured better on held-out months, and today
+  # that is the statistical one. Costs ~0.065 ms per zone on CPU.
+  challenger: true
   device: CPU                   # CPU | GPU | NPU | AUTO — any OpenVINO device
   max_new_tokens: 2048          # 10 zones of justification + species needs room
   # Used only by the hosted providers below; ignored when provider: openvino.

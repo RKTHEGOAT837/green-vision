@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="512" height="512"
+     role="img" aria-label="Green Vision">
+  <title>Green Vision</title>
+  <!-- The mark the app itself draws, lifted from index.html unchanged so the
+       logo file and the running product cannot drift apart.
+
+       The disc reads green to blue: canopy and water, the two things the
+       whole tool is weighing. The white shape is a leaf and a map pin at
+       once — what to plant, and where. The veins inside are the branching
+       the ranking produces: one trunk, decisions off it. -->
+  <defs>
+    <linearGradient id="gvGrad" x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#12b981"/>
+      <stop offset="1" stop-color="#2f7ef0"/>
+    </linearGradient>
+  </defs>
+  <circle cx="24" cy="24" r="22" fill="url(#gvGrad)"/>
+  <path d="M24 9C17 11 13 17 13 24c0 8 11 15 11 15s11-7 11-15c0-7-4-13-11-15z"
+        fill="#fff" opacity=".92"/>
+  <path d="M24 15v18M24 20l-5-3M24 25l6-4M24 30l-5-3"
+        stroke="#0e9f6e" stroke-width="2" stroke-linecap="round" fill="none"/>
+</svg>

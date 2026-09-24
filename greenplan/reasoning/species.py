@@ -19,10 +19,32 @@ from __future__ import annotations
 # water_need (low|medium|high), context (where it belongs in a city),
 # soil_ph (tolerated pH range "lo-hi"), soil_texture (sandy|loamy|clay|any,
 # '|'-separated), salinity_tolerance (low|medium|high)
+# The two Ficus rows were corrected after the costing catalogue and this
+# table were compared row by row, which is the only way the disagreement was
+# ever going to surface: they are separate files, written at different times,
+# and nothing checked them against each other.
+#
+# WATER. Both said water_need "low". That is true of a mature Banyan or
+# Peepal, which will hold on through a drought - but it is not what the
+# recommender uses the field for. It awards low-water species +2.5 on a site
+# under 400 mm of rain, and these two carry the highest establishment
+# irrigation in the whole catalogue: 11,000 and 9,000 L/yr against a median
+# near 4,000. So the driest sites in the country were being recommended the
+# two thirstiest trees to establish, on the strength of how they behave
+# twenty years later. "medium" is the honest answer for a field that drives a
+# three-year establishment budget.
+#
+# ROOTS. Peepal's row warned about aggressive roots and Banyan's did not,
+# although Ficus benghalensis is the more destructive of the two - it drops
+# prop roots that lift pavements and enter drains. The recommender reads the
+# word "aggressive" out of `context` to penalise a species for avenues,
+# residential streets, campuses and community gardens, so the omission meant
+# Banyan was never penalised on any of them.
+
 SPECIES_KB: list[dict[str, str]] = [
     {"common": "Neem", "botanical": "Azadirachta indica", "native_status": "native", "canopy": "large", "pollution_tolerance": "high", "water_need": "low", "context": "avenue, park", "soil_ph": "6.0-8.5", "soil_texture": "any", "salinity_tolerance": "high"},
-    {"common": "Peepal", "botanical": "Ficus religiosa", "native_status": "native", "canopy": "large", "pollution_tolerance": "high", "water_need": "low", "context": "park, open grounds (aggressive roots: keep off narrow pavements)", "soil_ph": "6.5-8.5", "soil_texture": "any", "salinity_tolerance": "medium"},
-    {"common": "Banyan", "botanical": "Ficus benghalensis", "native_status": "native", "canopy": "large", "pollution_tolerance": "high", "water_need": "low", "context": "large park, open grounds only", "soil_ph": "6.5-8.0", "soil_texture": "any", "salinity_tolerance": "medium"},
+    {"common": "Peepal", "botanical": "Ficus religiosa", "native_status": "native", "canopy": "large", "pollution_tolerance": "high", "water_need": "medium", "context": "park, open grounds (aggressive roots: keep off narrow pavements)", "soil_ph": "6.5-8.5", "soil_texture": "any", "salinity_tolerance": "medium"},
+    {"common": "Banyan", "botanical": "Ficus benghalensis", "native_status": "native", "canopy": "large", "pollution_tolerance": "high", "water_need": "medium", "context": "large park, open grounds only (aggressive roots and prop roots: never on pavements or near drains)", "soil_ph": "6.5-8.0", "soil_texture": "any", "salinity_tolerance": "medium"},
     {"common": "Pongamia (Karanj)", "botanical": "Millettia pinnata", "native_status": "native", "canopy": "medium", "pollution_tolerance": "high", "water_need": "low", "context": "avenue, road median", "soil_ph": "6.5-8.5", "soil_texture": "any", "salinity_tolerance": "high"},
     {"common": "Jamun", "botanical": "Syzygium cumini", "native_status": "native", "canopy": "large", "pollution_tolerance": "medium", "water_need": "medium", "context": "avenue, park", "soil_ph": "6.0-8.0", "soil_texture": "loamy|clay", "salinity_tolerance": "medium"},
     {"common": "Arjun", "botanical": "Terminalia arjuna", "native_status": "native", "canopy": "large", "pollution_tolerance": "high", "water_need": "medium", "context": "avenue, riverbank, lakefront", "soil_ph": "6.0-8.0", "soil_texture": "loamy|clay", "salinity_tolerance": "medium"},

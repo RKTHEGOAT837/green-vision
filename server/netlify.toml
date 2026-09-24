@@ -1,0 +1,41 @@
+# Green Vision account API — the replacement for Pipedream.
+#
+# Pipedream's free tier meters WORKFLOW INVOCATIONS as "credits", and this
+# app spends them the way any app does: a sign-in, a project save, a chat
+# turn, a history row. It reached the cap and Pipedream DISABLED the
+# workflow, which does not fail loudly - every route quietly began returning
+# Pipedream's own "Success!" page with HTTP 200, so the app saw a valid
+# response that was not JSON and simply behaved as though nothing was saved.
+#
+# Netlify's free tier is 125,000 function invocations a month against
+# Pipedream's ~100 credits, the storage (Blobs) is included rather than a
+# separate product, and it is the account the studio is already deployed
+# from - one vendor instead of two.
+[build]
+  publish = "public"
+  functions = "netlify/functions"
+
+# One function, path-routed, for the same reason the Pipedream workflow was:
+# the app has ONE base URL, and splitting routes across deployments means
+# the client has to know which call goes where.
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/auth/*"
+  to = "/.netlify/functions/api/auth/:splat"
+  status = 200
+
+# Everything else. The app was written against Pipedream's URL shape, where
+# the base IS the API root and paths hang straight off it (base + "/me").
+# Keeping that shape means the desktop client changes one string rather than
+# every call site.
+#
+# Netlify serves a real file before it consults redirects, so /index.html -
+# the admin page - is unaffected by this and still loads at "/".
+[[redirects]]
+  from = "/*"
+  to = "/.netlify/functions/api/:splat"
+  status = 200

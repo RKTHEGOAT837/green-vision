@@ -37,3 +37,26 @@ android/.gradle/
 android/app/build/
 android/app/src/main/assets/www/
 dist_app/
+
+# Local Netlify folder
+.netlify
+
+# The Windows desktop app. The SOURCE here is committed - main.js, preload.js,
+# the build scripts - and everything the build PRODUCES is not:
+#   engine/        a complete CPython, the OpenVINO runtime, the map index and
+#                  the 1.2 GB INT4 language model. Rebuild it with
+#                  scripts/build_portable_engine.py --with-openvino
+#   release/       the packaged app and the two installers, 1.2 GB each
+#   node_modules/  electron and electron-builder
+desktop/engine/
+desktop/release/
+desktop/node_modules/
+desktop/*-shots/
+desktop/site-report/
+
+# Editor and tooling leavings, and the backups the i18n filler writes.
+*.bak
+.ovcache/
+data/geti_tiles/
+desktop/.engine-cache/
+server/node_modules/

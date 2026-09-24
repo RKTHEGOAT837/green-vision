@@ -1,0 +1,524 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Green Vision · Admin</title>
+<link rel="icon" href="green-vision-mark-128.png">
+<style>
+:root{--bg:#f2f5f3;--card:#fff;--ink:#0f2a22;--soft:#5c7168;--line:#dfe6e1;
+      --brand:#0e9f6e;--red:#c0392b;--field:#fff;--head:#f7faf8;}
+@media(prefers-color-scheme:dark){:root{--bg:#0c1512;--card:#121c19;--ink:#e8f2ee;
+      --soft:#9fb3aa;--line:#22322c;--field:#0e1815;--head:#16211d;}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font:15px/1.6 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;padding:28px 16px 60px;}
+.w{max-width:1080px;margin:0 auto;}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:24px;margin-bottom:16px;}
+.h{display:flex;align-items:center;gap:12px;margin-bottom:20px;}
+.h img{width:44px;height:44px;border-radius:11px;display:block;}
+.n{font-size:18px;font-weight:800;letter-spacing:-.2px;}
+.t{font-size:10px;font-weight:700;color:var(--soft);letter-spacing:.13em;}
+h1{font-size:20px;margin:0 0 6px;} p.d{color:var(--soft);font-size:13.5px;margin:0 0 18px;}
+label{display:block;font-size:12px;font-weight:700;color:var(--soft);margin:0 0 5px;}
+input{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;
+  background:var(--field);color:var(--ink);font:inherit;font-size:14px;margin-bottom:12px;}
+button{background:var(--brand);color:#fff;border:0;border-radius:11px;padding:12px 18px;
+  font:inherit;font-weight:700;cursor:pointer;}
+button.ghost{background:transparent;color:var(--soft);border:1px solid var(--line);font-size:13px;padding:8px 14px;}
+button:disabled{opacity:.55;cursor:default;}
+.err{color:var(--red);font-size:13px;margin:6px 0 0;min-height:18px;}
+.bar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;}
+.stat{display:flex;gap:22px;flex-wrap:wrap;}
+.stat b{display:block;font-size:22px;line-height:1.2;}
+.stat span{font-size:11.5px;color:var(--soft);text-transform:uppercase;letter-spacing:.08em;}
+.tw{overflow-x:auto;}
+table{border-collapse:collapse;width:100%;min-width:820px;font-size:13.5px;}
+th{background:var(--head);text-align:left;font-size:11px;text-transform:uppercase;
+  letter-spacing:.07em;color:var(--soft);padding:10px 12px;position:sticky;top:0;}
+td{padding:11px 12px;border-top:1px solid var(--line);vertical-align:top;}
+td b{font-weight:700;}
+.mut{color:var(--soft);font-size:12px;}
+.pill{display:inline-block;background:rgba(14,159,110,.12);color:var(--brand);
+  border-radius:99px;padding:1px 9px;font-size:11.5px;font-weight:700;}
+/* A revoked account, and the control that gets it there. Amber, not red:
+   red in a table of people reads as an error on the row rather than a state
+   somebody chose, and this state is reversible. */
+.pill.bad{background:rgba(190,140,40,.16);color:#8a6d1f;}
+@media(prefers-color-scheme:dark){.pill.bad{color:#e3c46a;}}
+.lnk{background:none;border:0;padding:0;font:inherit;font-size:12px;font-weight:700;
+  color:var(--brand);cursor:pointer;text-decoration:underline;}
+.lnk.bad{color:#a4622a;}
+@media(prefers-color-scheme:dark){.lnk.bad{color:#e0a15e;}}
+.hide{display:none}
+.bc{border:1px solid var(--line);border-radius:14px;padding:18px 18px 16px;margin:0 0 18px;}
+.bc h3{margin:0 0 4px;font-size:15px;}
+.bc label{display:block;font-size:12px;font-weight:700;color:var(--soft);margin:12px 0 0;}
+.bc input,.bc textarea{width:100%;margin-top:5px;padding:9px 11px;border:1px solid var(--line);
+  border-radius:9px;background:var(--bg);color:var(--ink);font:inherit;font-size:13.5px;}
+.bc textarea{min-height:62px;resize:vertical;}
+.bcrow{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;}
+@media(max-width:620px){.bcrow{grid-template-columns:minmax(0,1fr);}}
+.bc .d{font-weight:400;display:block;margin-top:4px;}
+.kill{display:flex;gap:10px;align-items:flex-start;margin-top:16px!important;
+  border:1px solid #e5b4b4;background:#fdf3f3;border-radius:10px;padding:12px;}
+@media(prefers-color-scheme:dark){.kill{background:#2a1616;border-color:#5b2b2b;}}
+.kill input{width:auto;margin:2px 0 0;flex:0 0 auto;}
+.kill b{color:#b91c1c;}
+.bcacts{display:flex;gap:10px;align-items:center;margin-top:14px;flex-wrap:wrap;}
+.bcstate{font-size:12.5px;color:var(--soft);}
+/* Destructive, and it should look it - but amber rather than red, because
+   it removes an announcement and never touches anybody's data. */
+button.ghost.danger{color:#a4622a;border-color:rgba(190,140,40,.5);}
+@media(prefers-color-scheme:dark){button.ghost.danger{color:#e0a15e;}}
+
+/* The per-account detail row: hidden until asked for. */
+tr.detail > td { background: rgba(255,255,255,.03); padding: 0 14px 14px; }
+.profgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 10px 18px; margin: 4px 0 2px; }
+.profgrid .f { border-left: 2px solid rgba(255,255,255,.12); padding-left: 10px; }
+.profgrid .f .k { font-size: 11px; letter-spacing: .04em; text-transform: uppercase;
+                  opacity: .6; }
+.profgrid .f .v { font-weight: 700; margin: 1px 0 1px; }
+.profgrid .f .u { font-size: 11.5px; opacity: .6; line-height: 1.35; }
+.profgrid .f.unused .v { opacity: .75; }
+.profgrid .f.unused .u { color: #e0a33a; opacity: .85; }
+button.lnk.open { color: inherit; opacity: .75; }
+</style></head><body><div class="w">
+
+<div class="card">
+  <div class="h">
+    <img src="green-vision-mark-128.png" alt="">
+    <div><div class="n">Green Vision</div><div class="t">ADMIN</div></div>
+  </div>
+
+  <div id="loginBox">
+    <h1>Sign in</h1>
+    <p class="d">Registered users and what they have saved. This page is for administrators —
+      it is not the same sign-in as the app.</p>
+    <label for="u">Username</label>
+    <input id="u" autocomplete="username" autocapitalize="off" spellcheck="false">
+    <label for="p">Password</label>
+    <input id="p" type="password" autocomplete="current-password">
+    <button id="go">Sign in</button>
+    <p class="err" id="err"></p>
+  </div>
+
+  <div id="app" class="hide">
+    <div class="bar">
+      <div class="stat">
+        <div><b id="nUsers">—</b><span>Accounts</span></div>
+        <div><b id="nActive">—</b><span>Signed in at least once</span></div>
+        <div><b id="nProjects">—</b><span>Projects saved</span></div>
+        <div><b id="nChats">—</b><span>Chat turns</span></div>
+      </div>
+      <div>
+        <button class="ghost" id="refresh">Refresh</button>
+        <button class="ghost" id="csv">Download CSV</button>
+        <button class="ghost" id="out">Sign out</button>
+      </div>
+    </div>
+    <div class="bc">
+      <h3>The current release, and what to tell people</h3>
+      <p class="d">Two things run off this. The public download page renders the
+        version, size and hash from here, and the installed app reads it each
+        time it starts — so anyone who opens Green Vision after you save gets
+        the message as a pop-up. It does not interrupt a session already
+        running.</p>
+
+      <div class="bcrow">
+        <label>Headline<input id="bTitle" placeholder="Update available"></label>
+        <label>Newest version<input id="bLatest" placeholder="1.0.1"></label>
+      </div>
+      <label>Message<textarea id="bMsg" placeholder="A new version is ready. Close Green Vision and open it again to update."></textarea></label>
+      <div class="bcrow">
+        <label>Installer link
+          <input id="bFile" placeholder="https://github.com/.../GreenVision-1.0.1-x64.exe">
+        </label>
+        <label>Download size shown
+          <input id="bSize" placeholder="178 MB">
+        </label>
+      </div>
+      <label>SHA-256 of the installer
+        <input id="bSha" placeholder="paste the hash so people can verify the file">
+        <span class="d">Shown on the download page. Leave it blank and that section is hidden, rather than showing a hash that is wrong.</span>
+      </label>
+
+      <label>Insist below version
+        <input id="bMin" placeholder="leave blank to only inform">
+        <span class="d">Anyone older than this is told they must update, rather than simply informed.</span>
+      </label>
+
+      <label>Send only to this address <span style="font-weight:400">(optional)</span>
+        <input id="bOnly" placeholder="your.email@example.com — leave blank to send to everyone">
+        <span class="d">A rehearsal. Only that signed-in person sees it, so you can
+          check the wording without interrupting anybody else. Applies to the
+          disable switch too.</span>
+      </label>
+
+      <label class="kill">
+        <input type="checkbox" id="bKill">
+        <span><b>Disable the app for everyone</b>
+          <span class="d">Green Vision stops working on every machine that can reach
+          the internet and shows your message instead. Use it for a build that is
+          actively doing harm. A machine that is offline keeps working until it
+          next connects — this is a switch, not a recall.</span></span>
+      </label>
+
+      <div class="bcacts">
+        <button id="bSend">Send to every app</button>
+        <button class="ghost" id="bClear">Clear the message</button>
+        <button class="ghost danger" id="bWipe">Delete all messages</button>
+        <span class="bcstate" id="bState"></span>
+      </div>
+    </div>
+
+    <div class="tw"><table>
+      <thead><tr>
+        <th>Person</th><th>Organisation</th><th>Where</th>
+        <th>Sign-ins</th><th>Saved</th><th>Last seen</th><th>Access</th>
+      </tr></thead>
+      <tbody id="rows"></tbody>
+    </table></div>
+    <p class="d" style="margin:14px 0 0">Everything here was entered by the person
+      themselves at sign-up. No figure on this page is computed or inferred.</p>
+  </div>
+</div>
+
+</div>
+<script>
+/* The API lives on a different host to this page.
+
+   This said `location.origin`, which was correct when the page and the API
+   were two halves of one Netlify deploy. On GitHub Pages the origin is
+   rkthegoat837.github.io, which has no API on it - so every call fetched
+   GitHub's own 404 page and the reader was shown a JSON parse error about
+   an unexpected "<". Nothing was wrong with the server, the credentials or
+   the network; the page was simply asking the wrong host.
+
+   `location.origin` is kept as the fallback for a same-origin deploy, so
+   this file still works unchanged if it is ever served beside the API
+   again. */
+const API = "https://green-vision-api.greenvision-rk.workers.dev" || location.origin;
+const $ = id => document.getElementById(id);
+
+/* Read a response that is supposed to be JSON.
+
+   A fetch that lands on the wrong host, or on a host that is down, answers
+   with a page of HTML at some status - and `r.json()` then throws a parser
+   message that describes the first character of the markup rather than the
+   problem. Anyone reading "Unexpected token '<'" learns nothing about what
+   to do next, so it is turned into a sentence that names the actual
+   suspect. */
+async function readJson(r) {
+  const text = await r.text();
+  try {
+    return JSON.parse(text);
+  } catch (e) {
+    if (/^\s*</.test(text)) {
+      throw new Error("the API returned a web page instead of data — " +
+                      "check that " + API + " is reachable");
+    }
+    throw new Error("the API sent something unreadable (HTTP " + r.status + ")");
+  }
+}
+let token = null, users = [];
+
+try { token = sessionStorage.getItem("gv_admin") || null; } catch (e) {}
+
+function when(ts) {
+  if (!ts) return "—";
+  const d = new Date(ts), days = Math.floor((Date.now() - ts) / 86400000);
+  if (days === 0) return "today";
+  if (days === 1) return "yesterday";
+  if (days < 30) return days + " days ago";
+  return d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+}
+const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g,
+  c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+/* The broadcast. Read on open so the boxes show what is actually live
+   rather than empty fields that imply nothing is set. */
+async function loadNotice() {
+  try {
+    const r = await fetch(API + "/api/app/notice");
+    const n = await readJson(r);
+    $("bTitle").value = n.title || "";
+    $("bMsg").value = n.message || "";
+    $("bLatest").value = n.latest || "";
+    $("bMin").value = n.min || "";
+    $("bFile").value = n.file || "";
+    $("bSize").value = n.size || "";
+    $("bSha").value = n.sha256 || "";
+    $("bOnly").value = n.only || "";
+    $("bKill").checked = !!n.killed;
+    $("bState").textContent = n.killed
+      ? "The app is currently DISABLED for everyone."
+      : ((n.message || n.title)
+           ? "A message is live (set " + when(n.updated) + ")."
+           : "No message is live.");
+    $("bState").style.color = n.killed ? "#b91c1c" : "";
+    if (n.only) $("bState").textContent += "  (test — only " + n.only + " sees it)";
+  } catch (e) { $("bState").textContent = "Could not read the current message."; }
+}
+
+async function sendNotice(clear) {
+  const kill = clear ? false : $("bKill").checked;
+  if (kill && !confirm(
+      "Disable Green Vision on every machine that can reach the internet?\n\n" +
+      "Nobody will be able to use the app until you clear this.")) return;
+
+  /* Refuse to "send" something that would reach nobody. The app shows a
+     notice when there is a headline, a message, or a version newer than the
+     one installed; with none of those it correctly does nothing, and an
+     administrator who filled in one field and saw no pop-up has no way to
+     tell a broken feature from an empty one. */
+  if (!clear && !kill) {
+    const has = $("bTitle").value.trim() || $("bMsg").value.trim() ||
+                $("bMin").value.trim();
+    if (!has) {
+      $("bState").textContent =
+        "Nothing to send — add a headline or a message. Setting only the " +
+        "version updates the download page, but shows nothing to anyone already " +
+        "running that version.";
+      $("bState").style.color = "#b45309";
+      return;
+    }
+  }
+
+  const body = clear
+    ? { killed: false, title: "", message: "", latest: "", min: "", only: "",
+        file: $("bFile").value.trim(), size: $("bSize").value.trim(),
+        sha256: $("bSha").value.trim() }
+    : { killed: kill, title: $("bTitle").value.trim(), message: $("bMsg").value.trim(),
+        latest: $("bLatest").value.trim(), min: $("bMin").value.trim(),
+        file: $("bFile").value.trim(), size: $("bSize").value.trim(),
+        sha256: $("bSha").value.trim(), only: $("bOnly").value.trim() };
+
+  $("bState").textContent = "Sending…";
+  const r = await fetch(API + "/api/admin/notice", {
+    method: "POST",
+    headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" },
+    body: JSON.stringify(body)
+  });
+  if (r.status === 401) { signOut(); return; }
+  if (!r.ok) { $("bState").textContent = "Failed — " + r.status; return; }
+  // Clearing removes the MESSAGE, not the release details: the installer
+  // link, its size and its hash describe the current build and are still
+  // true after an announcement has run its course.
+  if (clear) { $("bTitle").value = $("bMsg").value = $("bLatest").value = $("bMin").value = $("bOnly").value = ""; $("bKill").checked = false; }
+  await loadNotice();
+}
+
+async function load() {
+  const r = await fetch(API + "/api/admin/users", {
+    headers: { Authorization: "Bearer " + token }
+  });
+  if (r.status === 401) { signOut(); return; }
+  const j = await readJson(r);
+  users = j.users || [];
+  loadNotice();
+
+  $("nUsers").textContent = users.length;
+  $("nActive").textContent = users.filter(u => u.sign_ins > 0).length;
+  $("nProjects").textContent = users.reduce((n, u) => n + (u.counts.projects || 0), 0);
+  $("nChats").textContent = users.reduce((n, u) => n + (u.counts.chats || 0), 0);
+
+  $("rows").innerHTML = users.length ? users.map(u => {
+    const p = u.profile || {};
+    return `<tr>
+      <td><b>${esc(p.name || "—")}</b><div class="mut">${esc(u.email)}</div></td>
+      <td>${esc(p.org || "—")}<div class="mut">${esc([p.role, p.orgType].filter(Boolean).join(" · ") || "")}</div></td>
+      <td>${esc([p.city, p.state].filter(Boolean).join(", ") || "—")}</td>
+      <td>${u.sign_ins ? `<span class="pill">${u.sign_ins}</span>` : '<span class="mut">never</span>'}</td>
+      <td>${u.counts.projects} projects<div class="mut">${u.counts.chats} chat · ${u.counts.history} searches</div></td>
+      <td>${when(u.last_seen || u.created)}</td>
+      <td>${u.revoked
+        ? `<span class="pill bad" title="${esc(u.revoked_reason || "no reason recorded")}">Revoked</span>
+           <div><button class="lnk" data-restore="${esc(u.email)}">Restore access</button></div>`
+        : `<button class="lnk bad" data-revoke="${esc(u.email)}">Revoke access</button>`}
+        <div><button class="lnk open" data-detail="${esc(u.email)}">Full profile</button></div></td>
+    </tr>
+    <tr class="detail" id="d-${esc(u.email)}" hidden><td colspan="7">${profileGrid(p)}</td></tr>`;
+  }).join("") : `<tr><td colspan="7" class="mut" style="padding:22px">No accounts yet.</td></tr>`;
+
+  for (const b of document.querySelectorAll("[data-detail]")) b.onclick = () => {
+    const row = document.getElementById("d-" + b.dataset.detail);
+    if (!row) return;
+    row.hidden = !row.hidden;
+    b.textContent = row.hidden ? "Full profile" : "Hide profile";
+  };
+
+  /* Bound after each render rather than inline in the markup: an onclick
+     attribute would have to carry the address through an HTML string, and
+     an apostrophe in a real address breaks it. */
+  for (const b of document.querySelectorAll("[data-revoke]"))
+    b.onclick = () => setAccess(b.getAttribute("data-revoke"), true);
+  for (const b of document.querySelectorAll("[data-restore]"))
+    b.onclick = () => setAccess(b.getAttribute("data-restore"), false);
+
+  $("loginBox").classList.add("hide");
+  $("app").classList.remove("hide");
+}
+
+/* Turn one person's access off, or back on.
+
+   Confirmed, and the address is repeated in the prompt. The rows are a list
+   of similar-looking email addresses and the control sits at the end of a
+   wide table, so the misclick this guards against is the ordinary one: the
+   right button on the wrong line.
+
+   The reason is optional but asked for every time, because it is shown to
+   the person on the screen that blocks their app. An explanation written now
+   is the difference between somebody understanding what happened and
+   somebody writing in to ask. */
+async function setAccess(email, revoke) {
+  let reason = "";
+  if (revoke) {
+    if (!confirm("Revoke Green Vision access for " + email + "?\n\n" +
+                 "They will be signed out of the app and shown a message. " +
+                 "Their saved projects are kept and come back if you restore access.")) return;
+    reason = prompt("Reason (optional) — this is shown to them in the app:", "") || "";
+  } else if (!confirm("Restore access for " + email + "?")) return;
+
+  const r = await fetch(API + "/api/admin/revoke", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+    body: JSON.stringify({ email, revoked: revoke, reason: reason.trim() })
+  });
+  const j = await readJson(r).catch(() => ({}));
+  if (!r.ok) { alert(j.error || ("HTTP " + r.status)); return; }
+  await load();
+}
+
+$("go").onclick = async () => {
+  $("err").textContent = "";
+  $("go").disabled = true;
+  try {
+    const r = await fetch(API + "/api/admin/login", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: $("u").value, password: $("p").value })
+    });
+    const j = await readJson(r);
+    if (!r.ok || !j.ok) { $("err").textContent = j.error || ("HTTP " + r.status); return; }
+    token = j.token;
+    try { sessionStorage.setItem("gv_admin", token); } catch (e) {}
+    $("p").value = "";
+    await load();
+  } catch (e) {
+    $("err").textContent = "Could not reach the server — " + e.message;
+  } finally { $("go").disabled = false; }
+};
+$("p").addEventListener("keydown", e => { if (e.key === "Enter") $("go").click(); });
+
+function signOut() {
+  token = null;
+  try { sessionStorage.removeItem("gv_admin"); } catch (e) {}
+  $("app").classList.add("hide");
+  $("loginBox").classList.remove("hide");
+}
+$("out").onclick = signOut;
+$("refresh").onclick = load;
+$("bSend").onclick = () => sendNotice(false);
+$("bClear").onclick = () => sendNotice(true);
+
+/* Delete every message the apps are showing.
+
+   "Clear the message" empties the form's text fields and leaves the release
+   details in place, which is the ordinary end of an announcement. This is
+   the bigger hammer: it also removes the version that drives the update
+   pop-up, so an app that starts up afterwards shows nothing at all.
+
+   What it does NOT do is touch accounts, projects, the Library or anyone's
+   history. The notice is one shared record; deleting it deletes what people
+   are being SHOWN, not anything they have made. The confirmation says so,
+   because "delete all messages" is the kind of label a reader can easily
+   believe means more than it does. */
+$("bWipe").onclick = async () => {
+  if (!confirm(
+      "Delete every message currently shown in Green Vision?\n\n" +
+      "This removes the headline, the message and the update prompt from " +
+      "every app, including the kill switch if it is on.\n\n" +
+      "Accounts, saved projects and the Library are not affected.")) return;
+
+  $("bState").style.color = "";
+  $("bState").textContent = "Deleting…";
+  const r = await fetch(API + "/api/admin/notice", {
+    method: "POST",
+    headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" },
+    /* Everything a reader could see, blanked - including `latest` and `min`,
+       which is what separates this from Clear: leave `latest` set and the
+       update prompt keeps appearing after the message is gone. The installer
+       link, size and hash stay, because the download page renders those and
+       they are facts about the build rather than a message to anyone. */
+    body: JSON.stringify({
+      killed: false, title: "", message: "", latest: "", min: "", only: "",
+      file: $("bFile").value.trim(), size: $("bSize").value.trim(),
+      sha256: $("bSha").value.trim()
+    })
+  });
+  if (r.status === 401) { signOut(); return; }
+  if (!r.ok) { $("bState").textContent = "Failed — " + r.status; return; }
+  $("bTitle").value = $("bMsg").value = $("bLatest").value =
+    $("bMin").value = $("bOnly").value = "";
+  $("bKill").checked = false;
+  await loadNotice();
+  $("bState").textContent = "All messages deleted. Apps will show nothing on next start.";
+};
+
+/* Everything an account told us, and what the app does with each answer.
+
+   `use` is the honest part. Four of these steer the app; two are collected,
+   converted into a setting, and then read by nothing - saying so here beats
+   letting an administrator assume the app acts on an answer it ignores. */
+const PROFILE_FIELDS = [
+  ["name",     "Name",               "Shown on published designs and on exported bills of quantities"],
+  ["org",      "Organisation",       "Shown alongside the name on published work"],
+  ["orgType",  "Kind of organisation", "Collected only \u2014 the app does not act on it", true],
+  ["role",     "Role",               "Collected only \u2014 the app does not act on it", true],
+  ["city",     "City or ward",       "Used to decide whether this is a first-time reader"],
+  ["state",    "State",              "Chooses which land-value register the Cost tab quotes"],
+  ["lang",     "Language",           "Sets the interface language on sign-in"],
+  ["goal",     "Usual scheme",       "Sets what the Studio opens on"],
+  ["scale",    "Typical site size",  "Sets the size the site finder looks for"],
+  ["priority", "Biggest problem",    "Collected only \u2014 it was meant to reorder the Area report, and nothing reads it", true]
+];
+
+function profileGrid(p) {
+  const cells = PROFILE_FIELDS.map(([k, label, use, unused]) => {
+    const v = p[k];
+    return `<div class="f${unused ? " unused" : ""}">
+      <div class="k">${esc(label)}</div>
+      <div class="v">${v ? esc(String(v)) : '<span class="mut">not answered</span>'}</div>
+      <div class="u">${esc(use)}</div>
+    </div>`;
+  }).join("");
+  const extra = Object.keys(p).filter(k => !PROFILE_FIELDS.some(f => f[0] === k));
+  const more = extra.length
+    ? `<div class="mut" style="margin-top:8px;font-size:11.5px">Also stored: ` +
+      extra.map(k => esc(k) + " = " + esc(String(p[k]))).join(" \u00b7 ") + `</div>`
+    : "";
+  return `<div class="profgrid">${cells}</div>${more}`;
+}
+
+$("csv").onclick = () => {
+  const head = ["email","name","organisation","orgType","role","city","state",
+                "language","usual_scheme","typical_site_size","biggest_problem",
+                "sign_ins","projects","chats","history","created","last_seen"];
+  const cell = v => '"' + String(v == null ? "" : v).replace(/"/g, '""') + '"';
+  const body = users.map(u => {
+    const p = u.profile || {};
+    return [u.email, p.name, p.org, p.orgType, p.role, p.city, p.state,
+            p.lang, p.goal, p.scale, p.priority,
+            u.sign_ins, u.counts.projects, u.counts.chats, u.counts.history,
+            u.created ? new Date(u.created).toISOString() : "",
+            u.last_seen ? new Date(u.last_seen).toISOString() : ""].map(cell).join(",");
+  });
+  const blob = new Blob([[head.join(","), ...body].join("\n")], { type: "text/csv" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "green-vision-users.csv";
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+};
+
+if (token) load().catch(signOut);
+</script></body></html>

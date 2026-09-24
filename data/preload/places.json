@@ -1,0 +1,75 @@
+{
+ "_note": "Landmarks preloaded so the app resolves them instantly instead of asking Nominatim. Geocoded once at build time and checked in, so the coordinates are reproducible and reviewable rather than whatever a live lookup returned that day.",
+ "places": [
+  {
+   "label": "Rajpath Club",
+   "lat": 23.03464,
+   "lon": 72.50935,
+   "display": "Rajpath Club",
+   "city": "Ahmedabad"
+  },
+  {
+   "label": "Karnavati Club",
+   "lat": 23.01976,
+   "lon": 72.50341,
+   "display": "Karnavati Club",
+   "city": "Ahmedabad"
+  },
+  {
+   "label": "SBR Road",
+   "lat": 23.03981,
+   "lon": 72.5086,
+   "display": "Sindhu Bhavan Road",
+   "city": "Ahmedabad"
+  },
+  {
+   "label": "Satellite",
+   "lat": 23.02718,
+   "lon": 72.5094,
+   "display": "Satellite Road",
+   "city": "Ahmedabad"
+  },
+  {
+   "label": "Sabarmati Riverfront",
+   "lat": 23.01928,
+   "lon": 72.57364,
+   "display": "Flower Park",
+   "city": "Ahmedabad"
+  },
+  {
+   "label": "Vastrapur",
+   "lat": 23.04009,
+   "lon": 72.52904,
+   "display": "Vastrapur",
+   "city": "Ahmedabad"
+  },
+  {
+   "label": "Bodakdev",
+   "lat": 23.04459,
+   "lon": 72.51734,
+   "display": "Bodakdev",
+   "city": "Ahmedabad"
+  },
+  {
+   "label": "Prahlad Nagar",
+   "lat": 22.99994,
+   "lon": 72.50501,
+   "display": "Prahlad Nagar",
+   "city": "Ahmedabad"
+  },
+  {
+   "label": "Bopal",
+   "lat": 23.03858,
+   "lon": 72.45878,
+   "display": "Bopal Lake",
+   "city": "Ahmedabad"
+  },
+  {
+   "label": "Thaltej",
+   "lat": 23.04854,
+   "lon": 72.51174,
+   "display": "Thaltej",
+   "city": "Ahmedabad"
+  }
+ ]
+}

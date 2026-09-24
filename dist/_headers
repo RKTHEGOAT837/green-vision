@@ -2,6 +2,8 @@
   Cache-Control: public, max-age=3600, must-revalidate
 /data/i18n/*
   Cache-Control: public, max-age=3600, must-revalidate
+/brand/*
+  Cache-Control: public, max-age=604800, immutable
 /gv-engine.js
   Cache-Control: public, max-age=600, must-revalidate
 /index.html

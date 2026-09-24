@@ -1,5 +1,5 @@
 {
-  "_note": "Language registry for Green Vision. `dir` drives the document direction; `native` is what the picker shows, because a language selector that lists languages in a language you cannot read is not a language selector. `translated` says whether data/i18n/<code>.json actually exists. Eight of these are declared as intended languages and have no dictionary yet; the menu must not offer them as if they were finished, because selecting one leaves the whole interface in English with no explanation.",
+  "_note": "Language registry for Green Vision. `dir` drives the document direction; `native` is what the picker shows, because a language selector that lists languages in a language you cannot read is not a language selector. `translated` says whether data/i18n/<code>.json actually exists. Some of these are declared as intended languages and have no dictionary yet; the menu must not offer them as if they were finished, because selecting one leaves the whole interface in English with no explanation.",
   "languages": [
     {
       "code": "en",
@@ -41,56 +41,70 @@
       "name": "Tamil",
       "native": "தமிழ்",
       "dir": "ltr",
-      "translated": false
+      "translated": true
     },
     {
       "code": "te",
       "name": "Telugu",
       "native": "తెలుగు",
       "dir": "ltr",
-      "translated": false
+      "translated": true
     },
     {
       "code": "kn",
       "name": "Kannada",
       "native": "ಕನ್ನಡ",
       "dir": "ltr",
-      "translated": false
+      "translated": true
     },
     {
       "code": "ml",
       "name": "Malayalam",
       "native": "മലയാളം",
       "dir": "ltr",
-      "translated": false
+      "translated": true
     },
     {
       "code": "pa",
       "name": "Punjabi",
       "native": "ਪੰਜਾਬੀ",
       "dir": "ltr",
-      "translated": false
+      "translated": true
     },
     {
       "code": "or",
       "name": "Odia",
       "native": "ଓଡ଼ିଆ",
       "dir": "ltr",
-      "translated": false
+      "translated": true
     },
     {
       "code": "as",
       "name": "Assamese",
       "native": "অসমীয়া",
       "dir": "ltr",
-      "translated": false
+      "translated": true
     },
     {
       "code": "ur",
       "name": "Urdu",
       "native": "اردو",
       "dir": "rtl",
-      "translated": false
+      "translated": true
+    },
+    {
+      "code": "fr",
+      "name": "French",
+      "native": "Français",
+      "dir": "ltr",
+      "translated": true
+    },
+    {
+      "code": "de",
+      "name": "German",
+      "native": "Deutsch",
+      "dir": "ltr",
+      "translated": true
     }
   ]
 }

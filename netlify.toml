@@ -1,0 +1,67 @@
+# Netlify deployment for Green Vision.
+#
+# There is no build step here on purpose. `dist/` is produced by
+#
+#     python scripts/build_static.py --out dist \
+#         --cities config/city.yaml config/bengaluru.yaml config/chennai.yaml \
+#                  config/delhi.yaml config/mumbai.yaml
+#
+# which BAKES the trained engine — the H3 ranking, the 42-month forecast, the
+# soil profiles and the species table — into engine/<city>/*.json. Netlify
+# cannot run the Python server, and it does not need to: the ranking is not
+# recomputed in the browser, it is read. `gv-engine.js` is the in-page planner
+# that answers the assistant when no Python engine is reachable, and it says
+# so in its own replies ("offline planner (static build)").
+#
+# Do NOT point `publish` at the repository root. index.html at the root still
+# lists /api/osm first in CFG.OVERPASS, which only exists when greenplan.server
+# is running; build_static.py strips it for the static bundle.
+
+[build]
+  publish = "dist"
+  command = ""
+
+# _headers and _redirects in dist/ already carry these, and Netlify reads them
+# from the publish directory. They are repeated here so the policy is visible
+# in one place and survives someone deleting the dotfiles.
+
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+[[headers]]
+  for = "/"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+# The baked engine is content-stable between builds but must not be pinned for
+# long: a redeploy changes it, and a stale ranking beside a fresh interface is
+# the one inconsistency this app is built to avoid.
+[[headers]]
+  for = "/engine/*"
+  [headers.values]
+    Cache-Control = "public, max-age=3600, must-revalidate"
+
+[[headers]]
+  for = "/data/i18n/*"
+  [headers.values]
+    Cache-Control = "public, max-age=3600, must-revalidate"
+
+[[headers]]
+  for = "/gv-engine.js"
+  [headers.values]
+    Cache-Control = "public, max-age=600, must-revalidate"
+
+# Single-page fallback, so a deep link serves index.html rather than 404.
+#
+# Netlify applies redirects only when no file matches, so every real asset is
+# still served as itself. The cost is that a MISSING one — a city folder that
+# did not get baked, say — comes back as index.html with status 200 rather
+# than a 404, and the fetch fails at JSON.parse instead of at the status
+# check. That is why the regression suite asserts all five cities are present
+# in dist/engine/ before this ever reaches a deploy.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

@@ -1,14 +1,13 @@
 {
-  "model": "mlp",
+  "model": "rf",
   "model_params": {
-    "hidden": [
-      64,
-      32
-    ]
+    "trees": 600,
+    "max_depth": 4
   },
   "sklearnex": {
-    "requested": false,
-    "active": false
+    "requested": true,
+    "active": true,
+    "version": "2199.9.9"
   },
   "n_train": 1056,
   "n_test": 396,
@@ -18,35 +17,35 @@
       "test_mae": 0.0,
       "baseline_mae": 0.0,
       "skill_vs_baseline": 0.0,
-      "train_seconds": 0.081,
+      "train_seconds": 0.131,
       "inert_placeholder": true
     },
     "aqi": {
-      "test_mae": 41.3471,
+      "test_mae": 28.7079,
       "baseline_mae": 7.7641,
-      "skill_vs_baseline": -1.5032,
-      "train_seconds": 0.382,
+      "skill_vs_baseline": -0.9375,
+      "train_seconds": 0.156,
       "inert_placeholder": false
     },
     "ndvi": {
-      "test_mae": 0.1733,
+      "test_mae": 0.029,
       "baseline_mae": 0.0259,
-      "skill_vs_baseline": -1.3129,
-      "train_seconds": 1.928,
+      "skill_vs_baseline": -0.0278,
+      "train_seconds": 0.233,
       "inert_placeholder": false
     }
   },
-  "skill_combined": -1.408,
-  "train_seconds_total": 2.392,
+  "skill_combined": -0.4826,
+  "train_seconds_total": 0.52,
   "openvino_parity": {
     "measured": true,
     "device": "CPU",
     "max_abs_diff": {
-      "traffic": 1.3e-07,
-      "aqi": 3.6e-07,
-      "ndvi": 1.43e-06
+      "traffic": 0.0,
+      "aqi": 2.24e-06,
+      "ndvi": 3e-07
     },
-    "worst_abs_diff": 1.43e-06,
+    "worst_abs_diff": 2.24e-06,
     "tolerance": 0.001,
     "ok": true
   }

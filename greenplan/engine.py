@@ -45,6 +45,36 @@ from .training.memory import MemoryStore
 log = logging.getLogger(__name__)
 
 
+def _load_challenger(cfg):
+    """The trained network, compiled by OpenVINO, or None.
+
+    None is a perfectly good answer: no runtime installed, no exported
+    network, or the feature set moved since it was trained. The deployed
+    forecast does not depend on this and must not fail with it.
+    """
+    if not getattr(cfg.model, "challenger", True):
+        return None
+    try:
+        from .forecast.ovmodel import OVForecaster
+    except Exception:
+        return None
+    # `{city}` is already substituted when the config is loaded.
+    d = cfg.resolve(str(cfg.model.forecaster_dir))
+    if not Path(d).is_dir():
+        return None
+    try:
+        device = getattr(cfg.model, "device", "CPU") or "CPU"
+        f = OVForecaster(d, device=device)
+        log.info("challenger: trained network compiled by OpenVINO on %s "
+                 "(not deployed - it scored below the statistical baseline)",
+                 device)
+        return f
+    except Exception as exc:
+        log.info("challenger unavailable (%s) - the statistical forecast is "
+                 "unaffected", str(exc).split(chr(10))[0][:120])
+        return None
+
+
 # ---------------------------------------------------------------------------
 # Data loading
 # ---------------------------------------------------------------------------
@@ -169,6 +199,7 @@ def predict_future(cfg: Config, panel: pd.DataFrame, model: Any, memory: MemoryS
     t = cfg.training
     stats = panel_stats(panel)
     last_month = int(panel["month"].max())
+    challenger = _load_challenger(cfg)
     rows = []
     for zone in sorted(panel["zone"].unique()):
         ctx = build_predict_context(
@@ -180,7 +211,17 @@ def predict_future(cfg: Config, panel: pd.DataFrame, model: Any, memory: MemoryS
         except Exception as exc:
             log.warning("future prediction failed for %s: %s", zone, exc)
             continue
-        rows.append({"zone": zone, **{f"{m}_pred": pred[m] for m in METRICS}})
+        row = {"zone": zone, **{f"{m}_pred": pred[m] for m in METRICS}}
+        # The network's answer, for comparison only. Wrapped tightly: this
+        # is a demonstration of a model that measured WORSE, and it must not
+        # be able to damage the answer that measured better.
+        if challenger is not None:
+            try:
+                alt = challenger.predict(ctx)
+                row.update({f"{m}_pred_challenger": alt[m] for m in METRICS})
+            except Exception as exc:
+                log.debug("challenger failed for %s: %s", zone, exc)
+        rows.append(row)
     return pd.DataFrame(rows)
 
 
@@ -265,6 +306,12 @@ def rank_zones(
         baseline = df["zone"].map(base[m]) if not base.empty else pd.Series(np.nan, index=df.index)
         df[f"{m}_baseline"] = baseline.fillna(df[f"{m}_latest"])
         df[f"{m}_pred_delta"] = df[f"{m}_pred"] - df[f"{m}_baseline"]
+        # The challenger measured against the SAME baseline, so the two
+        # deltas are directly comparable. Absent whenever the network did
+        # not run, which is the normal case on a machine without OpenVINO.
+        alt = f"{m}_pred_challenger"
+        if alt in df.columns:
+            df[f"{m}_challenger_delta"] = df[alt] - df[f"{m}_baseline"]
 
     w = cfg.mcda.weights
     df["c_aqi_worsening"] = normalize(df["aqi_pred_delta"])
@@ -299,6 +346,12 @@ def _ranked_rows_for_model(
             "traffic_pred_delta": round(float(r.traffic_pred_delta), 1),
             "aqi_pred_delta": round(float(r.aqi_pred_delta), 1),
             "ndvi_slope": round(float(r.ndvi_slope), 5),
+            # The trained network's view, run through OpenVINO. Reported for
+            # comparison; it does not enter the score.
+            **{k: round(float(getattr(r, k)), 3)
+               for k in ("aqi_challenger_delta", "traffic_challenger_delta",
+                         "ndvi_challenger_delta")
+               if hasattr(r, k) and getattr(r, k) == getattr(r, k)},
             "plantable_space": round(float(r.plantable_space), 2),
             "n_sites": int(getattr(r, "n_sites", 0)),
         }
@@ -332,7 +385,7 @@ def recommend(
             break
 
     recs = model.recommend(top_rows, lessons)
-    out_dir = cfg.resolve(cfg.run.outputs_dir)
+    out_dir = cfg.resolve_out(cfg.run.outputs_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     _write_outputs(cfg, ranked, recs, train_report, lessons, out_dir, sites, soil)
     return {"ranked": ranked, "recommendations": recs, "outputs_dir": str(out_dir)}
@@ -389,6 +442,7 @@ def _write_outputs(
     csv_cols = [
         "rank", "zone", "score", "traffic_latest", "aqi_latest", "ndvi_latest",
         "traffic_pred", "aqi_pred", "ndvi_pred", "traffic_pred_delta", "aqi_pred_delta",
+        *[c for c in ranked.columns if c.endswith("_challenger_delta")],
         "ndvi_pred_delta", "ndvi_slope", "plantable_space", *n_sites_col, "c_aqi_worsening",
         "c_traffic_worsening", "c_ndvi_decline", "c_low_green_cover", "c_plantable_space",
     ]
@@ -447,6 +501,17 @@ def _write_outputs(
             "ndvi_trend_per_year": round(float(r.ndvi_slope) * 12, 4) if has_ndvi else None,
             # forecast yr-on-yr (yellow signal)
             "ndvi_pred_delta": round(float(r.ndvi_pred_delta), 4) if has_ndvi else None,
+            # The trained network's view of the same year, computed through
+            # Intel OpenVINO. Reported beside the deployed forecast, never
+            # mixed into it and never part of the score: on every shipped
+            # city it measured worse than the statistical model, and the
+            # engine deploys whichever measured better.
+            "challenger": {
+                k.replace("_challenger_delta", ""): round(float(getattr(r, k)), 4)
+                for k in ("aqi_challenger_delta", "traffic_challenger_delta",
+                          "ndvi_challenger_delta")
+                if hasattr(r, k) and getattr(r, k) == getattr(r, k)
+            } or None,
             "plantable_space": round(float(r.plantable_space), 2),
             "plantable_source": (
                 ("bare_ground_sites" if has_sites else "proxy_1_minus_ndvi")
@@ -729,7 +794,7 @@ def run(
         ]
 
     if project_months:
-        out_dir = cfg.resolve(cfg.run.outputs_dir)
+        out_dir = cfg.resolve_out(cfg.run.outputs_dir)
         out_dir.mkdir(parents=True, exist_ok=True)
         summary["projection_file"] = str(project(cfg, panel, model, project_months, out_dir))
 

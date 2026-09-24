@@ -47,14 +47,16 @@ def _clean(obj: Any) -> Any:
         return [_clean(v) for v in obj]
     return obj
 
-from .config import apply_env_overrides, load_config
+from .config import apply_env_overrides, load_config, user_data_dir
 from .engine import load_panel, recommend, train
 from .features.h3grid import cell_boundary_lonlat, cell_center, latlng_to_cell
 from .features.soil import load_soil, species_soil_ok
+from .features import quality
 from . import osmlocal
 from .cities import CityRegistry
-from .reasoning import i18n
+from .reasoning import i18n, intent_model
 from .reasoning.assistant import Assistant
+from .reasoning import llm_assistant
 from .reasoning.client import MockModel, build_model
 from .reasoning.species import SPECIES_KB, kb_by_name, validate_selection
 from .training.memory import MemoryStore
@@ -317,6 +319,14 @@ class Engine:
         if isinstance(self._picker, MockModel):
             self.mock_model = True
         self.assistant = Assistant(self)
+        # Compile the assistant's language model in the background. The first
+        # compile for an integrated GPU is tens of seconds, and the only
+        # acceptable place to spend that is before anybody has asked
+        # anything - never inside a reader's first question.
+        try:
+            llm_assistant.warm()
+        except Exception:          # an optional model may never break startup
+            log.debug("assistant LLM warm-up skipped", exc_info=True)
         self._build_and_train()
 
     def _build_and_train(self) -> None:
@@ -353,7 +363,7 @@ class Engine:
         # restarted - and restarting means reloading the local OSM index,
         # which is minutes. So the map could sit there serving a ranking that
         # no longer existed on disk, with nothing on screen to say so.
-        self._geo_path = cfg.resolve(cfg.run.outputs_dir) / "recommendations.geojson"
+        self._geo_path = cfg.resolve_out(cfg.run.outputs_dir) / "recommendations.geojson"
         self._geo_cache: tuple[float, dict] | None = None
         self.lessons = [
             r.get("lesson", "").strip()
@@ -450,6 +460,17 @@ class Engine:
             "nvidia": "nvidia-llm",
             "openrouter": "openrouter-llm",
         }.get(self.cfg.model.provider, self.cfg.model.provider)
+
+    def _quality(self) -> dict[str, Any]:
+        """Screen the loaded panel once and keep the answer.
+
+        Cached because health() is polled and this walks every zone; the
+        panel does not change between reloads, so recomputing it per request
+        would be work nobody asked for.
+        """
+        if getattr(self, "_quality_cache", None) is None:
+            self._quality_cache = quality.check_panel(self.panel)
+        return self._quality_cache
 
     def _accuracy(self) -> dict[str, Any]:
         """Measured forecast error, for the interface to show.
@@ -575,6 +596,20 @@ class Engine:
             ),
             "greenloss": self.greenloss["count"],
             "assistant": True,
+            # The trained intent classifier, when its weights are present.
+            # Reported with the accuracy it MEASURED, not with a claim, and
+            # {"loaded": false} when it is absent - the assistant works
+            # either way and a reader should be able to tell which.
+            "intent_classifier": intent_model.info(),
+            # The local language model behind the assistant's free-text
+            # answers. Reports what is actually loaded and on which device,
+            # so "is the AI running" has an answer that is not a guess.
+            "assistant_llm": llm_assistant.info(),
+            # What in the loaded data does not look right. Reported rather
+            # than repaired: an implausible reading is sometimes a real
+            # monsoon flush, and silently smoothing it is how a confident
+            # wrong answer gets made.
+            "data_quality": self._quality(),
             "species_kb": len(SPECIES_KB),
             "soil_cells": int(len(self.soil)),
             "languages": [l["code"] for l in i18n.available()],
@@ -675,6 +710,7 @@ class Engine:
             recs = self._fallback.recommend([row], self.lessons)
             used = "offline-engine (LLM unavailable)"
         names = validate_selection(recs[0]["species"]) if recs else []
+        names = self._drop_thirsty(names, _num(body.get("rain_mm_yr"), None))
         species = [self._species_card(n) for n in names]
         return {
             "source": used,
@@ -858,6 +894,40 @@ class Engine:
     # Planting one of these on a small urban plot is a decision to fell it, or
     # the wall next to it, inside twenty years.
     _NEEDS_ROOM = ("large park", "open ground", "wide avenue", "peri-urban")
+
+    def _drop_thirsty(self, names, rain_mm_yr):
+        """Remove species that cannot be established on this much rain.
+
+        The point report's species come from the model picker, which ranks on
+        the cell's pollution and canopy and knows nothing about rainfall. On a
+        200 mm site it was recommending Banyan and Peepal - the two highest
+        establishment-water species in the catalogue, 11,000 and 9,000 L/yr
+        against a median near 4,000. Correct for the cell, indefensible for
+        the climate.
+
+        This drops only what is genuinely unaffordable, and only when the
+        rainfall is actually known. A missing reading removes nothing: an
+        absent measurement must not silently narrow a recommendation.
+        """
+        if rain_mm_yr is None or not (rain_mm_yr < 400):
+            return names
+        kb = {sp["common"]: sp for sp in SPECIES_KB}
+
+        def affordable(n):
+            row = kb.get(n)
+            if not row:
+                return True                 # not in the KB: not ours to judge
+            # The combination that is unaffordable under 400 mm is a LARGE
+            # crown that is not itself drought-frugal: the crown sets how much
+            # water it wants and the water_need says whether it can go without.
+            # A large low-water native (Neem) stays; a large medium-water Ficus
+            # does not.
+            return not (row.get("canopy") == "large"
+                        and row.get("water_need") != "low")
+
+        keep = [n for n in names if affordable(n)]
+        # Never hand back an empty list - a shorter honest answer beats none.
+        return keep or names
 
     def match_species(self, lat=None, lon=None, aqi=None, canopy_pct=None,
                       rain_mm_yr=None, goal="park", limit=5,
@@ -1158,10 +1228,13 @@ def make_handler(registry: CityRegistry):
             self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
             self.send_header("Access-Control-Allow-Headers", "Content-Type")
 
-        def _json(self, obj: Any, code: int = 200) -> None:
+        def _json(self, obj: Any, code: int = 200,
+                  headers: dict[str, str] | None = None) -> None:
             payload = json.dumps(_clean(obj)).encode("utf-8")
             self.send_response(code)
             self._cors()
+            for k, v in (headers or {}).items():
+                self.send_header(k, v)
             self.send_header("Content-Type", "application/json")
             self.send_header("Content-Length", str(len(payload)))
             self.end_headers()
@@ -1214,7 +1287,18 @@ def make_handler(registry: CityRegistry):
             # can be tested without standing a server up.
             root = Path(__file__).resolve().parent.parent
             target = safe_static_path(root, rel, within)
-            if target is None:
+            # Outputs may not live under the install any more. When the
+            # install directory is read-only the engine writes them to the
+            # user's data directory instead (see Config.resolve_out), and a
+            # request for /outputs/... has to follow them there - otherwise
+            # the server keeps serving whatever shipped in the installer and
+            # a freshly computed ranking is written, ignored, and invisible.
+            if within == "outputs":
+                alt_root = user_data_dir()
+                alt = safe_static_path(alt_root, rel, within)
+                if alt is not None and alt.is_file():
+                    target = alt
+            if target is None or not target.is_file():
                 return False
             body = target.read_bytes()
             self.send_response(200)
@@ -1360,13 +1444,42 @@ def make_handler(registry: CityRegistry):
                         ql = unquote_plus(raw[5:])
                     root = Path(__file__).resolve().parent.parent
                     _idx = osm_index_path(root / "data" / "osm")
-                    res = osmlocal.get(_idx,
-                                       focus=_CITY_FOCUS[0],
-                                       radius_km=_CITY_FOCUS[1]).query(ql)
+                    # peek(), not get(): get() BLOCKS on the loader's lock
+                    # until the index is built, which is up to a minute on a
+                    # cold start. Holding a map click for that long is the
+                    # bug this endpoint was written to avoid - see the
+                    # comment on _LOAD_STARTED in osmlocal.
+                    idx = osmlocal.peek()
+                    if idx is None:
+                        # Nobody loading? Start one. The boot warm-up normally
+                        # has, but if it failed this is what stops the answer
+                        # being "warming" forever.
+                        osmlocal.start(_idx, focus=_CITY_FOCUS[0],
+                                       radius_km=_CITY_FOCUS[1])
+                        warming = _idx.is_file()
+                        res = None
+                    else:
+                        warming = False
+                        res = idx.query(ql)
                 except Exception as exc:
                     log.warning("/api/osm failed: %s", exc)
+                    warming = False
                     res = None
-                if res is None:
+                if res is None and warming:
+                    # 503, not 501. "I cannot answer this" and "ask me again
+                    # in a moment" are different claims, and the client spends
+                    # its budget differently on each: a 501 means go to public
+                    # Overpass, a 503 means the fast, unthrottled answer is
+                    # seconds away and worth waiting for.
+                    eta = osmlocal.eta_s()
+                    # The seconds go in the BODY as well as the header: this
+                    # is read from a page on another origin, where a custom
+                    # response header is invisible unless it is named in
+                    # Access-Control-Expose-Headers. The body always arrives.
+                    self._json({"error": "local index still loading",
+                                "warming": True, "retry_after": eta},
+                               503, {"Retry-After": str(eta)})
+                elif res is None:
                     self._json({"error": "not answerable locally"}, 501)
                 else:
                     self._json(res)
@@ -1415,6 +1528,7 @@ def make_handler(registry: CityRegistry):
                     (b.get("context") or {}) if isinstance(b.get("context"), dict) else {}
                 ).assistant.handle(
                     str(b.get("message") or ""), b.get("context"), b.get("lang"),
+                    memory=b.get("memory"),
                 ),
             }
             fn = next((f for pre, f in routes.items() if path.startswith(pre)), None)
@@ -1470,9 +1584,12 @@ def main() -> None:
     #
     # Loading it here instead means the server answers immediately, the map
     # and every engine route work at once, and the feature panels start
-    # working the moment the index is ready. Nothing waits on it: osmlocal
-    # returns None until it is loaded, which is the same path as "not
-    # covered", and that already falls through to the public instance.
+    # working the moment the index is ready. No REQUEST waits on it:
+    # /api/osm peeks rather than calling get(), so a map click arriving
+    # mid-load is told "warming, come back in N seconds" immediately. That
+    # used to be a claim this comment made and the code did not honour -
+    # get() blocks on the loader's lock, so the click stalled for the rest
+    # of the load and then went to public Overpass with no budget left.
     def _warm_osm():
         try:
             idx = osm_index_path(root / "data" / "osm")

@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Green Vision · Invite colleagues</title>
+<!--
+  A TEMPORARY internal tool. Open it from disk (double-click); it needs no
+  server, because the API allows any origin.
+
+  What sending does, in one request:
+    1. creates or updates the colleague's Green Vision account with the
+       details typed here, so their name and organisation are already on
+       their designs and exported BOQ the first time they open the app;
+    2. emails them a branded invitation carrying the download link, their
+       account details, and a sign-in button.
+
+  The key field is not decoration. /invite sends mail to whatever address it
+  is given, so without a shared secret it would be an open mail relay with
+  our Gmail account's reputation attached to it.
+-->
+<style>
+:root{--bg:#f2f5f3;--card:#fff;--ink:#0f2a22;--soft:#5c7168;--line:#dfe6e1;
+      --brand:#0e9f6e;--red:#c0392b;--ok:#0e9f6e;--field:#fff;}
+@media(prefers-color-scheme:dark){:root{--bg:#0c1512;--card:#121c19;--ink:#e8f2ee;
+      --soft:#9fb3aa;--line:#22322c;--field:#0e1815;}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);padding:28px 16px 60px;
+  font:15px/1.6 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;}
+.w{max-width:720px;margin:0 auto;}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;
+  padding:22px 22px;margin-bottom:16px;}
+.h{display:flex;align-items:center;gap:12px;margin-bottom:18px;}
+.h img{width:42px;height:42px;border-radius:11px;display:block;}
+.n{font-size:18px;font-weight:800;letter-spacing:-.2px;}
+.t{font-size:10px;font-weight:700;color:var(--soft);letter-spacing:.13em;}
+h2{font-size:15px;margin:0 0 4px;}
+p.d{color:var(--soft);font-size:13px;margin:0 0 16px;}
+label{display:block;font-size:12px;font-weight:700;color:var(--soft);margin:0 0 5px;}
+input,textarea{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;
+  background:var(--field);color:var(--ink);font:inherit;font-size:14px;}
+textarea{min-height:74px;resize:vertical;}
+.row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:12px;}
+@media(max-width:560px){.row{grid-template-columns:minmax(0,1fr);}}
+.one{margin-bottom:12px;}
+/* The edition chooser. Two cards rather than a select, because which build
+   goes out is the most consequential field on this form and a collapsed
+   dropdown shows only the chosen one - there is no moment where the reader
+   sees what they did not pick. */
+.eds{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:0 0 6px;}
+@media(max-width:560px){.eds{grid-template-columns:minmax(0,1fr);}}
+.ed{border:1px solid var(--line);border-radius:12px;padding:12px 13px;cursor:pointer;
+  display:block;background:var(--field);}
+.ed:hover{border-color:var(--brand);}
+.ed input{position:absolute;opacity:0;width:0;height:0;}
+.ed .nm{font-size:13.5px;font-weight:800;display:flex;align-items:center;gap:7px;}
+.ed .nm:before{content:"";width:13px;height:13px;border-radius:50%;flex:none;
+  border:2px solid var(--line);}
+.ed .ds{font-size:11.5px;color:var(--soft);margin-top:5px;line-height:1.5;}
+.ed.on{border-color:var(--brand);box-shadow:0 0 0 1px var(--brand) inset;}
+.ed.on .nm:before{border-color:var(--brand);background:var(--brand);
+  box-shadow:0 0 0 2px var(--field) inset;}
+button{background:var(--brand);color:#fff;border:0;border-radius:11px;padding:13px 18px;
+  font:inherit;font-weight:700;font-size:15px;cursor:pointer;width:100%;}
+button:disabled{opacity:.55;cursor:default;}
+button.ghost{background:transparent;color:var(--soft);border:1px solid var(--line);
+  font-size:13px;padding:9px 14px;width:auto;}
+.log{margin-top:16px;font-size:13.5px;}
+.log div{padding:9px 12px;border-radius:9px;border:1px solid var(--line);margin-bottom:7px;
+  display:flex;gap:9px;align-items:flex-start;}
+.log .s{font-weight:800;}
+.ok .s{color:var(--ok);} .bad .s{color:var(--red);}
+code{background:rgba(128,128,128,.14);padding:2px 6px;border-radius:5px;font-size:12px;
+  word-break:break-all;}
+.kv{font-size:13px;color:var(--soft);margin:3px 0;}
+</style></head><body><div class="w">
+
+<div class="card">
+  <div class="h">
+    <img src="brand/green-vision-mark-128.png"
+         onerror="this.src='https://green-vision-india.netlify.app/brand/green-vision-mark-128.png'" alt="">
+    <div><div class="n">Green Vision</div><div class="t">INVITE COLLEAGUES</div></div>
+  </div>
+  <h2>Send someone the app</h2>
+  <p class="d">One email: the Windows installer, their account details, and a sign-in
+  button. Their account is created here, so their name and organisation are already
+  filled in the first time they open it.</p>
+
+  <div class="one">
+    <label for="key">Invite key</label>
+    <input id="key" type="password" placeholder="paste the key" autocomplete="off">
+  </div>
+</div>
+
+<div class="card">
+  <div class="row">
+    <div><label for="name">Full name</label><input id="name" placeholder="Aarti Mehta"></div>
+    <div><label for="email">Email</label><input id="email" type="email" placeholder="aarti@example.org"></div>
+  </div>
+  <div class="row">
+    <div><label for="org">Organisation</label><input id="org" placeholder="Ahmedabad Municipal Corporation"></div>
+    <div><label for="role">Role</label><input id="role" placeholder="Urban planner"></div>
+  </div>
+  <div class="row">
+    <div><label for="city">City</label><input id="city" placeholder="Ahmedabad"></div>
+    <div><label for="state">State</label><input id="state" placeholder="Gujarat"></div>
+  </div>
+  <div class="one">
+    <label for="note">A line from you <span style="font-weight:400">(optional)</span></label>
+    <textarea id="note" placeholder="Have a look at the Traffic tab for the SBR Road corridor — curious what you think."></textarea>
+  </div>
+  <div class="one">
+    <label>Which build to send</label>
+    <div class="eds">
+      <label class="ed on" id="edManaged">
+        <input type="radio" name="ed" value="managed" checked>
+        <span class="nm">Managed &mdash; sign-in required</span>
+        <span class="ds">An account is needed to use the app at all, so revoking
+          their access on the admin page actually blocks them. Send this one.</span>
+      </label>
+      <label class="ed" id="edOpen">
+        <input type="radio" name="ed" value="open">
+        <span class="nm">Open &mdash; sign-in optional</span>
+        <span class="ds">Works fully without an account. Revoking removes saved
+          projects and the Library but leaves a working planner. Keep this one.</span>
+      </label>
+    </div>
+    <p class="d" id="edWarn" style="margin:8px 0 0;display:none">
+      Heads up: revoking access will not stop them using the open build &mdash;
+      the analysis engine and the map index are inside the installer, on their
+      own machine.</p>
+  </div>
+  <button id="send">Send the invitation</button>
+  <div class="log" id="log"></div>
+</div>
+
+<div class="card">
+  <h2>What they receive</h2>
+  <p class="kv">Download &nbsp;·&nbsp; <code id="dl"></code></p>
+  <p class="kv">Size &nbsp;·&nbsp; 178 MB, Windows 10/11, 64-bit</p>
+  <p class="kv">SHA-256 &nbsp;·&nbsp; <code id="sha"></code></p>
+  <p class="d" style="margin-top:12px">The installer is unsigned, so Windows SmartScreen
+  shows “Windows protected your PC”. The email and the download page both explain that,
+  and tell them to click <b>More info → Run anyway</b>. Nothing else to install: Python,
+  the analysis engine and the 2.6-million-feature map index all ship inside it.</p>
+  <button class="ghost" id="copy">Copy the download link</button>
+</div>
+
+</div>
+<script>
+const API = "https://green-vision-api.greenvision-rk.workers.dev";
+const DOWNLOAD = "https://github.com/RKTHEGOAT837/green-vision-releases/releases/latest";
+
+
+const $ = id => document.getElementById(id);
+const log = $("log");
+
+/* The key is remembered so a run of ten invitations does not mean typing it
+   ten times, but it lives only in this browser and never leaves it except
+   as the request that uses it. */
+try { $("key").value = localStorage.getItem("gv_invite_key") || ""; } catch (e) {}
+
+function line(cls, who, msg) {
+  const d = document.createElement("div");
+  d.className = cls;
+  d.innerHTML = '<span class="s">' + (cls === "ok" ? "sent" : "failed") + '</span>' +
+                '<span>' + who + ' — ' + msg + '</span>';
+  log.prepend(d);
+}
+
+/* Which build the form is currently set to send. */
+const FILES = {
+  managed: "https://github.com/RKTHEGOAT837/green-vision-releases/releases/latest/download/GreenVision-Managed-1.1.1-x64.exe",
+  open:    "https://github.com/RKTHEGOAT837/green-vision-releases/releases/latest/download/GreenVision-1.1.1-x64.exe"
+};
+const SHA = {
+  managed: "fb277ea6ff5de78eba3c8bb16e8914f3653ece5a669cc45fe18859de0e647026",
+  open:    "2f15071d71598753db23b863bbf7b9cb238b27efc5e74948b950e94b50cf1e66"
+};
+function edition() {
+  const el = document.querySelector('input[name="ed"]:checked');
+  return el ? el.value : "managed";
+}
+function edSync() {
+  const e = edition();
+  for (const l of document.querySelectorAll(".ed"))
+    l.classList.toggle("on", l.querySelector("input").checked);
+  /* The warning appears only for the open build. Shown always it would be
+     wallpaper; shown on the one choice it applies to, it is a fact. */
+  $("edWarn").style.display = e === "open" ? "block" : "none";
+  $("dl").textContent = FILES[e];
+  $("sha").textContent = SHA[e];
+}
+for (const i of document.querySelectorAll('input[name="ed"]')) i.onchange = edSync;
+edSync();
+
+$("copy").onclick = () => navigator.clipboard.writeText(FILES[edition()])
+  .then(() => { $("copy").textContent = "Copied"; setTimeout(() => $("copy").textContent = "Copy the download link", 1400); });
+
+$("send").onclick = async () => {
+  const key = $("key").value.trim();
+  const email = $("email").value.trim();
+  if (!key)   return line("bad", "—", "enter the invite key first");
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(email))
+    return line("bad", email || "—", "that is not an email address");
+
+  try { localStorage.setItem("gv_invite_key", key); } catch (e) {}
+
+  const btn = $("send");
+  btn.disabled = true; btn.textContent = "Sending…";
+  try {
+    const r = await fetch(API + "/invite", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        key, email,
+        name: $("name").value.trim(), org:  $("org").value.trim(),
+        role: $("role").value.trim(), city: $("city").value.trim(),
+        state: $("state").value.trim(), note: $("note").value.trim(),
+        edition: edition(),
+        download: FILES[edition()]
+      })
+    });
+    const j = await r.json().catch(() => ({}));
+    if (r.ok && j.ok) {
+      /* The edition is echoed back from the server, not from this page, so
+         the log says what was actually sent rather than what was asked for. */
+      const ed = (j.edition || edition()) === "managed" ? "managed build" : "open build";
+      line("ok", email, (j.isNew ? "account created, " : "account existed, ") +
+                        ed + " sent");
+      ["name", "email", "org", "role", "note"].forEach(f => $(f).value = "");
+    } else if (r.status === 403) {
+      line("bad", email, "the invite key was rejected");
+    } else {
+      line("bad", email, (j.error || ("HTTP " + r.status)));
+    }
+  } catch (e) {
+    line("bad", email, "could not reach the API — " + e.message);
+  } finally {
+    btn.disabled = false; btn.textContent = "Send the invitation";
+  }
+};
+</script></body></html>

@@ -37,6 +37,8 @@ import json
 import logging
 import math
 import re
+import threading
+import time
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -407,7 +409,33 @@ class LocalOSM:
         # trailing `out geom` = the geometry shape.
         modes = [(m.group("mode") or "").lower() for m in outs]
         count_mode = all(m == "count" for m in modes)
-        geom_mode = (not count_mode) and any(m == "geom" for m in modes)
+        # `out geom` asks for full geometry; `out body`, `out meta`, `out skel`
+        # and a bare `out` ask for the element itself. For a NODE those are the
+        # same answer - a node IS its coordinate - and the index emits lat/lon
+        # for nodes either way, so refusing `body` bought nothing.
+        #
+        # It cost the Traffic tab, which is where this was found. Its second
+        # query - traffic signals, level crossings, motorway junctions - ends
+        # `out body qt 1200`, and `body` was in the _OUT regex but not in this
+        # accept list, so `query()` returned None and the server answered 501.
+        # The client then did exactly what a 501 tells it to and went to the
+        # public Overpass instance, which throttles: the roads came back from
+        # the local index in half a second and the junctions sat waiting out a
+        # rate limit, so the panel loaded with nothing on it. Signal and
+        # junction density is one of the three inputs the congestion model
+        # uses, so this was not a cosmetic loss.
+        #
+        # WAY geometry is a different matter. Real Overpass `out body` on a way
+        # returns node REFERENCES, not coordinates, and this index does not
+        # hold the node table to resolve them - so answering a way query with
+        # full geometry would be returning a shape the caller did not ask for.
+        # `body` is therefore accepted only when every statement is a node;
+        # a way asking for `body` still gets the honest refusal.
+        node_only = all(st.group("type").lower() == "node" for st in stmts)
+        body_mode = (not count_mode) and node_only and any(
+            m in ("body", "meta", "skel", "") for m in modes)
+        geom_mode = (not count_mode) and (
+            any(m == "geom" for m in modes) or body_mode)
         # `out bb` returns a bounding box per feature instead of full geometry.
         # The site finder uses it for compact obstacles (buildings, pools, car
         # parks) where a box is a fair stand-in for the footprint.
@@ -531,6 +559,90 @@ def _as_overpass(rec: dict, bounds_only: bool = False) -> dict:
 
 _INSTANCE: LocalOSM | None = None
 
+# One loader at a time. The server is a ThreadingHTTPServer, so several map
+# reads arrive CONCURRENTLY on a cold start - the area panel, the traffic
+# tab and the studio all ask at once. Without this lock every one of them
+# saw `_INSTANCE is None` and each began its own full load of the same file:
+# four threads parsing the same gzip, competing for the same disk and the
+# same GIL, and the machine paging. Measured cold, that turned reads that
+# should take a second into 60-150 s each and roughly ten minutes before the
+# app settled - the "surroundings unavailable, then suddenly fine" that this
+# lock exists to end.
+#
+# The double check around it is the standard one: the fast path stays
+# lock-free once the index is built, which is every call after the first.
+_LOAD_LOCK = threading.Lock()
+
+# When the one loader started, or None when nobody is loading. `peek()` reads
+# it to answer "not yet, come back" WITHOUT joining the queue behind the lock.
+#
+# This is the difference between a request that returns in a millisecond and
+# one that returns in fifty seconds. /api/osm used to call get(), which blocks
+# on the lock above until the index is built - so a map click during the
+# warm-up did not fall through to the public instance as the code claimed, it
+# STALLED for the rest of the load, blew the studio's 25 s budget, and only
+# then went to public Overpass with nothing left. Which is exactly when the
+# public instance is most likely to throttle, so the feature census came back
+# empty while a local index that answers the same query in 0.07 s finished
+# loading a few seconds later.
+_LOAD_STARTED: float | None = None
+# Roughly how long a cold load takes, used only to tell a caller when to
+# come back. Measured on the shipped slim index: 120 s for 2.6M features
+# across five cities, so this is that with room to spare. Wrong high costs
+# one late poll; wrong low costs a burst of early ones.
+_LOAD_BUDGET_S = 150.0
+
+
+def peek() -> LocalOSM | None:
+    """The index if it is already built, else None. NEVER blocks."""
+    return _INSTANCE
+
+
+def warming() -> bool:
+    """True when a load is under way and has not finished."""
+    return _INSTANCE is None and _LOAD_STARTED is not None
+
+
+def eta_s() -> int:
+    """Roughly how many seconds until a warming index is ready, at least 2.
+
+    A caller that is told to come back needs a number to come back AFTER;
+    guessing it client-side would bake this file's load time into the page."""
+    if _INSTANCE is not None:
+        return 0
+    if _LOAD_STARTED is None:
+        return int(_LOAD_BUDGET_S)
+    # An estimate that has run out must not count down to zero. The budget
+    # is a guess - the shipped index measured 120 s on one machine and 166 s
+    # on another - and a load that overruns it is still a load in progress.
+    # Answering "10 s" forever is honest ("I do not know, keep asking") and
+    # holds the caller at a sane polling rate; counting down to 1 would have
+    # it asking every second for however long the overrun lasts.
+    left = int(_LOAD_BUDGET_S - (time.time() - _LOAD_STARTED))
+    return left if left > 10 else 10
+
+
+def start(index_path: Path | str = "data/osm/index.jsonl.gz",
+          focus: tuple[float, float] | list[tuple[float, float]] | None = None,
+          radius_km: float = 60.0) -> None:
+    """Begin building the index in the background if nobody has yet.
+
+    The server warms the index at boot, so this is a safety net rather than
+    the usual path: it exists so that a /api/osm arriving on a server whose
+    warm-up thread died still gets an index eventually, instead of being told
+    "warming" forever by a loader that is not running."""
+    global _LOAD_STARTED
+    if _INSTANCE is not None or _LOAD_STARTED is not None:
+        return
+    # Claimed here, not in the thread: two requests arriving in the same
+    # millisecond would both see None and both spawn a loader. The lock in
+    # get() would keep them from parsing twice, but the second thread would
+    # sit on it for the whole load for no reason.
+    _LOAD_STARTED = time.time()
+    threading.Thread(
+        target=lambda: get(index_path, focus=focus, radius_km=radius_km),
+        name="osm-load", daemon=True).start()
+
 
 def get(index_path: Path | str = "data/osm/index.jsonl.gz",
         focus: tuple[float, float] | list[tuple[float, float]] | None = None,
@@ -539,8 +651,18 @@ def get(index_path: Path | str = "data/osm/index.jsonl.gz",
 
     `focus` should be the city being planned — greenplan.server passes the
     centre of config/city.yaml's bbox. Loading is bounded to a disc around it
-    so memory stays in tens of megabytes rather than over a gigabyte."""
-    global _INSTANCE
-    if _INSTANCE is None:
-        _INSTANCE = LocalOSM(Path(index_path), focus=focus, radius_km=radius_km)
+    so memory stays in tens of megabytes rather than over a gigabyte.
+
+    Callers that arrive while the index is loading BLOCK here until it is
+    ready, rather than starting a second load. Waiting on the one loader is
+    both faster and less memory than racing it."""
+    global _INSTANCE, _LOAD_STARTED
+    if _INSTANCE is not None:
+        return _INSTANCE
+    with _LOAD_LOCK:
+        # Re-check: another thread may have finished while we waited.
+        if _INSTANCE is None:
+            if _LOAD_STARTED is None:
+                _LOAD_STARTED = time.time()
+            _INSTANCE = LocalOSM(Path(index_path), focus=focus, radius_km=radius_km)
     return _INSTANCE

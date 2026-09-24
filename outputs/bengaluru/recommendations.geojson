@@ -58,6 +58,11 @@
         "ndvi_latest": 0.424,
         "ndvi_trend_per_year": -0.0196,
         "ndvi_pred_delta": -0.0869,
+        "challenger": {
+          "aqi": 17.4328,
+          "traffic": 0.0,
+          "ndvi": -0.1734
+        },
         "plantable_space": 0.29,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -135,6 +140,11 @@
         "ndvi_latest": 0.366,
         "ndvi_trend_per_year": -0.0279,
         "ndvi_pred_delta": -0.0612,
+        "challenger": {
+          "aqi": 16.9899,
+          "traffic": 0.0,
+          "ndvi": -0.1574
+        },
         "plantable_space": 0.39,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -142,7 +152,7 @@
           "Siris",
           "Neem",
           "Shisham",
-          "Banyan"
+          "Pongamia (Karanj)"
         ],
         "justification": "Priority score 0.783: predicted AQI change +14.9, NDVI trend -0.0278/yr with canopy at 0.37 and plantable-space 0.39. Species chosen for pollution tolerance and fit to available space. Soil pH 6.5 (neutral), sandy clay loam \u2014 species filtered for soil fit.",
         "components": {
@@ -212,6 +222,11 @@
         "ndvi_latest": 0.421,
         "ndvi_trend_per_year": -0.0162,
         "ndvi_pred_delta": -0.1383,
+        "challenger": {
+          "aqi": 17.3837,
+          "traffic": 0.0,
+          "ndvi": -0.2183
+        },
         "plantable_space": 0.3,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -289,6 +304,11 @@
         "ndvi_latest": 0.333,
         "ndvi_trend_per_year": -0.0192,
         "ndvi_pred_delta": -0.0998,
+        "challenger": {
+          "aqi": 17.1895,
+          "traffic": 0.0,
+          "ndvi": -0.1369
+        },
         "plantable_space": 0.44,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -366,6 +386,11 @@
         "ndvi_latest": 0.344,
         "ndvi_trend_per_year": -0.0186,
         "ndvi_pred_delta": -0.0762,
+        "challenger": {
+          "aqi": 17.1256,
+          "traffic": 0.0,
+          "ndvi": -0.1556
+        },
         "plantable_space": 0.43,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -443,6 +468,11 @@
         "ndvi_latest": 0.338,
         "ndvi_trend_per_year": -0.0175,
         "ndvi_pred_delta": -0.1025,
+        "challenger": {
+          "aqi": 17.1612,
+          "traffic": 0.0,
+          "ndvi": -0.1488
+        },
         "plantable_space": 0.44,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -520,6 +550,11 @@
         "ndvi_latest": 0.406,
         "ndvi_trend_per_year": -0.0093,
         "ndvi_pred_delta": -0.1811,
+        "challenger": {
+          "aqi": 17.1461,
+          "traffic": 0.0,
+          "ndvi": -0.252
+        },
         "plantable_space": 0.32,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -597,6 +632,11 @@
         "ndvi_latest": 0.361,
         "ndvi_trend_per_year": -0.0141,
         "ndvi_pred_delta": -0.1031,
+        "challenger": {
+          "aqi": 17.0194,
+          "traffic": 0.0,
+          "ndvi": -0.1877
+        },
         "plantable_space": 0.4,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -674,6 +714,11 @@
         "ndvi_latest": 0.27,
         "ndvi_trend_per_year": -0.0086,
         "ndvi_pred_delta": -0.0392,
+        "challenger": {
+          "aqi": 17.1355,
+          "traffic": 0.0,
+          "ndvi": -0.0918
+        },
         "plantable_space": 0.55,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -751,6 +796,11 @@
         "ndvi_latest": 0.315,
         "ndvi_trend_per_year": -0.0119,
         "ndvi_pred_delta": -0.047,
+        "challenger": {
+          "aqi": 17.3105,
+          "traffic": 0.0,
+          "ndvi": -0.1529
+        },
         "plantable_space": 0.47,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -828,6 +878,11 @@
         "ndvi_latest": 0.331,
         "ndvi_trend_per_year": -0.0124,
         "ndvi_pred_delta": -0.1611,
+        "challenger": {
+          "aqi": 17.2036,
+          "traffic": 0.0,
+          "ndvi": -0.1589
+        },
         "plantable_space": 0.45,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -900,6 +955,11 @@
         "ndvi_latest": 0.435,
         "ndvi_trend_per_year": -0.0167,
         "ndvi_pred_delta": -0.1845,
+        "challenger": {
+          "aqi": 14.8043,
+          "traffic": 0.0,
+          "ndvi": -0.2705
+        },
         "plantable_space": 0.27,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -972,6 +1032,11 @@
         "ndvi_latest": 0.257,
         "ndvi_trend_per_year": -0.0061,
         "ndvi_pred_delta": -0.0615,
+        "challenger": {
+          "aqi": 17.0587,
+          "traffic": 0.0,
+          "ndvi": -0.1004
+        },
         "plantable_space": 0.57,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -1036,6 +1101,11 @@
         "ndvi_latest": 0.414,
         "ndvi_trend_per_year": -0.0025,
         "ndvi_pred_delta": -0.1984,
+        "challenger": {
+          "aqi": 17.2627,
+          "traffic": 0.0,
+          "ndvi": -0.2675
+        },
         "plantable_space": 0.31,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -1108,6 +1178,11 @@
         "ndvi_latest": 0.449,
         "ndvi_trend_per_year": -0.0035,
         "ndvi_pred_delta": -0.0641,
+        "challenger": {
+          "aqi": 17.8433,
+          "traffic": 0.0,
+          "ndvi": -0.1974
+        },
         "plantable_space": 0.25,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -1180,6 +1255,11 @@
         "ndvi_latest": 0.323,
         "ndvi_trend_per_year": -0.007,
         "ndvi_pred_delta": -0.1034,
+        "challenger": {
+          "aqi": 17.2595,
+          "traffic": 0.0,
+          "ndvi": -0.1449
+        },
         "plantable_space": 0.46,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -1244,6 +1324,11 @@
         "ndvi_latest": 0.318,
         "ndvi_trend_per_year": -0.0064,
         "ndvi_pred_delta": -0.1927,
+        "challenger": {
+          "aqi": 17.2995,
+          "traffic": 0.0,
+          "ndvi": -0.1498
+        },
         "plantable_space": 0.47,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -1316,6 +1401,11 @@
         "ndvi_latest": 0.36,
         "ndvi_trend_per_year": -0.0073,
         "ndvi_pred_delta": -0.1549,
+        "challenger": {
+          "aqi": 17.0268,
+          "traffic": 0.0,
+          "ndvi": -0.1818
+        },
         "plantable_space": 0.4,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -1380,6 +1470,11 @@
         "ndvi_latest": 0.296,
         "ndvi_trend_per_year": -0.003,
         "ndvi_pred_delta": -0.0502,
+        "challenger": {
+          "aqi": 17.2921,
+          "traffic": 0.0,
+          "ndvi": -0.1334
+        },
         "plantable_space": 0.51,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -1444,6 +1539,11 @@
         "ndvi_latest": 0.388,
         "ndvi_trend_per_year": -0.0055,
         "ndvi_pred_delta": -0.1871,
+        "challenger": {
+          "aqi": 16.9549,
+          "traffic": 0.0,
+          "ndvi": -0.2527
+        },
         "plantable_space": 0.35,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -1516,6 +1616,11 @@
         "ndvi_latest": 0.405,
         "ndvi_trend_per_year": -0.0045,
         "ndvi_pred_delta": -0.1998,
+        "challenger": {
+          "aqi": 17.1284,
+          "traffic": 0.0,
+          "ndvi": -0.2605
+        },
         "plantable_space": 0.33,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -1588,6 +1693,11 @@
         "ndvi_latest": 0.27,
         "ndvi_trend_per_year": -0.0019,
         "ndvi_pred_delta": -0.0489,
+        "challenger": {
+          "aqi": 17.1331,
+          "traffic": 0.0,
+          "ndvi": -0.123
+        },
         "plantable_space": 0.55,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -1660,6 +1770,11 @@
         "ndvi_latest": 0.385,
         "ndvi_trend_per_year": -0.0039,
         "ndvi_pred_delta": -0.1701,
+        "challenger": {
+          "aqi": 16.9518,
+          "traffic": 0.0,
+          "ndvi": -0.2311
+        },
         "plantable_space": 0.36,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -1732,6 +1847,11 @@
         "ndvi_latest": 0.41,
         "ndvi_trend_per_year": 0.0037,
         "ndvi_pred_delta": -0.1667,
+        "challenger": {
+          "aqi": 17.1972,
+          "traffic": 0.0,
+          "ndvi": -0.2476
+        },
         "plantable_space": 0.32,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -1804,6 +1924,11 @@
         "ndvi_latest": 0.415,
         "ndvi_trend_per_year": 0.0026,
         "ndvi_pred_delta": -0.147,
+        "challenger": {
+          "aqi": 17.2823,
+          "traffic": 0.0,
+          "ndvi": -0.2463
+        },
         "plantable_space": 0.31,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -1876,6 +2001,11 @@
         "ndvi_latest": 0.419,
         "ndvi_trend_per_year": -0.0092,
         "ndvi_pred_delta": -0.1857,
+        "challenger": {
+          "aqi": 14.5346,
+          "traffic": 0.0,
+          "ndvi": -0.2633
+        },
         "plantable_space": 0.3,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -1948,6 +2078,11 @@
         "ndvi_latest": 0.334,
         "ndvi_trend_per_year": -0.0069,
         "ndvi_pred_delta": -0.1265,
+        "challenger": {
+          "aqi": 17.1864,
+          "traffic": 0.0,
+          "ndvi": -0.1526
+        },
         "plantable_space": 0.44,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -2020,6 +2155,11 @@
         "ndvi_latest": 0.326,
         "ndvi_trend_per_year": -0.0012,
         "ndvi_pred_delta": -0.1445,
+        "challenger": {
+          "aqi": 17.2331,
+          "traffic": 0.0,
+          "ndvi": -0.1553
+        },
         "plantable_space": 0.46,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -2092,6 +2232,11 @@
         "ndvi_latest": 0.284,
         "ndvi_trend_per_year": -0.016,
         "ndvi_pred_delta": -0.1296,
+        "challenger": {
+          "aqi": 13.9097,
+          "traffic": 0.0,
+          "ndvi": -0.0791
+        },
         "plantable_space": 0.53,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -2164,6 +2309,11 @@
         "ndvi_latest": 0.377,
         "ndvi_trend_per_year": -0.0159,
         "ndvi_pred_delta": -0.1224,
+        "challenger": {
+          "aqi": 14.3475,
+          "traffic": 0.0,
+          "ndvi": -0.1831
+        },
         "plantable_space": 0.37,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -2228,6 +2378,11 @@
         "ndvi_latest": 0.257,
         "ndvi_trend_per_year": -0.0019,
         "ndvi_pred_delta": -0.0693,
+        "challenger": {
+          "aqi": 17.0599,
+          "traffic": 0.0,
+          "ndvi": -0.112
+        },
         "plantable_space": 0.57,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -2292,6 +2447,11 @@
         "ndvi_latest": 0.266,
         "ndvi_trend_per_year": -0.002,
         "ndvi_pred_delta": -0.0662,
+        "challenger": {
+          "aqi": 17.1127,
+          "traffic": 0.0,
+          "ndvi": -0.1186
+        },
         "plantable_space": 0.56,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -2356,6 +2516,11 @@
         "ndvi_latest": 0.317,
         "ndvi_trend_per_year": 0.0015,
         "ndvi_pred_delta": -0.0675,
+        "challenger": {
+          "aqi": 17.3054,
+          "traffic": 0.0,
+          "ndvi": -0.1636
+        },
         "plantable_space": 0.47,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -2420,6 +2585,11 @@
         "ndvi_latest": 0.318,
         "ndvi_trend_per_year": 0.0014,
         "ndvi_pred_delta": -0.1512,
+        "challenger": {
+          "aqi": 17.2995,
+          "traffic": 0.0,
+          "ndvi": -0.1535
+        },
         "plantable_space": 0.47,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -2484,6 +2654,11 @@
         "ndvi_latest": 0.439,
         "ndvi_trend_per_year": 0.0056,
         "ndvi_pred_delta": -0.152,
+        "challenger": {
+          "aqi": 17.6716,
+          "traffic": 0.0,
+          "ndvi": -0.2687
+        },
         "plantable_space": 0.27,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -2548,6 +2723,11 @@
         "ndvi_latest": 0.329,
         "ndvi_trend_per_year": 0.001,
         "ndvi_pred_delta": -0.0799,
+        "challenger": {
+          "aqi": 17.2159,
+          "traffic": 0.0,
+          "ndvi": -0.1688
+        },
         "plantable_space": 0.45,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -2620,6 +2800,11 @@
         "ndvi_latest": 0.443,
         "ndvi_trend_per_year": -0.0094,
         "ndvi_pred_delta": -0.1512,
+        "challenger": {
+          "aqi": 14.9236,
+          "traffic": 0.0,
+          "ndvi": -0.2465
+        },
         "plantable_space": 0.26,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -2692,6 +2877,11 @@
         "ndvi_latest": 0.266,
         "ndvi_trend_per_year": -0.001,
         "ndvi_pred_delta": -0.1182,
+        "challenger": {
+          "aqi": 17.1097,
+          "traffic": 0.0,
+          "ndvi": -0.1221
+        },
         "plantable_space": 0.56,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -2756,6 +2946,11 @@
         "ndvi_latest": 0.295,
         "ndvi_trend_per_year": 0.0007,
         "ndvi_pred_delta": -0.1435,
+        "challenger": {
+          "aqi": 17.2861,
+          "traffic": 0.0,
+          "ndvi": -0.1407
+        },
         "plantable_space": 0.51,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -2820,6 +3015,11 @@
         "ndvi_latest": 0.465,
         "ndvi_trend_per_year": -0.0139,
         "ndvi_pred_delta": -0.1687,
+        "challenger": {
+          "aqi": 15.2929,
+          "traffic": 0.0,
+          "ndvi": -0.2445
+        },
         "plantable_space": 0.22,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -2892,6 +3092,11 @@
         "ndvi_latest": 0.428,
         "ndvi_trend_per_year": 0.0089,
         "ndvi_pred_delta": -0.1464,
+        "challenger": {
+          "aqi": 17.5047,
+          "traffic": 0.0,
+          "ndvi": -0.2577
+        },
         "plantable_space": 0.29,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -2956,6 +3161,11 @@
         "ndvi_latest": 0.332,
         "ndvi_trend_per_year": 0.0022,
         "ndvi_pred_delta": -0.1744,
+        "challenger": {
+          "aqi": 17.1956,
+          "traffic": 0.0,
+          "ndvi": -0.1766
+        },
         "plantable_space": 0.45,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -3020,6 +3230,11 @@
         "ndvi_latest": 0.338,
         "ndvi_trend_per_year": 0.0018,
         "ndvi_pred_delta": -0.1197,
+        "challenger": {
+          "aqi": 17.1606,
+          "traffic": 0.0,
+          "ndvi": -0.19
+        },
         "plantable_space": 0.44,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -3092,6 +3307,11 @@
         "ndvi_latest": 0.351,
         "ndvi_trend_per_year": 0.0007,
         "ndvi_pred_delta": -0.105,
+        "challenger": {
+          "aqi": 17.0802,
+          "traffic": 0.0,
+          "ndvi": -0.1684
+        },
         "plantable_space": 0.41,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -3156,6 +3376,11 @@
         "ndvi_latest": 0.28,
         "ndvi_trend_per_year": 0.004,
         "ndvi_pred_delta": -0.1554,
+        "challenger": {
+          "aqi": 17.1973,
+          "traffic": 0.0,
+          "ndvi": -0.1364
+        },
         "plantable_space": 0.53,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -3220,6 +3445,11 @@
         "ndvi_latest": 0.453,
         "ndvi_trend_per_year": -0.0079,
         "ndvi_pred_delta": -0.1799,
+        "challenger": {
+          "aqi": 15.0903,
+          "traffic": 0.0,
+          "ndvi": -0.2669
+        },
         "plantable_space": 0.24,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -3292,6 +3522,11 @@
         "ndvi_latest": 0.264,
         "ndvi_trend_per_year": 0.0011,
         "ndvi_pred_delta": -0.0761,
+        "challenger": {
+          "aqi": 17.1007,
+          "traffic": 0.0,
+          "ndvi": -0.1194
+        },
         "plantable_space": 0.56,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -3356,6 +3591,11 @@
         "ndvi_latest": 0.256,
         "ndvi_trend_per_year": 0.0016,
         "ndvi_pred_delta": -0.1168,
+        "challenger": {
+          "aqi": 17.0539,
+          "traffic": 0.0,
+          "ndvi": -0.1205
+        },
         "plantable_space": 0.57,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -3420,6 +3660,11 @@
         "ndvi_latest": 0.332,
         "ndvi_trend_per_year": 0.0042,
         "ndvi_pred_delta": -0.1686,
+        "challenger": {
+          "aqi": 17.2012,
+          "traffic": 0.0,
+          "ndvi": -0.1826
+        },
         "plantable_space": 0.45,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -3484,6 +3729,11 @@
         "ndvi_latest": 0.286,
         "ndvi_trend_per_year": 0.0045,
         "ndvi_pred_delta": -0.0769,
+        "challenger": {
+          "aqi": 17.2297,
+          "traffic": 0.0,
+          "ndvi": -0.1526
+        },
         "plantable_space": 0.52,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -3548,6 +3798,11 @@
         "ndvi_latest": 0.349,
         "ndvi_trend_per_year": 0.0064,
         "ndvi_pred_delta": -0.1124,
+        "challenger": {
+          "aqi": 17.0937,
+          "traffic": 0.0,
+          "ndvi": -0.1874
+        },
         "plantable_space": 0.42,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -3612,6 +3867,11 @@
         "ndvi_latest": 0.313,
         "ndvi_trend_per_year": -0.009,
         "ndvi_pred_delta": -0.0766,
+        "challenger": {
+          "aqi": 14.1005,
+          "traffic": 0.0,
+          "ndvi": -0.1383
+        },
         "plantable_space": 0.48,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -3684,6 +3944,11 @@
         "ndvi_latest": 0.484,
         "ndvi_trend_per_year": -0.0043,
         "ndvi_pred_delta": -0.1963,
+        "challenger": {
+          "aqi": 18.3309,
+          "traffic": 0.0,
+          "ndvi": -0.3401
+        },
         "plantable_space": 0.19,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -3756,6 +4021,11 @@
         "ndvi_latest": 0.293,
         "ndvi_trend_per_year": 0.0051,
         "ndvi_pred_delta": -0.1402,
+        "challenger": {
+          "aqi": 17.2753,
+          "traffic": 0.0,
+          "ndvi": -0.1547
+        },
         "plantable_space": 0.51,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -3820,6 +4090,11 @@
         "ndvi_latest": 0.359,
         "ndvi_trend_per_year": 0.0053,
         "ndvi_pred_delta": -0.121,
+        "challenger": {
+          "aqi": 17.0323,
+          "traffic": 0.0,
+          "ndvi": -0.2005
+        },
         "plantable_space": 0.4,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -3884,6 +4159,11 @@
         "ndvi_latest": 0.494,
         "ndvi_trend_per_year": -0.018,
         "ndvi_pred_delta": -0.1832,
+        "challenger": {
+          "aqi": 15.6517,
+          "traffic": 0.0,
+          "ndvi": -0.2917
+        },
         "plantable_space": 0.18,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -3956,6 +4236,11 @@
         "ndvi_latest": 0.317,
         "ndvi_trend_per_year": 0.0079,
         "ndvi_pred_delta": -0.1045,
+        "challenger": {
+          "aqi": 17.3061,
+          "traffic": 0.0,
+          "ndvi": -0.1746
+        },
         "plantable_space": 0.47,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -4020,6 +4305,11 @@
         "ndvi_latest": 0.468,
         "ndvi_trend_per_year": -0.0081,
         "ndvi_pred_delta": -0.2046,
+        "challenger": {
+          "aqi": 15.3338,
+          "traffic": 0.0,
+          "ndvi": -0.3124
+        },
         "plantable_space": 0.22,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -4092,6 +4382,11 @@
         "ndvi_latest": 0.513,
         "ndvi_trend_per_year": -0.0184,
         "ndvi_pred_delta": -0.1705,
+        "challenger": {
+          "aqi": 15.7733,
+          "traffic": 0.0,
+          "ndvi": -0.2944
+        },
         "plantable_space": 0.14,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -4164,6 +4459,11 @@
         "ndvi_latest": 0.397,
         "ndvi_trend_per_year": -0.0015,
         "ndvi_pred_delta": -0.14,
+        "challenger": {
+          "aqi": 14.3229,
+          "traffic": 0.0,
+          "ndvi": -0.2321
+        },
         "plantable_space": 0.34,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -4236,6 +4536,11 @@
         "ndvi_latest": 0.453,
         "ndvi_trend_per_year": 0.0046,
         "ndvi_pred_delta": -0.1266,
+        "challenger": {
+          "aqi": 17.9087,
+          "traffic": 0.0,
+          "ndvi": -0.2472
+        },
         "plantable_space": 0.24,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -4308,6 +4613,11 @@
         "ndvi_latest": 0.303,
         "ndvi_trend_per_year": -0.0047,
         "ndvi_pred_delta": -0.1233,
+        "challenger": {
+          "aqi": 14.0288,
+          "traffic": 0.0,
+          "ndvi": -0.1278
+        },
         "plantable_space": 0.5,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -4372,6 +4682,11 @@
         "ndvi_latest": 0.375,
         "ndvi_trend_per_year": -0.0084,
         "ndvi_pred_delta": -0.1408,
+        "challenger": {
+          "aqi": 14.3639,
+          "traffic": 0.0,
+          "ndvi": -0.1994
+        },
         "plantable_space": 0.38,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -4436,6 +4751,11 @@
         "ndvi_latest": 0.425,
         "ndvi_trend_per_year": -0.0003,
         "ndvi_pred_delta": -0.1952,
+        "challenger": {
+          "aqi": 14.6327,
+          "traffic": 0.0,
+          "ndvi": -0.2747
+        },
         "plantable_space": 0.29,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -4508,6 +4828,11 @@
         "ndvi_latest": 0.456,
         "ndvi_trend_per_year": 0.0085,
         "ndvi_pred_delta": -0.0964,
+        "challenger": {
+          "aqi": 17.9561,
+          "traffic": 0.0,
+          "ndvi": -0.2422
+        },
         "plantable_space": 0.24,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -4580,6 +4905,11 @@
         "ndvi_latest": 0.336,
         "ndvi_trend_per_year": -0.006,
         "ndvi_pred_delta": -0.1123,
+        "challenger": {
+          "aqi": 14.2292,
+          "traffic": 0.0,
+          "ndvi": -0.1612
+        },
         "plantable_space": 0.44,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -4644,6 +4974,11 @@
         "ndvi_latest": 0.352,
         "ndvi_trend_per_year": -0.0041,
         "ndvi_pred_delta": -0.1696,
+        "challenger": {
+          "aqi": 14.3181,
+          "traffic": 0.0,
+          "ndvi": -0.1811
+        },
         "plantable_space": 0.41,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -4716,6 +5051,11 @@
         "ndvi_latest": 0.491,
         "ndvi_trend_per_year": -0.0147,
         "ndvi_pred_delta": -0.1375,
+        "challenger": {
+          "aqi": 15.6233,
+          "traffic": 0.0,
+          "ndvi": -0.2481
+        },
         "plantable_space": 0.18,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -4788,6 +5128,11 @@
         "ndvi_latest": 0.444,
         "ndvi_trend_per_year": 0.0029,
         "ndvi_pred_delta": -0.1673,
+        "challenger": {
+          "aqi": 14.9367,
+          "traffic": 0.0,
+          "ndvi": -0.272
+        },
         "plantable_space": 0.26,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -4860,6 +5205,11 @@
         "ndvi_latest": 0.413,
         "ndvi_trend_per_year": 0.0061,
         "ndvi_pred_delta": -0.13,
+        "challenger": {
+          "aqi": 17.2594,
+          "traffic": 0.0,
+          "ndvi": -0.2313
+        },
         "plantable_space": 0.31,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -4932,6 +5282,11 @@
         "ndvi_latest": 0.54,
         "ndvi_trend_per_year": -0.0002,
         "ndvi_pred_delta": -0.2503,
+        "challenger": {
+          "aqi": 18.6542,
+          "traffic": 0.0,
+          "ndvi": -0.3934
+        },
         "plantable_space": 0.1,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -5004,6 +5359,11 @@
         "ndvi_latest": 0.504,
         "ndvi_trend_per_year": -0.012,
         "ndvi_pred_delta": -0.1414,
+        "challenger": {
+          "aqi": 15.7204,
+          "traffic": 0.0,
+          "ndvi": -0.298
+        },
         "plantable_space": 0.16,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -5076,6 +5436,11 @@
         "ndvi_latest": 0.325,
         "ndvi_trend_per_year": -0.0073,
         "ndvi_pred_delta": -0.1585,
+        "challenger": {
+          "aqi": 14.1686,
+          "traffic": 0.0,
+          "ndvi": -0.1362
+        },
         "plantable_space": 0.46,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -5148,6 +5513,11 @@
         "ndvi_latest": 0.537,
         "ndvi_trend_per_year": 0.0013,
         "ndvi_pred_delta": -0.2056,
+        "challenger": {
+          "aqi": 18.6409,
+          "traffic": 0.0,
+          "ndvi": -0.3566
+        },
         "plantable_space": 0.1,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -5220,6 +5590,11 @@
         "ndvi_latest": 0.304,
         "ndvi_trend_per_year": 0.0017,
         "ndvi_pred_delta": -0.1474,
+        "challenger": {
+          "aqi": 14.0376,
+          "traffic": 0.0,
+          "ndvi": -0.1498
+        },
         "plantable_space": 0.49,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -5284,6 +5659,11 @@
         "ndvi_latest": 0.471,
         "ndvi_trend_per_year": 0.0062,
         "ndvi_pred_delta": -0.1479,
+        "challenger": {
+          "aqi": 18.1787,
+          "traffic": 0.0,
+          "ndvi": -0.2905
+        },
         "plantable_space": 0.22,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -5356,6 +5736,11 @@
         "ndvi_latest": 0.417,
         "ndvi_trend_per_year": 0.0047,
         "ndvi_pred_delta": -0.2209,
+        "challenger": {
+          "aqi": 14.4971,
+          "traffic": 0.0,
+          "ndvi": -0.2779
+        },
         "plantable_space": 0.31,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -5420,6 +5805,11 @@
         "ndvi_latest": 0.327,
         "ndvi_trend_per_year": 0.0042,
         "ndvi_pred_delta": -0.1409,
+        "challenger": {
+          "aqi": 14.1782,
+          "traffic": 0.0,
+          "ndvi": -0.1761
+        },
         "plantable_space": 0.46,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -5484,6 +5874,11 @@
         "ndvi_latest": 0.544,
         "ndvi_trend_per_year": 0.003,
         "ndvi_pred_delta": -0.256,
+        "challenger": {
+          "aqi": 18.6766,
+          "traffic": 0.0,
+          "ndvi": -0.3847
+        },
         "plantable_space": 0.09,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -5556,6 +5951,11 @@
         "ndvi_latest": 0.285,
         "ndvi_trend_per_year": 0.0016,
         "ndvi_pred_delta": -0.159,
+        "challenger": {
+          "aqi": 13.9152,
+          "traffic": 0.0,
+          "ndvi": -0.1403
+        },
         "plantable_space": 0.53,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -5620,6 +6020,11 @@
         "ndvi_latest": 0.435,
         "ndvi_trend_per_year": -0.0031,
         "ndvi_pred_delta": -0.1293,
+        "challenger": {
+          "aqi": 14.801,
+          "traffic": 0.0,
+          "ndvi": -0.23
+        },
         "plantable_space": 0.27,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -5692,6 +6097,11 @@
         "ndvi_latest": 0.54,
         "ndvi_trend_per_year": 0.0125,
         "ndvi_pred_delta": -0.103,
+        "challenger": {
+          "aqi": 18.6574,
+          "traffic": 0.0,
+          "ndvi": -0.3198
+        },
         "plantable_space": 0.1,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -5764,6 +6174,11 @@
         "ndvi_latest": 0.491,
         "ndvi_trend_per_year": 0.0005,
         "ndvi_pred_delta": -0.1599,
+        "challenger": {
+          "aqi": 15.6233,
+          "traffic": 0.0,
+          "ndvi": -0.3204
+        },
         "plantable_space": 0.18,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -5836,6 +6251,11 @@
         "ndvi_latest": 0.311,
         "ndvi_trend_per_year": 0.0061,
         "ndvi_pred_delta": -0.1453,
+        "challenger": {
+          "aqi": 14.0822,
+          "traffic": 0.0,
+          "ndvi": -0.168
+        },
         "plantable_space": 0.48,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -5908,6 +6328,11 @@
         "ndvi_latest": 0.355,
         "ndvi_trend_per_year": 0.0034,
         "ndvi_pred_delta": -0.2035,
+        "challenger": {
+          "aqi": 14.3362,
+          "traffic": 0.0,
+          "ndvi": -0.2023
+        },
         "plantable_space": 0.41,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -5980,6 +6405,11 @@
         "ndvi_latest": 0.534,
         "ndvi_trend_per_year": 0.001,
         "ndvi_pred_delta": -0.1625,
+        "challenger": {
+          "aqi": 15.8909,
+          "traffic": 0.0,
+          "ndvi": -0.3674
+        },
         "plantable_space": 0.11,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -6052,6 +6482,11 @@
         "ndvi_latest": 0.562,
         "ndvi_trend_per_year": 0.0107,
         "ndvi_pred_delta": -0.2446,
+        "challenger": {
+          "aqi": 18.7705,
+          "traffic": 0.0,
+          "ndvi": -0.4242
+        },
         "plantable_space": 0.06,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -6124,6 +6559,11 @@
         "ndvi_latest": 0.488,
         "ndvi_trend_per_year": 0.0074,
         "ndvi_pred_delta": -0.1562,
+        "challenger": {
+          "aqi": 15.5853,
+          "traffic": 0.0,
+          "ndvi": -0.3195
+        },
         "plantable_space": 0.19,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -6188,6 +6628,11 @@
         "ndvi_latest": 0.57,
         "ndvi_trend_per_year": -0.0004,
         "ndvi_pred_delta": -0.2388,
+        "challenger": {
+          "aqi": 16.0332,
+          "traffic": 0.0,
+          "ndvi": -0.4291
+        },
         "plantable_space": 0.05,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -6260,6 +6705,11 @@
         "ndvi_latest": 0.496,
         "ndvi_trend_per_year": 0.0093,
         "ndvi_pred_delta": -0.1677,
+        "challenger": {
+          "aqi": 15.6749,
+          "traffic": 0.0,
+          "ndvi": -0.3471
+        },
         "plantable_space": 0.17,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -6324,6 +6774,11 @@
         "ndvi_latest": 0.551,
         "ndvi_trend_per_year": 0.003,
         "ndvi_pred_delta": -0.2275,
+        "challenger": {
+          "aqi": 15.9889,
+          "traffic": 0.0,
+          "ndvi": -0.4201
+        },
         "plantable_space": 0.08,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -6396,6 +6851,9 @@
         "ndvi_latest": 0.348,
         "ndvi_trend_per_year": -0.001,
         "ndvi_pred_delta": -0.133,
+        "challenger": {
+          "ndvi": -0.3384
+        },
         "plantable_space": 0.42,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -6459,6 +6917,9 @@
         "ndvi_latest": 0.389,
         "ndvi_trend_per_year": 0.0031,
         "ndvi_pred_delta": -0.1359,
+        "challenger": {
+          "ndvi": -0.3789
+        },
         "plantable_space": 0.35,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -6530,6 +6991,10 @@
         "ndvi_latest": null,
         "ndvi_trend_per_year": null,
         "ndvi_pred_delta": null,
+        "challenger": {
+          "aqi": 10.5626,
+          "traffic": 0.0
+        },
         "plantable_space": null,
         "plantable_source": null,
         "n_sites": 0,
@@ -6600,6 +7065,10 @@
         "ndvi_latest": null,
         "ndvi_trend_per_year": null,
         "ndvi_pred_delta": null,
+        "challenger": {
+          "aqi": 10.5626,
+          "traffic": 0.0
+        },
         "plantable_space": null,
         "plantable_source": null,
         "n_sites": 0,
@@ -6670,6 +7139,10 @@
         "ndvi_latest": null,
         "ndvi_trend_per_year": null,
         "ndvi_pred_delta": null,
+        "challenger": {
+          "aqi": 10.5626,
+          "traffic": 0.0
+        },
         "plantable_space": null,
         "plantable_source": null,
         "n_sites": 0,
@@ -6740,6 +7213,9 @@
         "ndvi_latest": 0.472,
         "ndvi_trend_per_year": 0.0048,
         "ndvi_pred_delta": -0.1628,
+        "challenger": {
+          "ndvi": -0.4625
+        },
         "plantable_space": 0.21,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -6811,6 +7287,9 @@
         "ndvi_latest": 0.406,
         "ndvi_trend_per_year": -0.004,
         "ndvi_pred_delta": -0.1467,
+        "challenger": {
+          "ndvi": -0.3957
+        },
         "plantable_space": 0.32,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -6882,6 +7361,9 @@
         "ndvi_latest": 0.474,
         "ndvi_trend_per_year": -0.0051,
         "ndvi_pred_delta": -0.1676,
+        "challenger": {
+          "ndvi": -0.4641
+        },
         "plantable_space": 0.21,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -6953,6 +7435,9 @@
         "ndvi_latest": 0.47,
         "ndvi_trend_per_year": 0.0066,
         "ndvi_pred_delta": -0.1653,
+        "challenger": {
+          "ndvi": -0.4605
+        },
         "plantable_space": 0.22,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -7024,6 +7509,9 @@
         "ndvi_latest": 0.422,
         "ndvi_trend_per_year": -0.0119,
         "ndvi_pred_delta": -0.1756,
+        "challenger": {
+          "ndvi": -0.412
+        },
         "plantable_space": 0.3,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -7095,6 +7583,9 @@
         "ndvi_latest": 0.356,
         "ndvi_trend_per_year": -0.0107,
         "ndvi_pred_delta": -0.1345,
+        "challenger": {
+          "ndvi": -0.3458
+        },
         "plantable_space": 0.41,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -7166,6 +7657,9 @@
         "ndvi_latest": 0.317,
         "ndvi_trend_per_year": -0.0209,
         "ndvi_pred_delta": -0.0373,
+        "challenger": {
+          "ndvi": -0.3074
+        },
         "plantable_space": 0.47,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -7237,6 +7731,9 @@
         "ndvi_latest": 0.271,
         "ndvi_trend_per_year": -0.0242,
         "ndvi_pred_delta": -0.0397,
+        "challenger": {
+          "ndvi": -0.2607
+        },
         "plantable_space": 0.55,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -7308,6 +7805,9 @@
         "ndvi_latest": 0.297,
         "ndvi_trend_per_year": -0.0073,
         "ndvi_pred_delta": -0.0253,
+        "challenger": {
+          "ndvi": -0.2868
+        },
         "plantable_space": 0.51,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -7379,6 +7879,9 @@
         "ndvi_latest": 0.271,
         "ndvi_trend_per_year": -0.008,
         "ndvi_pred_delta": -0.0469,
+        "challenger": {
+          "ndvi": -0.2609
+        },
         "plantable_space": 0.55,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -7442,6 +7945,9 @@
         "ndvi_latest": 0.46,
         "ndvi_trend_per_year": -0.0356,
         "ndvi_pred_delta": -0.0853,
+        "challenger": {
+          "ndvi": -0.4501
+        },
         "plantable_space": 0.23,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -7513,6 +8019,9 @@
         "ndvi_latest": 0.381,
         "ndvi_trend_per_year": -0.0072,
         "ndvi_pred_delta": -0.0659,
+        "challenger": {
+          "ndvi": -0.3712
+        },
         "plantable_space": 0.36,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -7584,6 +8093,9 @@
         "ndvi_latest": 0.445,
         "ndvi_trend_per_year": -0.0107,
         "ndvi_pred_delta": -0.1594,
+        "challenger": {
+          "ndvi": -0.4348
+        },
         "plantable_space": 0.26,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -7655,6 +8167,9 @@
         "ndvi_latest": 0.197,
         "ndvi_trend_per_year": -0.0099,
         "ndvi_pred_delta": -0.0094,
+        "challenger": {
+          "ndvi": -0.1874
+        },
         "plantable_space": 0.67,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -7718,6 +8233,9 @@
         "ndvi_latest": 0.282,
         "ndvi_trend_per_year": -0.0101,
         "ndvi_pred_delta": -0.0455,
+        "challenger": {
+          "ndvi": -0.2723
+        },
         "plantable_space": 0.53,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -7789,6 +8307,9 @@
         "ndvi_latest": 0.271,
         "ndvi_trend_per_year": -0.0046,
         "ndvi_pred_delta": -0.0538,
+        "challenger": {
+          "ndvi": -0.2606
+        },
         "plantable_space": 0.55,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -7852,6 +8373,9 @@
         "ndvi_latest": 0.278,
         "ndvi_trend_per_year": 0.0203,
         "ndvi_pred_delta": 0.0075,
+        "challenger": {
+          "ndvi": -0.2684
+        },
         "plantable_space": 0.54,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -7915,6 +8439,9 @@
         "ndvi_latest": 0.315,
         "ndvi_trend_per_year": -0.0112,
         "ndvi_pred_delta": -0.0603,
+        "challenger": {
+          "ndvi": -0.3047
+        },
         "plantable_space": 0.48,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -7986,6 +8513,9 @@
         "ndvi_latest": 0.296,
         "ndvi_trend_per_year": -0.0146,
         "ndvi_pred_delta": -0.0195,
+        "challenger": {
+          "ndvi": -0.2861
+        },
         "plantable_space": 0.51,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -8057,6 +8587,9 @@
         "ndvi_latest": 0.265,
         "ndvi_trend_per_year": -0.0027,
         "ndvi_pred_delta": -0.0356,
+        "challenger": {
+          "ndvi": -0.2548
+        },
         "plantable_space": 0.56,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -8120,6 +8653,9 @@
         "ndvi_latest": 0.348,
         "ndvi_trend_per_year": -0.0116,
         "ndvi_pred_delta": -0.0805,
+        "challenger": {
+          "ndvi": -0.3378
+        },
         "plantable_space": 0.42,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -8191,6 +8727,9 @@
         "ndvi_latest": 0.282,
         "ndvi_trend_per_year": -0.0085,
         "ndvi_pred_delta": -0.1087,
+        "challenger": {
+          "ndvi": -0.2722
+        },
         "plantable_space": 0.53,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -8262,6 +8801,9 @@
         "ndvi_latest": 0.46,
         "ndvi_trend_per_year": -0.0232,
         "ndvi_pred_delta": -0.1775,
+        "challenger": {
+          "ndvi": -0.45
+        },
         "plantable_space": 0.23,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -8333,6 +8875,9 @@
         "ndvi_latest": 0.345,
         "ndvi_trend_per_year": -0.0056,
         "ndvi_pred_delta": -0.1157,
+        "challenger": {
+          "ndvi": -0.335
+        },
         "plantable_space": 0.43,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -8404,6 +8949,9 @@
         "ndvi_latest": 0.461,
         "ndvi_trend_per_year": 0.0029,
         "ndvi_pred_delta": -0.1956,
+        "challenger": {
+          "ndvi": -0.4512
+        },
         "plantable_space": 0.23,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -8475,6 +9023,9 @@
         "ndvi_latest": 0.408,
         "ndvi_trend_per_year": -0.0017,
         "ndvi_pred_delta": -0.1388,
+        "challenger": {
+          "ndvi": -0.3978
+        },
         "plantable_space": 0.32,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -8546,6 +9097,9 @@
         "ndvi_latest": 0.425,
         "ndvi_trend_per_year": -0.0024,
         "ndvi_pred_delta": -0.1797,
+        "challenger": {
+          "ndvi": -0.4155
+        },
         "plantable_space": 0.29,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -8617,6 +9171,9 @@
         "ndvi_latest": 0.299,
         "ndvi_trend_per_year": -0.0065,
         "ndvi_pred_delta": -0.1024,
+        "challenger": {
+          "ndvi": -0.2888
+        },
         "plantable_space": 0.5,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -8680,6 +9237,9 @@
         "ndvi_latest": 0.357,
         "ndvi_trend_per_year": -0.004,
         "ndvi_pred_delta": -0.1299,
+        "challenger": {
+          "ndvi": -0.3466
+        },
         "plantable_space": 0.41,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -8743,6 +9303,9 @@
         "ndvi_latest": 0.36,
         "ndvi_trend_per_year": -0.0096,
         "ndvi_pred_delta": -0.1169,
+        "challenger": {
+          "ndvi": -0.3498
+        },
         "plantable_space": 0.4,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -8814,6 +9377,9 @@
         "ndvi_latest": 0.542,
         "ndvi_trend_per_year": -0.0174,
         "ndvi_pred_delta": -0.2503,
+        "challenger": {
+          "ndvi": -0.5325
+        },
         "plantable_space": 0.1,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -8885,6 +9451,9 @@
         "ndvi_latest": 0.508,
         "ndvi_trend_per_year": -0.0168,
         "ndvi_pred_delta": -0.1833,
+        "challenger": {
+          "ndvi": -0.4977
+        },
         "plantable_space": 0.15,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -8956,6 +9525,9 @@
         "ndvi_latest": 0.429,
         "ndvi_trend_per_year": -0.0311,
         "ndvi_pred_delta": -0.1669,
+        "challenger": {
+          "ndvi": -0.4193
+        },
         "plantable_space": 0.28,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -9027,6 +9599,9 @@
         "ndvi_latest": 0.502,
         "ndvi_trend_per_year": -0.0223,
         "ndvi_pred_delta": -0.2063,
+        "challenger": {
+          "ndvi": -0.492
+        },
         "plantable_space": 0.16,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -9098,6 +9673,9 @@
         "ndvi_latest": 0.408,
         "ndvi_trend_per_year": -0.0248,
         "ndvi_pred_delta": -0.1774,
+        "challenger": {
+          "ndvi": -0.3981
+        },
         "plantable_space": 0.32,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -9169,6 +9747,9 @@
         "ndvi_latest": 0.422,
         "ndvi_trend_per_year": -0.0288,
         "ndvi_pred_delta": -0.1666,
+        "challenger": {
+          "ndvi": -0.4119
+        },
         "plantable_space": 0.3,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
@@ -9240,6 +9821,9 @@
         "ndvi_latest": 0.416,
         "ndvi_trend_per_year": -0.0248,
         "ndvi_pred_delta": -0.1968,
+        "challenger": {
+          "ndvi": -0.4063
+        },
         "plantable_space": 0.31,
         "plantable_source": "proxy_1_minus_ndvi",
         "n_sites": 0,
