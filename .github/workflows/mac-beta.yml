@@ -31,6 +31,9 @@ on:
         type: boolean
         default: true
 
+permissions:
+  contents: write              # so the runner can publish the build itself
+
 jobs:
   build:
     runs-on: macos-14          # Apple Silicon
@@ -156,3 +159,28 @@ jobs:
           name: greenvision-mac-beta-${{ inputs.version }}
           path: desktop/release/*.zip
           if-no-files-found: error
+
+      # Publish from the runner, not through a laptop.
+      #
+      # The build is about 2 GB. Pulling that down over a home connection
+      # and pushing the same bytes back up to a release is slow, and it
+      # failed halfway the first time it was tried - "an existing connection
+      # was forcibly closed". The runner already has the files and is next
+      # door to GitHub's storage, so it uploads them itself.
+      #
+      # The release lives in THIS repository rather than the downloads one,
+      # because the token a workflow is given only reaches its own repo.
+      # The download page reads the mac assets from here and the Windows
+      # ones from there; both are resolved from the API at page load, so
+      # neither goes stale.
+      - name: Publish the mac beta
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -eux
+          TAG="mac-v${{ inputs.version }}"
+          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1             || gh release create "$TAG" --repo "$GITHUB_REPOSITORY"                  --title "Green Vision ${{ inputs.version }} for macOS (beta)"                  --notes "Unsigned beta. Unzip, drag Green Vision to Applications, then right-click it and choose Open the first time.
+
+          Built by the macOS beta workflow from ${GITHUB_SHA}."
+          gh release upload "$TAG" --repo "$GITHUB_REPOSITORY"             --clobber desktop/release/*.zip
+          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json assets             --jq '.assets[] | "\(.name)  \(.size)"'
