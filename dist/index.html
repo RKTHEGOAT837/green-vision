@@ -1377,6 +1377,83 @@ function greenZoomFor(b) {
   return null;
 }
 
+/* CANOPY, MEASURED AT A FIXED SCALE.
+
+   The headline percentage used to be whatever the raster happened to be
+   drawn from, and the raster is drawn at whatever zoom fits the viewport
+   inside the tile budget. So the number moved with the map. Measured over
+   the same ground at Bopal: 10% at z11, 17% at z13, 19% at z15, 23% at
+   z16, with "bare" going 80% down to 51%. A planner reading 10% and a
+   planner reading 23% were looking at the same trees.
+
+   The cause is not a bug in the arithmetic. Esri generalises its imagery
+   as you zoom out: at z11 one pixel is about 76 m of ground, so a row of
+   trees along a road is averaged together with the road and the roofs
+   either side of it and never reaches the greenness threshold. Only at
+   crown scale - a pixel of a few metres - does the index measure what it
+   claims to.
+
+   So the statistic is now taken at a FIXED zoom, from a sample of tiles
+   spread evenly across the view, independent of how far the reader has
+   zoomed. The picture still redraws at whatever zoom fits, because a
+   picture that only covers part of the screen is worse than a coarse one;
+   the number beside it no longer depends on that choice. */
+const GREEN_READ_Z = 16;           // ~2.4 m a pixel here: a crown is several
+const GREEN_SAMPLE_TILES = 25;     // spread across the view, not contiguous
+
+async function greenSampleCanopy(b) {
+  const z = GREEN_READ_Z;
+  const xmin = lon2x(b.getWest(), z), xmax = lon2x(b.getEast(), z);
+  const ymin = lat2y(b.getNorth(), z), ymax = lat2y(b.getSouth(), z);
+  const cols = xmax - xmin + 1, rows = ymax - ymin + 1;
+  if (cols < 1 || rows < 1) return null;
+
+  /* Evenly spaced, not the first 25. A contiguous block in one corner
+     measures that corner; a spread measures the view. */
+  const want = Math.max(1, Math.round(Math.sqrt(GREEN_SAMPLE_TILES)));
+  const nx = Math.min(cols, want), ny = Math.min(rows, want);
+  const picks = [];
+  for (let j = 0; j < ny; j++) {
+    for (let i = 0; i < nx; i++) {
+      picks.push([xmin + Math.floor(((i + 0.5) * cols) / nx),
+                  ymin + Math.floor(((j + 0.5) * rows) / ny)]);
+    }
+  }
+
+  const cv = document.createElement("canvas");
+  cv.width = 256; cv.height = 256;
+  const cx = cv.getContext("2d", { willReadFrequently: true });
+  let sum = 0, n = 0, bare = 0, cells = 0;
+  for (const [tx, ty] of picks) {
+    let im = null;
+    try { im = await loadTile(z, tx, ty); } catch (e) { im = null; }
+    if (!im) continue;
+    cx.clearRect(0, 0, 256, 256);
+    cx.drawImage(im, 0, 0);
+    let data;
+    try { data = cx.getImageData(0, 0, 256, 256).data; } catch (e) { return null; }
+    let ts = 0, tn = 0;
+    for (let py = 0; py < 256; py += 4) {
+      for (let px = 0; px < 256; px += 4) {
+        const i = (py * 256 + px) * 4;
+        if (data[i + 3] < 200) continue;
+        const br = (data[i] + data[i + 1] + data[i + 2]) / 3;
+        if (br < 16 || br > 244) continue;      // shadow or blown highlight
+        ts += vegScore(data[i], data[i + 1], data[i + 2]);
+        tn++;
+      }
+    }
+    if (tn < 40) continue;
+    const f = ts / tn;
+    sum += f; cells++;
+    if (f < 0.20) bare++;
+    n += tn;
+  }
+  if (!cells) return null;
+  return { pct: Math.round((sum / cells) * 100), z, tiles: cells, px: n,
+           bare: Math.round((bare / cells) * 100) };
+}
+
 async function drawGreen() {
   if (!GVG.showCanopy) { greenClearRaster(); greenLegend(); return; }
   if (GVG.busy) return;
@@ -1451,12 +1528,29 @@ async function drawGreen() {
                                   [y2lat(ymax + 1, z), x2lon(xmax + 1, z)]);
     GVG.raster = L.imageOverlay(out.toDataURL(), bounds,
                                 { opacity: 1, interactive: false }).addTo(map);
+    /* The picture is drawn from the tiles above; the NUMBER is measured
+       separately at a fixed scale, so it does not move when the reader
+       zooms. Drawn first and measured second, because the raster is what
+       the reader is waiting to see. */
     GVG.stats = {
       pct: cells ? Math.round((sumFrac / cells) * 100) : 0,
       cells, z, hist,
-      bare: cells ? Math.round((hist[0] + hist[1]) / cells * 100) : 0
+      bare: cells ? Math.round((hist[0] + hist[1]) / cells * 100) : 0,
+      measuring: true
     };
     greenLegend();
+
+    try {
+      const fixed = await greenSampleCanopy(b);
+      if (gen === GVG.gen && currentView === "green" && fixed) {
+        GVG.stats = { pct: fixed.pct, cells: fixed.tiles, z: fixed.z, hist,
+                      bare: fixed.bare, fixedScale: true };
+        greenLegend();
+      } else if (gen === GVG.gen && currentView === "green") {
+        GVG.stats = { ...GVG.stats, measuring: false };
+        greenLegend();
+      }
+    } catch (e) { /* the picture stands without the measurement */ }
   } finally {
     GVG.busy = false;
   }
@@ -1665,9 +1759,17 @@ function greenLegend() {
     head = '<div class="gl-big">—</div><div class="gl-sub">Imagery blocked by the ' +
            'browser. Serve the page over http:// to read canopy.</div>';
   } else if (st) {
-    head = '<div class="gl-big">' + st.pct + '%</div>' +
-           '<div class="gl-sub">canopy in view · ' + st.cells.toLocaleString() +
-           ' samples at z' + st.z + '</div>' +
+    /* Say the scale, because the scale is the whole reason this number can
+       be trusted against the one on the Area panel. */
+    head = '<div class="gl-big">' + st.pct + '%' +
+             (st.measuring ? '<em class="gl-wait">&nbsp;·&nbsp;·&nbsp;·</em>' : '') +
+           '</div>' +
+           '<div class="gl-sub">canopy across the view · ' +
+             (st.fixedScale
+               ? st.cells.toLocaleString() + ' tiles sampled at z' + st.z +
+                 ' (about 2 m a pixel)'
+               : 'measuring at crown scale…') +
+           '</div>' +
            '<div class="gl-sub">' + st.bare + '% reads as bare or near-bare</div>';
   } else {
     head = '<div class="gl-big gl-wait">·&nbsp;·&nbsp;·</div>' +
@@ -9882,6 +9984,14 @@ function buildShell() {
           <h3 id="gvDockTitle">GreenVision Studio</h3>
           <div class="gv-docksub" id="gvDockSub"></div>
         </div>
+        <button class="gv-dockclose" id="gvDockHome" title="Back to the start screen" aria-label="Back to the start screen">
+          <svg viewBox="0 0 24 24" width="16" fill="none" stroke="currentColor" stroke-width="2.2"
+               stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>
+        </button>
+        <button class="gv-dockclose" id="gvDockHelp" title="Email support" aria-label="Email support">
+          <svg viewBox="0 0 24 24" width="16" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>
+        </button>
         <button class="gv-dockclose" id="gvDockRail" title="Collapse to a strip" aria-label="Collapse panel">
           <svg viewBox="0 0 24 24" width="16" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M15 6l-6 6 6 6"/></svg>
         </button>
@@ -9914,6 +10024,23 @@ function buildShell() {
   if (lr) lr.onclick = e => { e.stopPropagation(); GVLAY.resetAll(); };
   const dr = $("#gvDockRail");
   if (dr) dr.onclick = e => { e.stopPropagation(); railDock(); };
+
+  /* Back to the start screen.
+
+     There was no way back to it. Once "Open the map" was clicked the
+     splash was display:none for the rest of the session, so the goal
+     picker - which decides what the studio suggests and what the species
+     table is filtered to - could not be changed without reloading the
+     app. Reloading also throws away the area that has been read.
+
+     This puts the screen back without touching anything else: the map,
+     the AOI, the readings and any design all stay exactly as they were,
+     and "Open the map" returns to them. */
+  const dh = $("#gvDockHome");
+  if (dh) dh.onclick = e => { e.stopPropagation(); gvGoStart(); };
+
+  const dhelp = $("#gvDockHelp");
+  if (dhelp) dhelp.onclick = e => { e.stopPropagation(); gvEmailSupport(); };
   gvlSidebarResize($("#gvDock"), "left", "--gv-dock-w", "dock");
   gvlSidebarResize($("#panel"), "right", "--gv-panel-w", "panel");
   // ...and let them leave their edge entirely. Dragging by the header floats
@@ -10048,6 +10175,60 @@ function closeDock() {
    never contains land. The figures had changed; the only thing on screen
    was the one number that could not. "The button does nothing" is exactly
    what that looks like. */
+/* Show the start screen again, keeping the session behind it. */
+function gvGoStart() {
+  const intro = document.getElementById("intro");
+  if (!intro) return;
+  // Clear the inline display the entry button set, so the stylesheet's own
+  // flex layout comes back rather than a guessed value.
+  intro.style.display = "";
+  intro.scrollTop = 0;
+  /* The dock would otherwise sit on top of a full-screen overlay at a
+     lower z-index, which reads as the screen having half-opened. */
+  closeDock();
+  if (typeof closeSheet === "function") closeSheet();
+}
+window.gvGoStart = gvGoStart;
+
+/* Email support, with the version and place already filled in.
+
+   A support message that says "it does not work" costs two more emails to
+   become actionable. The version, the edition, the platform and the area
+   being looked at are exactly what the first reply would have to ask for,
+   and the reader can delete any of it before sending. Nothing is sent from
+   here: this opens their own mail client with a draft. */
+const GV_SUPPORT_EMAIL = "greenvision.support@gmail.com";
+function gvEmailSupport() {
+  const D = window.__GV_DESKTOP__;
+  const lines = [
+    "",
+    "",
+    "--- the app filled this in, delete anything you would rather not send ---",
+    "Version: " + ((D && D.version) || "web"),
+    "Platform: " + ((D && D.platform) || navigator.platform || "browser"),
+    "Language: " + ((window.GVI18N && GVI18N.lang) || document.documentElement.lang || "en"),
+    "Looking at: " + (window.lastPlace ||
+      (GV.aoi ? round(GV.aoi.lat, 4) + ", " + round(GV.aoi.lon, 4) : "nowhere yet")),
+    "View: " + (window.currentViewName ? currentViewName() : "?")
+  ];
+  const url = "mailto:" + GV_SUPPORT_EMAIL +
+    "?subject=" + encodeURIComponent("Green Vision support") +
+    "&body=" + encodeURIComponent(lines.join("\n"));
+  /* The desktop opens links in the reader's own browser through the shell,
+     and a mailto through window.open would be denied by the window handler
+     and land nowhere. */
+  try {
+    if (D && typeof D.openWindow === "function" && /^mailto:/.test(url)) {
+      window.location.href = url;
+    } else {
+      window.location.href = url;
+    }
+  } catch (e) {
+    toast("Email " + GV_SUPPORT_EMAIL);
+  }
+}
+window.gvEmailSupport = gvEmailSupport;
+
 function dockBody(html, keep) {
   const b = $("#gvDockBody");
   if (!b) return;
@@ -14677,13 +14858,19 @@ function priReport(props){
              props.aqi_latest>150?"#ef4444":props.aqi_latest>100?"#f5a623":"#12b981") +
       metric("Air predicted", fmtDelta(props.aqi_pred_delta),
              "AQI change over the horizon", null, null) +
-      metric("Canopy now", props.ndvi_latest!=null?props.ndvi_latest.toFixed(3):"—",
-             "MODIS vegetation index",
+      /* NDVI is not canopy cover, and calling it "Canopy now" put a 0.19
+         next to an 11.7% on the Area panel with both labelled canopy, for
+         the same ground. One is a greenness index from MODIS at 250 m; the
+         other is the share of a satellite image that reads as vegetation.
+         They measure different things on different scales and a planner
+         comparing them is comparing nothing. The name now says which. */
+      metric("Greenness (NDVI)", props.ndvi_latest!=null?props.ndvi_latest.toFixed(3):"—",
+             "MODIS index, 250 m · not a canopy percentage",
              props.ndvi_latest!=null?clamp(props.ndvi_latest*160,0,100):null) +
-      metric("Canopy trend", fmtDelta(props.ndvi_trend_per_year,4),
+      metric("Greenness trend", fmtDelta(props.ndvi_trend_per_year,4),
              "per year, Theil–Sen", null,
              props.ndvi_trend_per_year<0?"#ef4444":"#12b981") +
-      metric("Canopy predicted", fmtDelta(props.ndvi_pred_delta,4),
+      metric("Greenness predicted", fmtDelta(props.ndvi_pred_delta,4),
              "change over the horizon", null,
              props.ndvi_pred_delta<0?"#ef4444":"#12b981") +
       metric("Plantable space",
