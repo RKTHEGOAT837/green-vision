@@ -149,6 +149,97 @@ class LocalOSM:
         self.bbox = [90.0, 180.0, -90.0, -180.0]   # minlat, minlon, maxlat, maxlon
         self._load()
 
+    # Overture's building footprints, when they have been fetched. Written by
+    # scripts/fetch_overture_buildings.py, in this index's own record shape.
+    OVERTURE_NAME = "buildings.overture.jsonl.gz"
+
+    def _load_overture(self) -> None:
+        """Replace the OSM buildings with Overture's, when they are there.
+
+        REPLACE, not add. Overture merges OSM with Microsoft's and Google's
+        machine-extracted footprints, so it already contains the OSM
+        building the index just loaded. Keeping both would put two records
+        on the same roof - and every consumer here is an overlap test, so a
+        phantom neighbour is not a cosmetic duplicate, it is a site the
+        finder refuses for a building that is not there.
+
+        Measured across one 4 x 3 km box over Bopal and Thaltej: OSM a few
+        thousand, Overture 13,398. That difference is the whole reason the
+        imagery had to be brought in as a second witness, and it is the
+        difference this file closes.
+
+        The roads, parks, water and trees in the index are untouched:
+        Overture's buildings are the only theme fetched, and the only one
+        replaced.
+        """
+        src = self.path.parent / self.OVERTURE_NAME
+        if not src.is_file():
+            return
+
+        boxes = []
+        for flat, flon in self.focus:
+            dlat = self.radius_m / 111320.0
+            dlon = self.radius_m / (111320.0 * max(0.2, math.cos(math.radians(flat))))
+            boxes.append((flat, flon, dlat, dlon))
+
+        # Count what is being replaced before dropping it, so the log can say
+        # whether this was a gain or a loss. A source that turned out to hold
+        # FEWER buildings than OSM would be a regression wearing the clothes
+        # of an upgrade, and silence would hide it.
+        before = 0
+        for cell in self.grid.values():
+            before += len(cell.get("building", ()))
+
+        added = 0
+        opener = gzip.open if src.suffix == ".gz" else open
+        staged: dict[tuple[int, int], list[dict]] = {}
+        try:
+            with opener(src, "rt", encoding="utf-8") as fh:
+                for line in fh:
+                    try:
+                        rec = json.loads(line)
+                    except Exception:
+                        continue
+                    lat, lon = rec.get("lat"), rec.get("lon")
+                    if lat is None or lon is None:
+                        continue
+                    if boxes:
+                        keep = False
+                        for flat, flon, dlat, dlon in boxes:
+                            if abs(lat - flat) > dlat or abs(lon - flon) > dlon:
+                                continue
+                            if _haversine(flat, flon, lat, lon) <= self.radius_m:
+                                keep = True
+                                break
+                        if not keep:
+                            continue
+                    staged.setdefault(
+                        (int(lat / self.CELL), int(lon / self.CELL)), []).append(rec)
+                    added += 1
+        except Exception as exc:
+            log.warning("could not read %s (%s) - keeping the OSM buildings", src, exc)
+            return
+
+        if not added:
+            log.info("%s held nothing inside the focus - keeping the OSM buildings", src.name)
+            return
+        if added < before:
+            # Do not swap a fuller source for a thinner one without saying so.
+            log.warning("%s has %s buildings against OpenStreetMap's %s inside the "
+                        "focus - keeping OpenStreetMap", src.name,
+                        f"{added:,}", f"{before:,}")
+            return
+
+        for cell in self.grid.values():
+            cell.pop("building", None)
+        self.n -= before
+        for key, recs in staged.items():
+            self.grid.setdefault(key, {}).setdefault("building", []).extend(recs)
+        self.n += added
+        log.info("building footprints from Overture: %s, replacing %s from "
+                 "OpenStreetMap (%+.0f%%)", f"{added:,}", f"{before:,}",
+                 100.0 * (added - before) / max(before, 1))
+
     def _load(self) -> None:
         if not self.path.is_file():
             log.info("no local OSM index at %s — the public Overpass stays the only source", self.path)
@@ -188,6 +279,8 @@ class LocalOSM:
                 if lon < self.bbox[1]: self.bbox[1] = lon
                 if lat > self.bbox[2]: self.bbox[2] = lat
                 if lon > self.bbox[3]: self.bbox[3] = lon
+        self._load_overture()
+
         if self.n:
             log.info("local OSM index: %s features loaded (%s outside the %.0f km focus, "
                      "left on disk), bbox %.3f,%.3f -> %.3f,%.3f",

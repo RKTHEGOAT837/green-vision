@@ -2114,8 +2114,17 @@ function grade(v){if(v>=80)return["Excellent","#12b981"];if(v>=65)return["Good",
 function aqiWord(a){return a<=50?"Good":a<=100?"Moderate":a<=150?"Unhealthy (sensitive)":a<=200?"Unhealthy":"Very unhealthy";}
 function riskCol(v){if(v>=66)return"#ef4444";if(v>=40)return"#f5a623";return"#12b981";}
 
-function ring(v){const R=42,C=2*Math.PI*R,off=C*(1-v/100),col=grade(v)[1];
-  return `<div class="ring"><svg width="96" height="96" viewBox="0 0 96 96"><circle cx="48" cy="48" r="${R}" fill="none" stroke="var(--bg2)" stroke-width="9"/><circle cx="48" cy="48" r="${R}" fill="none" stroke="${col}" stroke-width="9" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${off}" style="transition:stroke-dashoffset .9s"/></svg><div class="val"><b>${v}</b><span>Green</span></div></div>`;}
+/* The dial, with what it is measuring.
+
+   It was written for the point report, where the number IS a greenness
+   score and higher is better, and the caption "Green" and the colour from
+   grade() both say so. The priority report then reused it for a priority
+   score, where higher means MORE URGENT - so the 13th most urgent cell in
+   the city displayed a large green 74 captioned GREEN, which reads as a
+   good result and is the exact opposite of what it means. The caption and
+   the colour are now the caller's to state. */
+function ring(v, label, col0){const R=42,C=2*Math.PI*R,off=C*(1-v/100),col=col0||grade(v)[1];
+  return `<div class="ring"><svg width="96" height="96" viewBox="0 0 96 96"><circle cx="48" cy="48" r="${R}" fill="none" stroke="var(--bg2)" stroke-width="9"/><circle cx="48" cy="48" r="${R}" fill="none" stroke="${col}" stroke-width="9" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${off}" style="transition:stroke-dashoffset .9s"/></svg><div class="val"><b>${v}</b><span>${label||"Green"}</span></div></div>`;}
 function metric(label,value,detail,barVal,col){
   const bar=barVal!=null?`<div class="bar"><i style="width:${clamp(barVal,0,100)}%;background:${col||grade(barVal)[1]}"></i></div>`:"";
   return `<div class="metric"><div class="l">${label}</div><div class="v">${value}</div>${detail?`<div class="d">${detail}</div>`:""}${bar}</div>`;}
@@ -12338,10 +12347,24 @@ GV.builder = {
     const el = B3D_ELEMENTS.find(e => e.id === idOrRef) ||
                B3D_ELEMENTS.find(e => e.ref === idOrRef);
     if (!el) return false;
-    placeObject(el.id, { x: +x || 0, z: +z || 0 });
-    return true;
+    // The refusal has to reach the caller. Anything driving this - the
+    // assistant, a test, an auto-layout - counts what it placed, and a
+    // truthful count is the difference between "planted 24" and "planted 24
+    // of which 9 are inside a building".
+    return placeObject(el.id, { x: +x || 0, z: +z || 0 }) === true;
   },
   objects: () => (typeof B !== "undefined" && B && B.objects) ? B.objects.length : 0,
+  /* What the scene knows is already there, and whether a spot is free.
+     Exposed because "it refuses to build on a building" is a claim, and a
+     claim nothing can interrogate is one nobody can check - including the
+     tests, which could otherwise only observe that a placement failed and
+     not why. */
+  blockers: () => (typeof B !== "undefined" && B && B.blockers) ? B.blockers.length : 0,
+  canPlace: (x, z, r) => {
+    if (typeof B === "undefined" || !B) return null;
+    const hit = b3dBlockedAt(+x || 0, +z || 0, r == null ? 2.5 : +r);
+    return hit ? { ok: false, kind: hit.kind, what: hit.what } : { ok: true };
+  },
   design: () => (typeof builderDesign === "function") ? builderDesign() : null
 };
 
@@ -13148,8 +13171,29 @@ function addRealContext(B, ctx, plotShapePts) {
   const bMatKnown = new THREE.MeshStandardMaterial({ color: 0x8d959e, roughness: 0.95 });
   const bMatGuess = new THREE.MeshStandardMaterial({ color: 0xbcc3cb, roughness: 0.95,
                                                      transparent: true, opacity: 0.72 });
+  /* WHAT MAY NOT BE BUILT ON.
+
+     Everything added here is marked userData.context so the placement
+     raycaster ignores it - which was meant to stop a reader planting a tree
+     on a roof by clicking one. It did the opposite. The ray passed straight
+     THROUGH the building and landed on the ground plane underneath, so the
+     tree went exactly where the building is, inside it, and the scene drew
+     it sunk into the wall.
+
+     So the footprints are recorded in scene coordinates as they are drawn,
+     and the placement check below tests against them. */
+  B.blockers = [];
   for (const b of ctx.buildings) {
     const c = centroid(b.pts);
+    const poly = b.pts.map(p => proj.xz(p[0], p[1]));
+    /* Recorded even when the building is INSIDE the plot and therefore not
+       drawn as context. A building inside the plot is the one case where
+       putting a bench through a wall is most likely, not least: the ground
+       check lets a plot through when OpenStreetMap maps nothing there, and
+       an unmapped building is exactly what the imagery witness is for. */
+    B.blockers.push({ kind: "building",
+                      what: b.name || (b.kind === "yes" ? "a building" : b.kind),
+                      poly });
     if (inPlot(c[0], c[1])) continue;              // inside the plot: not context
     try {
       const geo = new THREE.ExtrudeGeometry(shapeFrom(b.pts), { depth: b.h, bevelEnabled: false });
@@ -13174,6 +13218,8 @@ function addRealContext(B, ctx, plotShapePts) {
       const dx = b2[0] - a[0], dz = b2[1] - a[1];
       const len = Math.hypot(dx, dz);
       if (len < 0.5) continue;
+      B.blockers.push({ kind: "road", what: rd.name || (rd.cls || "a road"),
+                        seg: [a[0], a[1], b2[0], b2[1]], half: rd.w / 2 });
       const g = new THREE.PlaneGeometry(len, rd.w);
       const m = new THREE.Mesh(g, rMat);
       m.rotation.x = -Math.PI / 2;
@@ -13196,6 +13242,8 @@ function addRealContext(B, ctx, plotShapePts) {
   };
   for (const w of ctx.water) {
     if (w.pts.length < 3) continue;
+    B.blockers.push({ kind: "water", what: w.name || "water",
+                      poly: w.pts.map(p => proj.xz(p[0], p[1])) });
     try {
       const geo = new THREE.ShapeGeometry(shapeFrom(w.pts));
       geo.rotateX(-Math.PI / 2);
@@ -14457,13 +14505,92 @@ function makeModel(def) {
 
 /* ---------- place / remove ---------- */
 let _pid = 0;
+/* How much ground this thing actually occupies, in metres of radius.
+
+   A tree is its crown, and a crown over a carriageway is a crown that gets
+   cut back to the kerb by whoever maintains the road. A bench is its seat.
+   Anything without its own size gets a metre, which is enough to stop it
+   being placed hard against a wall. */
+function b3dFootprintR(def) {
+  if (!def) return 1;
+  if (def.kind === "tree") return Math.max(1, def.r || 2.5);
+  if (def.shape === "gazebo") return 3;
+  if (def.shape === "play") return 2.6;
+  if (def.shape === "bench") return 1.2;
+  return 1;
+}
+
+/* Is this spot free of what is really there?
+
+   Returns null when it is, or {kind, what} naming the first thing in the
+   way. Buildings and water are tested as polygons, roads as a corridor
+   either side of their centreline, all expanded by the radius of the object
+   being placed - so a tree is refused when its CROWN would overhang, not
+   only when its trunk lands on a wall. */
+function b3dBlockedAt(x, z, r) {
+  const list = (B && B.blockers) || [];
+  for (let i = 0; i < list.length; i++) {
+    const b = list[i];
+    if (b.seg) {
+      if (b3dSegDist(x, z, b.seg[0], b.seg[1], b.seg[2], b.seg[3]) < b.half + r) return b;
+      continue;
+    }
+    if (b.poly && b3dNearPoly(x, z, b.poly, r)) return b;
+  }
+  return null;
+}
+
+function b3dSegDist(px, pz, x1, z1, x2, z2) {
+  const dx = x2 - x1, dz = z2 - z1;
+  const L2 = dx * dx + dz * dz;
+  let t = L2 ? ((px - x1) * dx + (pz - z1) * dz) / L2 : 0;
+  t = Math.max(0, Math.min(1, t));
+  return Math.hypot(px - (x1 + t * dx), pz - (z1 + t * dz));
+}
+
+/* Inside the polygon, or within `pad` of any of its edges. The second half
+   matters: a tree whose trunk is a metre outside a wall still has its crown
+   inside the building. */
+function b3dNearPoly(x, z, poly, pad) {
+  let inside = false;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const xi = poly[i][0], zi = poly[i][1], xj = poly[j][0], zj = poly[j][1];
+    if ((zi > z) !== (zj > z) && x < ((xj - xi) * (z - zi)) / (zj - zi) + xi) inside = !inside;
+    if (pad > 0 && b3dSegDist(x, z, xi, zi, xj, zj) < pad) return true;
+  }
+  return inside;
+}
+
+function b3dBlockedWhy(b) {
+  if (!b) return "";
+  if (b.kind === "road") return "that is " + b.what + " — you cannot plant in the carriageway";
+  if (b.kind === "water") return "that is " + b.what;
+  return "there is a building there" + (b.what && b.what !== "a building" ? " — " + b.what : "");
+}
+
+/* Returns true when something was actually placed. It used to return
+   nothing, and GV.builder.place() reported success regardless - so a caller
+   that placed forty trees against a wall was told forty had gone in. */
 function placeObject(toolId, point) {
   const def = B3D_ELEMENTS.find(e => e.id === toolId);
-  if (!def) return;
+  if (!def) return false;
   // keep it on the plot
   const lim = B.plotM/2 - 2;
   point.x = Math.max(-lim, Math.min(lim, point.x));
   point.z = Math.max(-lim, Math.min(lim, point.z));
+
+  /* REFUSE, rather than draw it through a wall.
+
+     The placement ray deliberately ignores context meshes, so a click on a
+     building passed through it and landed on the ground plane beneath -
+     putting the object inside the building. Nothing stopped it, nothing
+     said anything, and the saved design carried a bench in somebody's front
+     room to the costing and the bill of quantities. */
+  const blocked = b3dBlockedAt(point.x, point.z, b3dFootprintR(def));
+  if (blocked) {
+    try { toast("Cannot place here — " + b3dBlockedWhy(blocked)); } catch (e) {}
+    return false;
+  }
   const model = makeModel(def);
   model.position.set(point.x, 0, point.z);
   const id = ++_pid;
@@ -14472,6 +14599,7 @@ function placeObject(toolId, point) {
   B.scene.add(model);
   B.objects.push({ id, def, mesh: model, x: point.x, z: point.z });
   updateHud();
+  return true;
 }
 /* Put a saved 3D design's objects back into the scene.
 
@@ -14823,6 +14951,73 @@ function gvaccAppend(){
   }).catch(function(){ /* no engine, no section: the report stands alone */ });
 }
 
+/* Why this cell scored what it scored, from the engine's own components.
+
+   Only 10 of 146 cells carry a written justification - the model is asked
+   for the top handful and nothing else - so the headline panel of the cell
+   report read "(the engine recorded no justification for this cell)" for
+   93% of the city. That is a true sentence and a useless one, in the place
+   a planner looks first to find out why they are being sent here.
+
+   Everything needed was already in the cell. `components` holds each
+   factor's WEIGHTED contribution and they sum to the score exactly - for
+   rank 13: 0.394 + 0.150 + 0.121 + 0.074 + 0 = 0.740. So the explanation is
+   assembled from them, in order of how much they mattered, with the reading
+   behind each one. Nothing is inferred and nothing is phrased as though a
+   model wrote it. */
+const PRI_FACTOR = {
+  aqi_worsening:     "air quality getting worse",
+  low_green_cover:   "how little green cover there is now",
+  ndvi_decline:      "green cover falling",
+  plantable_space:   "room to plant",
+  traffic_worsening: "traffic getting worse"
+};
+
+function priWhy(p){
+  const c = p.components && typeof p.components === "object" ? p.components : null;
+  if (!c) return "This cell was scored from the same 42-month history as the " +
+                 "rest, but the engine did not record the breakdown for it.";
+  const parts = Object.keys(c)
+    .map(k => [k, +c[k] || 0])
+    .filter(r => r[1] > 0.001)
+    .sort((a, b) => b[1] - a[1]);
+  if (!parts.length) return "Nothing in this cell scored above zero — it is " +
+                            "ranked where it is by the absence of pressure, not by any one factor.";
+
+  const total = parts.reduce((s, r) => s + r[1], 0);
+  const say = parts.map(r => {
+    const name = PRI_FACTOR[r[0]] || r[0].replace(/_/g, " ");
+    return "<b>" + name + "</b> " + r[1].toFixed(3) +
+           " (" + Math.round(100 * r[1] / total) + "%)";
+  });
+
+  const reads = [];
+  if (p.aqi_latest != null) {
+    reads.push("Air is at " + Math.round(p.aqi_latest) +
+      (p.aqi_pred_delta != null
+        ? " and the forecast moves it " + (p.aqi_pred_delta >= 0 ? "+" : "") +
+          p.aqi_pred_delta.toFixed(1) + " over the horizon"
+        : ""));
+  }
+  if (p.ndvi_latest != null) {
+    reads.push("greenness reads " + p.ndvi_latest.toFixed(3) +
+      (p.ndvi_trend_per_year != null
+        ? " and is " + (p.ndvi_trend_per_year < 0 ? "falling " : "rising ") +
+          Math.abs(p.ndvi_trend_per_year).toFixed(4) + " a year"
+        : ""));
+  }
+  if (p.plantable_space != null) {
+    reads.push(Math.round(p.plantable_space * 100) + "% of it is not vegetated" +
+      (p.plantable_source === "proxy_1_minus_ndvi" ? " (a proxy, not a survey)" : ""));
+  }
+
+  return "Ranked #" + p.rank + " because of " + say.join(", then ") + ". " +
+         (reads.length ? reads.join("; ").replace(/^./, m => m.toUpperCase()) + ". " : "") +
+         '<span style="display:block;margin-top:8px;font-weight:600;opacity:.75">' +
+         "Assembled from the components the engine recorded for this cell, " +
+         "which add up to its score. Not written by a model." + "</span>";
+}
+
 function priReport(props){
   const sp = priSpecies(props.species);
   const score = Math.round((props.priority_score||0)*100);
@@ -14832,7 +15027,7 @@ function priReport(props){
   $("#pSub").textContent = "H3 " + props.zone;
 
   $("#pBody").innerHTML =
-    '<div class="hero">' + ring(score) + '<div class="rt">' +
+    '<div class="hero">' + ring(score, "Priority", priColor(props.priority_score)) + '<div class="rt">' +
       '<div class="grade" style="color:' + priColor(props.priority_score) + '">Priority ' +
         (props.priority_score||0).toFixed(3) + '</div>' +
       '<p>Ranked <b>#' + props.rank + '</b> of the cells the engine scored, on 42 months ' +
@@ -14842,7 +15037,7 @@ function priReport(props){
     '<div class="section" style="margin-top:16px"><div class="narr">' +
       '<div class="ai"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
       '<path d="M12 2l2 5 5 2-5 2-2 5-2-5-5-2 5-2z"/></svg>Why this cell</div>' +
-      (props.justification || "(the engine recorded no justification for this cell)") +
+      (String(props.justification || "").trim() || priWhy(props)) +
     '</div></div>' +
 
     '<div class="section"><h3>What the history says</h3><div class="mgrid">' +
