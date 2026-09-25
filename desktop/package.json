@@ -31,6 +31,7 @@
       "auth.js",
       "accounts.js",
       "windows.js",
+      "engine.js",
       "build/**/*",
       "config.json"
     ],
@@ -93,7 +94,6 @@
       "icon": "build/icon.png",
       "artifactName": "GreenVision-${version}-mac-${arch}-beta.${ext}",
       "darkModeSupport": true,
-      "identity": null,
       "extraResources": [
         {
           "from": "engine",

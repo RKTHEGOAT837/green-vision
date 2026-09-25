@@ -160,7 +160,39 @@ jobs:
         working-directory: desktop
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
-        run: npx electron-builder --mac --publish never
+        run: npx electron-builder --mac dir --publish never
+
+      # AD-HOC SIGN IT, then make the zip by hand.
+      #
+      # "The application is damaged and can't be opened. You should move it
+      # to the Bin." That is what macOS says about an app with NO signature
+      # at all, and it is not the usual unsigned-app warning - right-click
+      # and Open does not get past it. Apple Silicon refuses to load an
+      # arm64 binary that carries no signature whatsoever, and the mac
+      # config said `identity: null`, which tells electron-builder to skip
+      # signing rather than to sign cheaply.
+      #
+      # An ad-hoc signature (`codesign -s -`) costs nothing, needs no Apple
+      # account, and is the difference between "damaged" and an app that
+      # opens after the reader clears the download quarantine. It is not
+      # notarisation and does not pretend to be: the first open still needs
+      # the reader to allow it.
+      #
+      # The zip is made with ditto, not zip: a .app is a directory full of
+      # symlinks and extended attributes, and ordinary zip loses both -
+      # which breaks the signature that was just applied.
+      - name: Sign it ad-hoc and package it
+        working-directory: desktop
+        run: |
+          set -eux
+          APP=$(find release -maxdepth 2 -name "*.app" -type d | head -1)
+          codesign --force --deep --sign - --timestamp=none "$APP"
+          codesign --verify --deep --strict --verbose=2 "$APP"
+          # What the loader will actually check.
+          spctl --assess --type execute --verbose "$APP" ||             echo "note: not notarised, as expected for a beta"
+          VER="${{ inputs.version }}"
+          ditto -c -k --keepParent --sequesterRsrc "$APP"             "release/GreenVision-${VER}-mac-arm64-beta.zip"
+          ls -la release/*.zip
 
       - name: Disk after the build
         if: always()
@@ -194,6 +226,8 @@ jobs:
           set -eux
           APP=$(find desktop/release -maxdepth 2 -name "*.app" -type d | head -1)
           RES="$APP/Contents/Resources"
+          # The signature has to survive everything done to the bundle.
+          codesign --verify --deep --strict "$APP"
 
           # The engine, started the way the app starts it, before blaming
           # the app for not starting it. If this fails the fault is in the
