@@ -804,6 +804,95 @@ async function handle(req) {
       });
     }
 
+    /* ---------- the shared traffic key ----------------------------------
+
+       ONE key, held here, used by everybody who is signed in.
+
+       Before this, live traffic speeds needed each reader to go and get
+       their own TomTom key and paste it into the app. Almost nobody does
+       that, so the congestion column said "modelled" for almost everybody
+       while the app talked about measured speeds.
+
+       THE KEY IS NEVER SENT TO THE BROWSER. It would be trivially readable
+       in devtools by anyone signed in, and a leaked key is somebody else's
+       quota and somebody else's bill. So the Worker holds it and proxies
+       the call: the page asks this endpoint for a point, this endpoint asks
+       TomTom, and only the flow figures come back. That also makes the
+       usage attributable and rate-limitable, which a key pasted into a
+       thousand browsers never is. */
+    if (method === "POST" && path === "/admin/traffic-key") {
+      const adm = bearer ? await getFresh("adm:" + bearer) : null;
+      if (!adm) return json(401, { error: "sign in first" });
+      const key = String(body.key || "").trim().slice(0, 200);
+      await set("app:traffic_key", { key, by: adm.user, at: Date.now() });
+      return json(200, { ok: true, set: !!key });
+    }
+
+    /* Whether one is set, and who set it. Never the key itself: an admin
+       session is not a reason to put a live credential back on a wire. */
+    if (method === "GET" && path === "/admin/traffic-key") {
+      const adm = bearer ? await getFresh("adm:" + bearer) : null;
+      if (!adm) return json(401, { error: "sign in first" });
+      const rec = (await get("app:traffic_key")) || {};
+      return json(200, { ok: true, set: !!(rec.key), by: rec.by || null,
+                         at: rec.at || 0,
+                         hint: rec.key ? String(rec.key).slice(0, 4) + "…" : "" });
+    }
+
+    /* What the app asks so it can decide what to offer.
+
+       Signed in and a shared key is configured -> the app uses the proxy and
+       stops asking for a personal key. Signed out, or no shared key -> it
+       offers the personal one exactly as before. Anonymous callers are told
+       nothing is available, which is also true for them. */
+    if (method === "GET" && path === "/app/services") {
+      const s = bearer ? await getFresh("sess:" + bearer) : null;
+      if (!s) return json(200, { ok: true, signed_in: false, traffic: false });
+      const a = await get("acct:" + s.email);
+      if (a && a.revoked) return json(403, revokedBody(a));
+      const rec = (await get("app:traffic_key")) || {};
+      return json(200, { ok: true, signed_in: true, traffic: !!rec.key });
+    }
+
+    /* The proxy itself. One point per call, same shape TomTom returns, so
+       the page's existing reader needs no new parsing. */
+    if (method === "GET" && path === "/traffic/flow") {
+      const s = bearer ? await getFresh("sess:" + bearer) : null;
+      if (!s) return json(401, { error: "sign in to use the shared traffic key" });
+      const a = await get("acct:" + s.email);
+      if (a && a.revoked) return json(403, revokedBody(a));
+      const rec = (await get("app:traffic_key")) || {};
+      if (!rec.key) return json(503, { error: "no shared traffic key is configured" });
+
+      const point = String(url.searchParams.get("point") || "").trim();
+      /* Validated, not forwarded. This endpoint spends a credential, so what
+         it is asked to spend it on has to be a coordinate and nothing else -
+         an unchecked parameter on a proxy is an open relay for somebody
+         else's requests. */
+      if (!/^-?\d{1,3}(\.\d+)?,-?\d{1,3}(\.\d+)?$/.test(point)) {
+        return json(400, { error: "point must be lat,lon" });
+      }
+      const tt = "https://api.tomtom.com/traffic/services/4/flowSegmentData/" +
+                 "absolute/10/json?point=" + encodeURIComponent(point) +
+                 "&key=" + encodeURIComponent(rec.key);
+      try {
+        const r = await fetch(tt, { cf: { cacheTtl: 120, cacheEverything: true } });
+        if (!r.ok) return json(502, { error: "traffic service said " + r.status });
+        const j = await r.json();
+        const f = j && j.flowSegmentData;
+        if (!f) return json(502, { error: "traffic service returned no flow" });
+        // Only the four numbers the page uses. Passing the whole payload
+        // through would also pass through whatever else it carries.
+        return json(200, { ok: true, flowSegmentData: {
+          currentSpeed: f.currentSpeed, freeFlowSpeed: f.freeFlowSpeed,
+          currentTravelTime: f.currentTravelTime,
+          freeFlowTravelTime: f.freeFlowTravelTime,
+          confidence: f.confidence } });
+      } catch (e) {
+        return json(502, { error: "traffic service unreachable" });
+      }
+    }
+
     if (method === "POST" && path === "/admin/notice") {
       const adm = bearer ? await getFresh("adm:" + bearer) : null;
       if (!adm) return json(401, { error: "sign in first" });

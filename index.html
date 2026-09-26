@@ -303,6 +303,13 @@ body.gv-fabup #gvaFab{bottom:calc(22px + var(--gv-views-h,50px) + 10px);}
 .gva-me{align-self:flex-end;background:var(--brand-solid);color:#fff;border-bottom-right-radius:5px;
   max-width:86%;}
 .gva-me code{background:rgba(255,255,255,.22);}
+.gv-nudge{position:fixed;right:18px;bottom:78px;z-index:6000;max-width:330px;
+  border-radius:14px;padding:14px 16px;box-shadow:0 12px 36px rgba(0,0,0,.28);}
+.gv-nudge-t{font-size:13px;line-height:1.55;margin-bottom:10px;}
+.gv-nudge-a{display:flex;gap:8px;}
+.gv-nudge-a .gv-btn{flex:1;padding:7px 10px;font-size:12.5px;}
+body.gv-rtl .gv-nudge{right:auto;left:18px;}
+.gv-signin-wall h4{margin-bottom:6px;}
 .gva-llm{margin-top:7px;font-size:10.5px;letter-spacing:.02em;color:var(--warn,#8a6d1f);
   background:rgba(180,150,40,.10);border:1px solid rgba(180,150,40,.30);
   border-radius:7px;padding:4px 7px;display:inline-block;}
@@ -4416,6 +4423,10 @@ function touchDesign() {
     logHistory("draft", d);
     // mirror to the account, if there is one; never blocks the local save
     if (window.gvuSyncProject) gvuSyncProject(d);
+    /* The first time a design has real work in it, say that the work is
+       not being kept anywhere. Not on the first object - one tree is not
+       yet something to lose - and never more than the nudge budget allows. */
+    if (window.gvSignInNudge && (d.items || []).length >= 4) gvSignInNudge("design");
   }, 1200);
 }
 
@@ -5011,6 +5022,13 @@ function openAuth() {
        startup. Adding it anywhere else would mean finding all four again. */
     if (GV.auth.requireSignIn) {
       if (GV.auth.isIn()) gvHideGate(); else gvShowGate();
+    }
+    /* Whether the shared traffic key is available is a property of the
+       SESSION, so it is re-read wherever the session changes - which is
+       here, for all four routes into and out of a signed-in state. */
+    if (typeof gvRefreshServices === "function") {
+      if (!GV.auth.isIn()) GV.services = { signedIn: false, traffic: false, checked: true };
+      else gvRefreshServices().catch(() => {});
     }
   }
   GV.auth.syncUi = syncSignedInUi;
@@ -5960,6 +5978,17 @@ function gvuShowChatHistory() {
   const log = GVU.cache.chats || [];
   const body = document.getElementById("gvaBody");
   if (!body || typeof aAdd !== "function") return 0;
+  /* Say why it is empty rather than showing an empty transcript, which
+     reads as the feature being broken. */
+  if (typeof gvAccountsPossible === "function" && gvAccountsPossible()
+      && !GV.auth.isIn()) {
+    try {
+      aAdd("bot", "Past conversations are kept with your account. " +
+                  "Sign in and I will remember the places you look at and " +
+                  "what you asked about them.");
+    } catch (e) {}
+    return -1;
+  }
   if (body.querySelector(".gva-restored")) return -1;   // already showing
   if (!log.length) return 0;
 
@@ -6463,14 +6492,21 @@ function gvuRememberTurn(role, text, extra) {
   const turn = { role, text: String(text || "").slice(0, 4000),
                  place: (extra && extra.place) || window.lastPlace || "",
                  intent: (extra && extra.intent) || "", at: Date.now() };
-  /* Remember for EVERYONE, sync only for signed-in accounts.
+  /* Memory is an account feature.
 
-     This used to return immediately when signed out, which meant the
-     assistant had no memory at all for the people who actually use the app
-     that way - the whole product runs without an account by design, and
-     "what about the other site?" was answered blank for them. The memory
-     itself is local either way; the account layer adds carrying it to
-     another machine, and that is the part that needs a sign-in. */
+     It was local-for-everyone and synced for accounts. It is now one thing:
+     the assistant remembers for people who are signed in, and for anybody
+     else each question stands on its own. That is a deliberate narrowing -
+     a conversation kept on one machine, that no one can carry anywhere and
+     no one can delete from an account page, is a record without an owner.
+
+     Where the build has no accounts at all - the static web bundle has no
+     auth server - nothing is gated, because a sign-in that cannot happen
+     would just remove the feature. */
+  if (typeof gvAccountsPossible === "function" && gvAccountsPossible()
+      && !GV.auth.isIn()) {
+    return;
+  }
   GVU.cache.chats = [...(GVU.cache.chats || []), turn].slice(-120);
   gvuSave("cache", GVU.cache);
   if (GV.auth.isIn()) gvuWrite("/chats", turn, "POST");
@@ -6482,6 +6518,8 @@ function gvuRememberTurn(role, text, extra) {
    intent, not reading an essay — and a context that grows without bound
    is the thing that makes a fast local engine feel slow. */
 function gvuMemory() {
+  if (typeof gvAccountsPossible === "function" && gvAccountsPossible()
+      && !GV.auth.isIn()) return [];
   const log = GVU.cache.chats || [];
   return log.slice(-8).map(t => ({
     role: t.role, text: String(t.text).slice(0, 400),
@@ -6886,6 +6924,10 @@ function bottleneckMarker(b, cong) {
    advertises something they own; the way to change or clear it stays where
    it was, under the finished panel. */
 function gvTtKeyOffer(where) {
+  /* Nothing to offer when the installation already has one. Asking a
+     signed-in reader for a key they are already covered by is asking them
+     to solve a problem they do not have. */
+  if (typeof gvSharedTraffic === "function" && gvSharedTraffic()) return "";
   if (typeof gvTomTomKey === "function" && gvTomTomKey()) return "";
   return '<p class="gv-ttoffer">' +
     '<button class="gv-mini gv-ttkey" type="button">Add a traffic key</button>' +
@@ -7035,6 +7077,44 @@ async function renderTraffic() {
 /* The key, wherever this copy of the app keeps it. localStorage covers both
    builds: the desktop app and the browser both have it, and neither needs a
    rebuild to change the value. */
+/* THE SHARED KEY, for people who are signed in.
+
+   Asking every reader to go and get their own TomTom key is asking almost
+   everybody to leave the congestion column modelled, which is what
+   happened. An administrator can now set one key for the whole
+   installation, and a signed-in reader uses it without ever seeing it -
+   the server holds it and proxies the call, so it cannot be read out of
+   devtools and its usage stays attributable.
+
+   Refreshed on sign-in and sign-out, because whether it is available is a
+   property of the session and not of this machine. */
+GV.services = { signedIn: false, traffic: false, checked: false };
+
+async function gvRefreshServices() {
+  const base = (window.GVU && GVU.base) || (GV.CFG && GV.CFG.AUTH_URL) || "";
+  if (!base) { GV.services = { signedIn: false, traffic: false, checked: true }; return GV.services; }
+  try {
+    const headers = (GV.auth && GV.auth.headers) ? GV.auth.headers() : {};
+    const c = new AbortController();
+    const t = setTimeout(() => c.abort(), 7000);
+    const r = await fetch(base.replace(/\/+$/, "") + "/app/services",
+                          { headers, signal: c.signal });
+    clearTimeout(t);
+    if (r.ok) {
+      const j = await r.json();
+      GV.services = { signedIn: !!j.signed_in, traffic: !!j.traffic, checked: true };
+    }
+  } catch (e) { GV.services.checked = true; }
+  return GV.services;
+}
+window.gvRefreshServices = gvRefreshServices;
+
+/* Is the shared key available to this reader right now? */
+function gvSharedTraffic() {
+  return !!(GV.services && GV.services.signedIn && GV.services.traffic);
+}
+window.gvSharedTraffic = gvSharedTraffic;
+
 function gvTomTomKey() {
   try {
     const k = localStorage.getItem("gv.tomtom");
@@ -7062,12 +7142,21 @@ async function attachLiveFlow(bn) {
      tier is 2,500 requests a day and this list is capped at 40, so a reader
      could open the tab sixty times a day before it mattered - and the
      answers are cached per point for the life of the tab. */
-  const key = gvTomTomKey();
-  if (!key) return;
+  /* The shared key first, and through the server - the page never holds it.
+     A personal key still works for anyone signed out, or where no shared
+     key has been configured. */
+  const shared = gvSharedTraffic();
+  const key = shared ? "" : gvTomTomKey();
+  if (!shared && !key) return;
+  const base = (window.GVU && GVU.base) || (GV.CFG && GV.CFG.AUTH_URL) || "";
   const top = bn.slice(0, 40);
   await Promise.all(top.map(async b => {
-    const j = await getJSON("https://api.tomtom.com/traffic/services/4/flowSegmentData/absolute/10/json" +
-      "?point=" + b.lat + "," + b.lon + "&key=" + encodeURIComponent(key), {}, 9000);
+    const j = shared
+      ? await getJSON(base.replace(/\/+$/, "") + "/traffic/flow?point=" +
+                      b.lat + "," + b.lon,
+                      { headers: (GV.auth && GV.auth.headers) ? GV.auth.headers() : {} }, 9000)
+      : await getJSON("https://api.tomtom.com/traffic/services/4/flowSegmentData/absolute/10/json" +
+          "?point=" + b.lat + "," + b.lon + "&key=" + encodeURIComponent(key), {}, 9000);
     if (j && j.flowSegmentData) {
       const f = j.flowSegmentData;
       if (f.freeFlowSpeed > 0) {
@@ -7186,7 +7275,8 @@ function drawTrafficPanel() {
         ? "Junctions tagged <em>live</em> also carry " + prov("measured", "TomTom Traffic Flow", "TomTom") + " current speed."
         : "No historical traffic feed is free for arbitrary coordinates, so the past hours are a modelled pattern rather than a recording. " +
           "<b>Current</b> speeds can be measured, though \u2014 TomTom gives 2,500 requests a day free, no card. " +
-          "<button class='gv-mini gv-ttkey' type='button'>Add a traffic key</button>"}
+          (gvSharedTraffic() ? ""
+            : "<button class='gv-mini gv-ttkey' type='button'>Add a traffic key</button>")}
     </div>`);
 
   /* Somewhere to put the key.
@@ -9092,6 +9182,9 @@ function finishDesign() {
 
 function drawCostPanel(keep) {
   const d = GV.design;
+  if (d && d.plot && (d.items || []).length >= 4 && window.gvSignInNudge) {
+    gvSignInNudge("cost");
+  }
   if (!d || !d.plot) { dockBody(emptyStudio("cost")); return; }
   const c = computeCost(d, GV.ctx || {});
   d.cost = c;
@@ -9592,7 +9685,112 @@ async function saveDesign(publish) {
   openDock("gallery");
 }
 
+/* WHAT AN ACCOUNT IS FOR.
+
+   The Library, History and the assistant's memory are all the same kind of
+   thing: work that has to outlive the tab and follow the reader to another
+   machine. None of that can exist without somewhere to keep it and someone
+   to keep it for, so they are signed-in features - and saying that plainly
+   in the panel is better than a tab that opens onto an empty list and looks
+   broken.
+
+   Everything the app MEASURES stays open to everybody. The map, the area
+   report, the traffic model, the studio, the costing and the 25-year
+   projection need no account and are not gated here. */
+const GV_SIGNIN_WHY = {
+  gallery: ["The shared Library",
+            "Designs published by you and by everyone else on this " +
+            "installation, with the author's name and organisation on each. " +
+            "It is a directory of who is planning what, so it needs an " +
+            "account on both sides."],
+  history: ["Your history",
+            "Every design you save, publish or review, newest first, with " +
+            "one-tap resume. It has to be kept somewhere that is yours."],
+  chat:    ["Assistant memory",
+            "The assistant remembers the places you have looked at and what " +
+            "you asked about them, and you can reopen past conversations."]
+};
+
+function gvSignInPanel(which) {
+  const w = GV_SIGNIN_WHY[which] || GV_SIGNIN_WHY.gallery;
+  return '<div class="gv-empty gv-signin-wall">' +
+    '<h4>' + esc(w[0]) + '</h4>' +
+    '<p>' + esc(w[1]) + '</p>' +
+    '<p style="margin-top:10px">Signing in is free and takes one email — ' +
+    'no password. Everything the app measures works without it.</p>' +
+    '<button class="gv-btn gv-btn-primary" style="margin-top:12px" ' +
+    'onclick="GV.ui.auth()">Sign in or create an account</button>' +
+    '</div>';
+}
+
+/* Does this build have accounts at all? The static web bundle has no auth
+   server, and gating a tab behind a sign-in that cannot happen would just
+   remove the feature. */
+function gvAccountsPossible() {
+  return !!((window.GVU && GVU.base) || (GV.CFG && GV.CFG.AUTH_URL));
+}
+
+/* A REMINDER, NOT A NAG.
+
+   Somebody working without an account is losing their designs when the tab
+   closes and does not necessarily know it, so they should be told. They
+   should be told at a moment when it means something - after they have
+   made something worth keeping - and then left alone.
+
+   The rules, deliberately strict:
+     * never before the reader has done something an account would have
+       saved, because a prompt shown to somebody who has not used the app
+       yet is asking them to pay for a thing they have not been given;
+     * one at a time, and never on top of a dialog;
+     * at most three in a session and never twice within ten minutes;
+     * each one names what THIS action would have kept, not accounts in
+       general;
+     * dismissing one is remembered for the session; "not now" for the day.
+
+   It is a toast with a button, not a modal: a modal in front of somebody
+   mid-design is a thing to be got rid of, and what gets got rid of does
+   not get read. */
+const GV_NUDGE = { shown: 0, last: 0, max: 3, gapMs: 10 * 60 * 1000 };
+
+function gvSignInNudge(what) {
+  if (!gvAccountsPossible() || GV.auth.isIn()) return;
+  try { if (store.get("nudgeOff", 0) > Date.now()) return; } catch (e) {}
+  if (GV_NUDGE.shown >= GV_NUDGE.max) return;
+  if (Date.now() - GV_NUDGE.last < GV_NUDGE.gapMs) return;
+  if (document.getElementById("gvAsk") || document.getElementById("gvNudge")) return;
+
+  const LINES = {
+    design:  "This design lives in this tab only. An account keeps it, and lets you reopen it anywhere.",
+    publish: "Publishing needs an account — it puts your name and organisation on the design.",
+    place:   "Sign in and the assistant will remember the places you look at and what you asked.",
+    cost:    "An account keeps this costing with the design, so you can come back to it."
+  };
+  const msg = LINES[what] || LINES.design;
+
+  GV_NUDGE.shown++; GV_NUDGE.last = Date.now();
+  const el = document.createElement("div");
+  el.id = "gvNudge";
+  el.className = "glass gv-nudge";
+  el.innerHTML =
+    '<div class="gv-nudge-t">' + esc(msg) + '</div>' +
+    '<div class="gv-nudge-a">' +
+      '<button class="gv-btn gv-btn-primary" id="gvNudgeIn">Sign in</button>' +
+      '<button class="gv-btn gv-btn-ghost" id="gvNudgeLater">Not now</button>' +
+    '</div>';
+  document.body.appendChild(el);
+  const go = () => { el.remove(); };
+  el.querySelector("#gvNudgeIn").onclick = () => { go(); GV.ui.auth(); };
+  el.querySelector("#gvNudgeLater").onclick = () => {
+    go();
+    // "Not now" means today, not this minute.
+    try { store.set("nudgeOff", Date.now() + 24 * 3600 * 1000); } catch (e) {}
+  };
+  setTimeout(() => { if (el.isConnected) el.remove(); }, 14000);
+}
+window.gvSignInNudge = gvSignInNudge;
+
 async function drawGallery() {
+  if (gvAccountsPossible() && !GV.auth.isIn()) { dockBody(gvSignInPanel("gallery")); return; }
   /* In the desktop app the Library is a real shared gallery backed by the
      account; on the web it stays the local-only view it has always been. */
   if (window.__GV_DESKTOP__ && window.GVU && GVU.base) return gvuDrawLibrary();
@@ -9772,6 +9970,7 @@ function dayLabel(ts) {
 }
 
 async function drawHistory() {
+  if (gvAccountsPossible() && !GV.auth.isIn()) { dockBody(gvSignInPanel("history")); return; }
   const designs = store.get("designs", []);
   const byId = Object.fromEntries(designs.map(d => [d.id, d]));
 

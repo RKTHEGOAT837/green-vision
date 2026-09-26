@@ -171,6 +171,28 @@ button.lnk.open { color: inherit; opacity: .75; }
       </div>
     </div>
 
+    <div class="bc">
+      <h2>Live traffic, for everyone signed in</h2>
+      <p class="d">One TomTom key, held on the server and used on behalf of every
+      signed-in reader. Without it the congestion column is modelled; with it the
+      current-speed column is measured. Free at developer.tomtom.com &mdash; 2,500
+      requests a day, no card.</p>
+      <p class="d"><b>The key is never sent to anyone's browser.</b> The app asks
+      this server for a point and the server asks TomTom, so the key cannot be
+      read out of devtools by the people using it, and the usage stays yours to
+      see and to stop. Readers who are not signed in are unaffected: they can
+      still paste a key of their own.</p>
+
+      <label>TomTom API key
+        <input id="tkKey" type="password" autocomplete="off"
+               placeholder="paste the key — leave blank and save to remove it">
+      </label>
+      <div class="bcacts">
+        <button id="tkSave">Save the key</button>
+        <span class="bcstate" id="tkState"></span>
+      </div>
+    </div>
+
     <div class="tw"><table>
       <thead><tr>
         <th>Person</th><th>Organisation</th><th>Where</th>
@@ -308,6 +330,40 @@ async function sendNotice(clear) {
   await loadNotice();
 }
 
+/* The shared traffic key. Read as a yes/no and a four-character hint, never
+   as the key: an admin session is a reason to CHANGE a credential, not a
+   reason to put it back on a wire where a browser extension could read it. */
+async function loadTrafficKey() {
+  try {
+    const r = await fetch(API + "/api/admin/traffic-key", {
+      headers: { Authorization: "Bearer " + token }
+    });
+    if (!r.ok) return;
+    const j = await readJson(r);
+    $("tkState").textContent = j.set
+      ? "A key is set (" + (j.hint || "") + ") — saved by " + (j.by || "?")
+      : "No key set — traffic stays modelled for everyone.";
+    $("tkKey").value = "";
+    $("tkKey").placeholder = j.set
+      ? "a key is set — type a new one to replace it, or save empty to remove"
+      : "paste the key";
+  } catch (e) { /* the rest of the page still works */ }
+}
+
+async function saveTrafficKey() {
+  $("tkState").textContent = "Saving…";
+  try {
+    const r = await fetch(API + "/api/admin/traffic-key", {
+      method: "POST",
+      headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" },
+      body: JSON.stringify({ key: $("tkKey").value.trim() })
+    });
+    if (r.status === 401) { signOut(); return; }
+    if (!r.ok) { $("tkState").textContent = "Failed — " + r.status; return; }
+    await loadTrafficKey();
+  } catch (e) { $("tkState").textContent = "Failed — " + e.message; }
+}
+
 async function load() {
   const r = await fetch(API + "/api/admin/users", {
     headers: { Authorization: "Bearer " + token }
@@ -316,6 +372,7 @@ async function load() {
   const j = await readJson(r);
   users = j.users || [];
   loadNotice();
+  loadTrafficKey();
 
   $("nUsers").textContent = users.length;
   $("nActive").textContent = users.filter(u => u.sign_ins > 0).length;
@@ -417,6 +474,7 @@ function signOut() {
 }
 $("out").onclick = signOut;
 $("refresh").onclick = load;
+$("tkSave").onclick = () => saveTrafficKey();
 $("bSend").onclick = () => sendNotice(false);
 $("bClear").onclick = () => sendNotice(true);
 

@@ -38,14 +38,19 @@ DOWNLOAD_URL  = "https://rkthegoat837.github.io/green-vision-releases/"
 # /releases/latest/, so this pins a VERSION: it said 1.0.0 after 1.0.1
 # shipped and had been returning 404 ever since. Bump it with the release,
 # or the update prompt hands people a dead link.
-DOWNLOAD_FILE = "https://github.com/RKTHEGOAT837/green-vision-releases/releases/latest/download/GreenVision-1.2.2-x64.exe"
+# The PAGE, not a versioned filename. `latest/download/<name>` resolves only
+# while an asset of that exact name is still in the newest release, so every
+# release renamed these into 404s - and they are the links inside the emails
+# people are sent. Both now point at pages that resolve the current asset
+# from the GitHub API themselves.
+DOWNLOAD_FILE = "https://rkthegoat837.github.io/green-vision-releases/"
 
 # The MANAGED edition - sign-in required. This is what invitations link to,
 # because revoking an account only removes access in the build where an
 # account IS the access. Bump BOTH of these with every release: the filename
 # is part of the /releases/latest/download/ path, so a stale one is a 404,
 # and this file sat on 1.0.2 for two releases doing exactly that.
-DOWNLOAD_MANAGED = "https://github.com/RKTHEGOAT837/green-vision-releases/releases/latest/download/GreenVision-Managed-1.2.2-x64.exe"
+DOWNLOAD_MANAGED = "https://rkthegoat837.github.io/green-vision-releases/managed.html"
 
 # Storage. One key/value table - see schema.sql for why that shape rather
 # than a relational one.
