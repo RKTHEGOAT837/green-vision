@@ -182,14 +182,22 @@ class LocalOSM:
             dlon = self.radius_m / (111320.0 * max(0.2, math.cos(math.radians(flat))))
             boxes.append((flat, flon, dlat, dlon))
 
-        # Count what is being replaced before dropping it, so the log can say
-        # whether this was a gain or a loss. A source that turned out to hold
-        # FEWER buildings than OSM would be a regression wearing the clothes
-        # of an upgrade, and silence would hide it.
-        before = 0
-        for cell in self.grid.values():
-            before += len(cell.get("building", ()))
-
+        # PER CELL, not all or nothing.
+        #
+        # The first version compared totals across the whole focus and
+        # swapped everything or nothing. That breaks the moment the focus
+        # holds more cities than the Overture file does: loaded with all
+        # five cities, OpenStreetMap had 1,846,226 buildings against
+        # Ahmedabad's 507,377 from Overture, so the guard - correctly, on
+        # its own terms - kept OSM and threw away a source that was four
+        # times better for the one city it covered.
+        #
+        # The comparison belongs at grid-cell scale, where it is a question
+        # about the same ground. For each cell, whichever source has more
+        # buildings wins. That also handles the edge of the fetched bbox
+        # safely: a cell Overture only half covers has fewer buildings than
+        # OSM's, so OSM keeps it, and the two are never mixed inside one
+        # cell - which is what would put two records on one roof.
         added = 0
         opener = gzip.open if src.suffix == ".gz" else open
         staged: dict[tuple[int, int], list[dict]] = {}
@@ -223,22 +231,26 @@ class LocalOSM:
         if not added:
             log.info("%s held nothing inside the focus - keeping the OSM buildings", src.name)
             return
-        if added < before:
-            # Do not swap a fuller source for a thinner one without saying so.
-            log.warning("%s has %s buildings against OpenStreetMap's %s inside the "
-                        "focus - keeping OpenStreetMap", src.name,
-                        f"{added:,}", f"{before:,}")
-            return
 
-        for cell in self.grid.values():
-            cell.pop("building", None)
-        self.n -= before
+        took, left, gained, lost = 0, 0, 0, 0
         for key, recs in staged.items():
-            self.grid.setdefault(key, {}).setdefault("building", []).extend(recs)
-        self.n += added
-        log.info("building footprints from Overture: %s, replacing %s from "
-                 "OpenStreetMap (%+.0f%%)", f"{added:,}", f"{before:,}",
-                 100.0 * (added - before) / max(before, 1))
+            cell = self.grid.setdefault(key, {})
+            mine = cell.get("building") or []
+            if len(recs) < len(mine):
+                # Thinner here: almost always the edge of the fetched box.
+                left += len(recs)
+                continue
+            cell["building"] = recs
+            took += len(recs)
+            gained += len(recs)
+            lost += len(mine)
+        self.n += gained - lost
+
+        log.info("building footprints from Overture: %s used, replacing %s from "
+                 "OpenStreetMap (%+.0f%% where it covers); %s skipped in cells "
+                 "OpenStreetMap maps more thickly",
+                 f"{took:,}", f"{lost:,}",
+                 100.0 * (gained - lost) / max(lost, 1), f"{left:,}")
 
     def _load(self) -> None:
         if not self.path.is_file():

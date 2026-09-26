@@ -197,7 +197,23 @@ def fetch(bbox: tuple[float, float, float, float], out_path: Path) -> int:
              RELEASE, west, south, east, north)
     log.info("this reads remote parquet and takes minutes, not seconds")
     t0 = time.time()
-    rows = con.execute(q).fetchall()
+    rows = None
+    last = None
+    for attempt in range(1, 4):
+        try:
+            rows = con.execute(q).fetchall()
+            break
+        except Exception as exc:
+            last = exc
+            # A read of a few hundred remote parquet parts over twenty
+            # minutes will meet a DNS blip or a dropped connection sooner or
+            # later, and losing the whole city to one is not acceptable when
+            # the retry costs nothing but time. Chennai, Delhi and Mumbai
+            # were all lost in one burst to "could not resolve hostname".
+            log.warning("  attempt %d failed (%s)", attempt, str(exc)[:160])
+            if attempt == 3:
+                raise
+            time.sleep(20 * attempt)
     log.info("  %s rows in %.0fs", f"{len(rows):,}", time.time() - t0)
 
     kept = 0

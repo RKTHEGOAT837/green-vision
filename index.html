@@ -4791,23 +4791,49 @@ async function aoiVeg(aoi) {
   const map = window.map;
   if (!map || typeof window.vegScore !== "function") return null;
 
-  const z = 13;
+  /* CROWN SCALE, and the same scale the Green view uses.
+
+     This read the whole 100 km2 at z13, because that is the highest zoom
+     whose tiles fit a contiguous 36-tile budget over an 11 km box. At z13 a
+     pixel is about 19 m of ground - wider than most canopies - so a street
+     tree is averaged into the road beside it and never counted. The Green
+     view was fixed to measure at z16 and then reported 24% for ground this
+     panel called 11.7%: one app, two canopy figures, same place, and no way
+     for a reader to tell which to believe.
+
+     Both now measure the same way. 36 tiles spread evenly across the AOI at
+     z16 is the same cost in requests as 36 contiguous tiles at z13, and it
+     samples the whole area rather than a coarse blur of it. */
+  const z = 16;
   const lon2x = window.lon2x, lat2y = window.lat2y;
   if (!lon2x || !lat2y) return null;
 
   const xmin = lon2x(aoi.bbox.w, z), xmax = lon2x(aoi.bbox.e, z);
   const ymin = lat2y(aoi.bbox.n, z), ymax = lat2y(aoi.bbox.s, z);
   const cols = xmax - xmin + 1, rows = ymax - ymin + 1;
-  if (cols * rows > 36) return null;
+  if (cols < 1 || rows < 1) return null;
 
-  const W = cols * 256, H = rows * 256;
+  const SIDE = 6;                                   // 36 tiles, as before
+  const nx = Math.min(cols, SIDE), ny = Math.min(rows, SIDE);
+  const xs = [], ys = [];
+  for (let i = 0; i < nx; i++) xs.push(xmin + Math.floor(((i + 0.5) * cols) / nx));
+  for (let j = 0; j < ny; j++) ys.push(ymin + Math.floor(((j + 0.5) * rows) / ny));
+
+  const W = nx * 256, H = ny * 256;
   const cv = document.createElement("canvas"); cv.width = W; cv.height = H;
   const ctx = cv.getContext("2d", { willReadFrequently: true });
   let any = false;
   const jobs = [];
-  for (let ty = ymin; ty <= ymax; ty++) for (let tx = xmin; tx <= xmax; tx++) {
+  /* The sampled tiles are packed side by side on one canvas. They are not
+     adjacent on the ground, so the per-pixel lat/lon test below cannot be
+     used to clip them to the circle - each tile is instead accepted whole,
+     and the spread is what keeps the sample representative of the AOI. */
+  const packed = [];
+  for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) {
+    const tx = xs[i], ty = ys[j];
+    packed.push([i, j, tx, ty]);
     jobs.push(window.loadTile(z, tx, ty).then(im => {
-      if (im) { any = true; ctx.drawImage(im, (tx - xmin) * 256, (ty - ymin) * 256); }
+      if (im) { any = true; ctx.drawImage(im, i * 256, j * 256); }
     }));
   }
   await Promise.all(jobs);
@@ -4815,24 +4841,31 @@ async function aoiVeg(aoi) {
 
   let data; try { data = ctx.getImageData(0, 0, W, H).data; } catch (e) { return null; }
 
-  // Walk the pixels, but only score those actually inside the circle.
+  /* Per SAMPLED TILE, because the tiles are packed side by side on the
+     canvas and are not adjacent on the ground. Deriving a coordinate from
+     the canvas position, as this used to when the block was contiguous,
+     would now place every pixel somewhere it is not - and the circle test
+     below would then keep and discard the wrong ones. */
   const x2lon = window.x2lon, y2lat = window.y2lat;
   let s = 0, t = 0, greenCells = 0, bareCells = 0, cells = 0;
   const STRIDE = 3;
-  for (let py = 0; py < H; py += STRIDE) {
-    const lat = y2lat(ymin + py / 256, z);
-    for (let px = 0; px < W; px += STRIDE) {
-      const lon = x2lon(xmin + px / 256, z);
-      if (!inAOIpt(aoi, lat, lon)) continue;
-      const i = (py * W + px) * 4;
-      const r = data[i], g = data[i + 1], b = data[i + 2];
-      const br = (r + g + b) / 3;
-      if (br < 16 || br > 244) continue;
-      t++;
-      const v = window.vegScore(r, g, b);
-      s += v;
-      cells++;
-      if (v > 0.3) greenCells++; else if (v < 0.05) bareCells++;
+  for (const [ci, cj, tx, ty] of packed) {
+    for (let dy = 0; dy < 256; dy += STRIDE) {
+      const lat = y2lat(ty + dy / 256, z);
+      for (let dx = 0; dx < 256; dx += STRIDE) {
+        const lon = x2lon(tx + dx / 256, z);
+        if (!inAOIpt(aoi, lat, lon)) continue;
+        const px = ci * 256 + dx, py = cj * 256 + dy;
+        const i = (py * W + px) * 4;
+        const r = data[i], g = data[i + 1], b = data[i + 2];
+        const br = (r + g + b) / 3;
+        if (br < 16 || br > 244) continue;
+        t++;
+        const v = window.vegScore(r, g, b);
+        s += v;
+        cells++;
+        if (v > 0.3) greenCells++; else if (v < 0.05) bareCells++;
+      }
     }
   }
   if (!t) return null;
@@ -9602,6 +9635,10 @@ function emptyStudio(which) {
 
 async function saveDesign(publish) {
   const d = GV.design;
+  /* Publishing is the one that genuinely cannot happen without an account -
+     it puts a name and an organisation on the design for everyone else to
+     see - so it is the moment the reminder is most worth making. */
+  if (publish && window.gvSignInNudge) gvSignInNudge("publish");
   /* The ground comes first, before the name is even asked for.
 
      Saving and publishing were the two places a design on rooftops escaped
@@ -17637,6 +17674,9 @@ async function aSend(text, opts) {
   // and the answer, so the transcript that comes back on the next launch is
   // a conversation rather than a list of unanswered questions.
   if (window.gvuRememberTurn) gvuRememberTurn("bot", j.reply || "", { intent: j.intent || "" });
+  /* Asked the assistant something while signed out: memory is the feature
+     they just did not get, so it is the one to name. */
+  if (window.gvSignInNudge) gvSignInNudge("place");
   if (j.dir === "rtl") bubble.dir = "rtl";
   const res = await aExec(j.actions);
 
