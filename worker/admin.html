@@ -193,6 +193,31 @@ button.lnk.open { color: inherit; opacity: .75; }
       </div>
     </div>
 
+    <div class="bc">
+      <h2>Reviews</h2>
+      <p class="d">What people say about Green Vision, shown at
+      <a href="reviews.html" target="_blank" rel="noopener">reviews.html</a> and linked
+      from the start screen of the app. Words, a photo or a clip &mdash; the clip plays
+      in the page, nobody has to download it.</p>
+      <p class="d">Video and images are committed into the downloads repository and
+      served by GitHub Pages. <b>40 MB a file</b>: GitHub's upload API takes base64,
+      which inflates a file by a third, and the server has to hold both. Compress a
+      long clip before uploading it rather than trimming it to fit.</p>
+
+      <label>Name <input id="rvName" placeholder="Priya Sharma"></label>
+      <label>Role and organisation <input id="rvRole" placeholder="Horticulture Officer, Ahmedabad Municipal Corporation"></label>
+      <label>Stars, 0 to 5 <input id="rvStars" type="number" min="0" max="5" placeholder="5"></label>
+      <label>What they said <textarea id="rvText" placeholder="In their words. Leave blank if the review is only a photo or a clip."></textarea></label>
+      <label>Photo or video <input id="rvFile" type="file"
+             accept="video/mp4,video/webm,video/quicktime,image/*"></label>
+      <label>Caption for the media <input id="rvCap" placeholder="optional"></label>
+      <div class="bcacts">
+        <button id="rvAdd">Publish the review</button>
+        <span class="bcstate" id="rvState"></span>
+      </div>
+      <div id="rvList" style="margin-top:14px"></div>
+    </div>
+
     <div class="tw"><table>
       <thead><tr>
         <th>Person</th><th>Organisation</th><th>Where</th>
@@ -364,6 +389,89 @@ async function saveTrafficKey() {
   } catch (e) { $("tkState").textContent = "Failed — " + e.message; }
 }
 
+/* Reviews. The media goes up first and its path comes back; the review is
+   then written with that path. Two calls rather than one multipart request,
+   because a 40 MB body and a form field in the same request is a shape the
+   Worker would have to buffer twice. */
+async function loadReviews() {
+  try {
+    const r = await fetch(API + "/api/app/reviews");
+    const j = await readJson(r);
+    const rows = (j && j.reviews) || [];
+    $("rvList").innerHTML = rows.length
+      ? rows.map(function (x) {
+          return '<div style="display:flex;gap:8px;align-items:baseline;padding:6px 0;' +
+                 'border-top:1px solid var(--line);font-size:13px">' +
+                 '<b>' + esc(x.name || "Anonymous") + '</b>' +
+                 '<span style="color:var(--dim)">' + esc((x.text || x.caption || "").slice(0, 70)) + '</span>' +
+                 '<button class="ghost danger" style="margin-left:auto;padding:2px 8px" ' +
+                 'data-del="' + esc(x.id) + '">Remove</button></div>';
+        }).join("")
+      : '<span class="d">No reviews published yet.</span>';
+    Array.prototype.forEach.call($("rvList").querySelectorAll("[data-del]"), function (b) {
+      b.onclick = async function () {
+        if (!confirm("Remove this review?")) return;
+        await fetch(API + "/api/admin/reviews", {
+          method: "POST",
+          headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" },
+          body: JSON.stringify({ delete: b.getAttribute("data-del") })
+        });
+        loadReviews();
+      };
+    });
+  } catch (e) { /* the rest of the page still works */ }
+}
+
+function fileToBase64(f) {
+  return new Promise(function (res, rej) {
+    const fr = new FileReader();
+    fr.onload = function () {
+      const s = String(fr.result || "");
+      res(s.slice(s.indexOf(",") + 1));       // strip the data: prefix
+    };
+    fr.onerror = rej;
+    fr.readAsDataURL(f);
+  });
+}
+
+async function addReview() {
+  const f = $("rvFile").files && $("rvFile").files[0];
+  $("rvState").textContent = "Publishing…";
+  try {
+    let media = "";
+    if (f) {
+      if (f.size > 40 * 1024 * 1024) {
+        $("rvState").textContent = "That file is " +
+          Math.round(f.size / 1048576) + " MB. The limit is 40 MB.";
+        return;
+      }
+      $("rvState").textContent = "Uploading " + Math.round(f.size / 1048576) + " MB…";
+      const up = await fetch(API + "/api/admin/reviews/media", {
+        method: "POST",
+        headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" },
+        body: JSON.stringify({ filename: f.name, data: await fileToBase64(f) })
+      });
+      const uj = await readJson(up);
+      if (!up.ok) { $("rvState").textContent = "Upload failed — " + (uj.error || up.status); return; }
+      media = uj.media;
+    }
+    const r = await fetch(API + "/api/admin/reviews", {
+      method: "POST",
+      headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" },
+      body: JSON.stringify({ name: $("rvName").value.trim(), role: $("rvRole").value.trim(),
+        stars: $("rvStars").value, text: $("rvText").value.trim(),
+        caption: $("rvCap").value.trim(), media: media })
+    });
+    const j = await readJson(r);
+    if (!r.ok) { $("rvState").textContent = "Failed — " + (j.error || r.status); return; }
+    $("rvName").value = $("rvRole").value = $("rvStars").value = "";
+    $("rvText").value = $("rvCap").value = ""; $("rvFile").value = "";
+    $("rvState").textContent = "Published. It is live on the reviews page." +
+      (media ? " GitHub Pages takes a minute to serve new media." : "");
+    loadReviews();
+  } catch (e) { $("rvState").textContent = "Failed — " + e.message; }
+}
+
 async function load() {
   const r = await fetch(API + "/api/admin/users", {
     headers: { Authorization: "Bearer " + token }
@@ -373,6 +481,7 @@ async function load() {
   users = j.users || [];
   loadNotice();
   loadTrafficKey();
+  loadReviews();
 
   $("nUsers").textContent = users.length;
   $("nActive").textContent = users.filter(u => u.sign_ins > 0).length;
@@ -475,6 +584,7 @@ function signOut() {
 $("out").onclick = signOut;
 $("refresh").onclick = load;
 $("tkSave").onclick = () => saveTrafficKey();
+$("rvAdd").onclick = () => addReview();
 $("bSend").onclick = () => sendNotice(false);
 $("bClear").onclick = () => sendNotice(true);
 

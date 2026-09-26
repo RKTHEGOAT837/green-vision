@@ -820,6 +820,115 @@ async function handle(req) {
        TomTom, and only the flow figures come back. That also makes the
        usage attributable and rate-limitable, which a key pasted into a
        thousand browsers never is. */
+    /* ---------- reviews -------------------------------------------------
+
+       Public to read, admin to write. The text lives here; the media lives
+       in the downloads repository and is served by GitHub Pages, because
+       Pages sends a real content-type and honours range requests - so a
+       video plays inside the page. A release asset is served as an
+       attachment and would download instead, which is the one behaviour
+       this feature must not have. */
+    if (method === "GET" && path === "/app/reviews") {
+      const rows = (await get("app:reviews")) || [];
+      // Newest first, and only what the page renders.
+      return json(200, { ok: true, reviews: rows.map(r => ({
+        id: r.id, name: r.name, role: r.role, stars: r.stars,
+        text: r.text, media: r.media, caption: r.caption, at: r.at })) });
+    }
+
+    if (method === "POST" && path === "/admin/reviews") {
+      const adm = bearer ? await getFresh("adm:" + bearer) : null;
+      if (!adm) return json(401, { error: "sign in first" });
+      const rows = (await get("app:reviews")) || [];
+
+      if (body.delete) {
+        const left = rows.filter(r => r.id !== String(body.delete));
+        await set("app:reviews", left);
+        return json(200, { ok: true, removed: rows.length - left.length });
+      }
+
+      const rec = {
+        id: randomToken().slice(0, 12),
+        name: String(body.name || "").slice(0, 120),
+        role: String(body.role || "").slice(0, 160),
+        stars: Math.max(0, Math.min(5, parseInt(body.stars, 10) || 0)),
+        text: String(body.text || "").slice(0, 4000),
+        /* A PATH inside the site, never a URL. The page refuses anything
+           that is not reviews/media/<name>, and so does this: a reviews
+           list that accepts a full URL is a way to have the site embed
+           somebody else's content. */
+        media: String(body.media || "").replace(/[^A-Za-z0-9._/-]/g, "").slice(0, 200),
+        caption: String(body.caption || "").slice(0, 300),
+        at: Date.now(), by: adm.user
+      };
+      if (rec.media && !/^reviews\/media\/[A-Za-z0-9._-]+$/.test(rec.media)) {
+        return json(400, { error: "media must be reviews/media/<filename>" });
+      }
+      if (!rec.text && !rec.media) {
+        return json(400, { error: "a review needs words, a picture or a video" });
+      }
+      rows.unshift(rec);
+      await set("app:reviews", rows.slice(0, 200));
+      return json(200, { ok: true, review: rec });
+    }
+
+    /* Upload a photo or a clip into the downloads repository, so Pages can
+       serve it.
+
+       SIZE. GitHub's Contents API takes base64, which inflates a file by a
+       third, and a Worker has 128 MB of memory to hold both the bytes and
+       the encoding of them. 40 MB of video is about 54 MB encoded and fits
+       with room to work in; past that this refuses with a number rather
+       than dying halfway through an upload, which is the failure that
+       looks like the feature being broken. GitHub Pages itself will not
+       serve a file over 100 MB at all.
+
+       It needs a fine-grained token with Contents: write on the downloads
+       repository, set with:  npx wrangler secret put GITHUB_TOKEN */
+    if (method === "POST" && path === "/admin/reviews/media") {
+      const adm = bearer ? await getFresh("adm:" + bearer) : null;
+      if (!adm) return json(401, { error: "sign in first" });
+      if (!ENV.GITHUB_TOKEN) {
+        return json(503, { error: "no GITHUB_TOKEN is set on this worker, so " +
+                                  "media cannot be published" });
+      }
+      const name = String(body.filename || "").replace(/[^A-Za-z0-9._-]/g, "").slice(0, 80);
+      if (!name || !/\.(mp4|webm|mov|png|jpe?g|gif|webp|avif)$/i.test(name)) {
+        return json(400, { error: "filename must end in mp4, webm, mov, png, jpg, gif, webp or avif" });
+      }
+      const b64 = String(body.data || "");
+      const bytes = Math.floor(b64.length * 3 / 4);
+      const MAX = 40 * 1024 * 1024;
+      if (!b64) return json(400, { error: "no file" });
+      if (bytes > MAX) {
+        return json(413, { error: "that file is " + Math.round(bytes / 1048576) +
+                                  " MB; the limit is 40 MB" });
+      }
+
+      const repo = ENV.PAGES_REPO || "RKTHEGOAT837/green-vision-releases";
+      const stamped = Date.now().toString(36) + "-" + name;
+      const apiUrl = "https://api.github.com/repos/" + repo +
+                     "/contents/docs/reviews/media/" + encodeURIComponent(stamped);
+      const r = await fetch(apiUrl, {
+        method: "PUT",
+        headers: {
+          Authorization: "Bearer " + ENV.GITHUB_TOKEN,
+          Accept: "application/vnd.github+json",
+          "User-Agent": "green-vision-admin",
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          message: "Reviews: add " + stamped,
+          content: b64
+        })
+      });
+      if (!r.ok) {
+        const t = await r.text();
+        return json(502, { error: "GitHub said " + r.status + ": " + t.slice(0, 200) });
+      }
+      return json(200, { ok: true, media: "reviews/media/" + stamped, bytes });
+    }
+
     if (method === "POST" && path === "/admin/traffic-key") {
       const adm = bearer ? await getFresh("adm:" + bearer) : null;
       if (!adm) return json(401, { error: "sign in first" });
