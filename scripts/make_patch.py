@@ -93,7 +93,21 @@ def main() -> None:
     else:
         bake(dest)
 
-    data = dest.read_bytes()
+    # LINE ENDINGS, WHICH ARE NOT A DETAIL HERE.
+    #
+    # The app hashes the bytes it downloads. Git on Windows checks files
+    # out with CRLF and stores them with LF, and GitHub Pages serves what
+    # is stored - so the file on disk hashed to one value and the file
+    # people actually received hashed to another. Measured on the first
+    # payload: 1,006,116 bytes locally, 986,918 bytes served, and two
+    # different SHA-256s. Every app would have downloaded the patch,
+    # rejected it, and downloaded it again at the next start, forever,
+    # with nothing on screen to say why.
+    #
+    # So the payload is written LF-only and .gitattributes marks
+    # patch/*.html as `-text` so nothing converts it back.
+    data = dest.read_bytes().replace(b"\r\n", b"\n")
+    dest.write_bytes(data)
     if not data.lstrip()[:15].lower().startswith(b"<!doctype html"):
         raise SystemExit("that is not an HTML document")
     sha = hashlib.sha256(data).hexdigest()
@@ -112,9 +126,12 @@ def main() -> None:
     if args.notes:
         print(f"    notes     {args.notes}")
     print()
-    print("  Then commit and push the Pages repo, and check the URL loads")
-    print("  BEFORE you save the manifest - a manifest pointing at a 404")
-    print("  makes every app retry it on every start for nothing.")
+    print("  Then commit and push the Pages repo.")
+    print()
+    print("  The admin portal re-fetches that URL and re-hashes it before it")
+    print("  saves anything, so a mismatch is caught there rather than by")
+    print("  every installed copy. Wait for Pages to rebuild (a minute or so)")
+    print("  before pressing Publish.")
 
 
 if __name__ == "__main__":
