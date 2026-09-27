@@ -99,7 +99,14 @@ const STORE = "greenvision";
 const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization"
+  /* X-GV-Filename carries the name of an uploaded review clip, because the
+     file itself is the request body and there is nowhere else to put it.
+     A custom header makes the browser send a preflight, and a preflight
+     that does not name the header is refused before the request is ever
+     made - which surfaces as "Failed to fetch" with nothing in the
+     Worker's log, because the Worker was never asked. */
+  "Access-Control-Allow-Headers": "Content-Type, Authorization, X-GV-Filename",
+  "Access-Control-Max-Age": "86400"
 };
 
 const LIMITS = {
