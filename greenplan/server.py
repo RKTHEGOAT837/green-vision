@@ -1061,14 +1061,28 @@ class Engine:
         # trees, a body, and an edge - which is also how it stays diverse
         # without diversity being bolted on afterwards.
         #   (large, medium, small) targets by plot size
+        #
+        # WIDE ENOUGH TO PASS OUR OWN REVIEW.
+        #
+        # These targets used to come to 3-8 species, and the cap below let
+        # any one of them take 30% of the trees. The design review in the
+        # studio then graded the result against Santamour's 10/20/30 rule
+        # and returned CRITICAL - on a plan this same function had just
+        # written. A 1 ha park came back with 20 Amla and 20 Bael out of 67
+        # and its own reviewer told the planner to cap the largest species
+        # at 6. Two engines in one app contradicting each other about the
+        # same design is worse than either being wrong on its own.
+        #
+        # Ten species is the floor that makes 10% reachable at all, so the
+        # mid-size bands now aim past it and the cap below follows suit.
         if area_m2 < 2000:
-            target = (0, 1, 2)
+            target = (1, 2, 2)
         elif area_m2 < 10000:
-            target = (1, 2, 1)
+            target = (2, 4, 4)
         elif area_m2 < 50000:
-            target = (2, 2, 2)
+            target = (4, 5, 4)
         else:
-            target = (3, 3, 2)
+            target = (5, 6, 5)
         if goal == "avenue":
             target = (1, 2, 0)            # a street wants uniform crowns, not an edge
 
@@ -1111,7 +1125,20 @@ class Engine:
         # park to whichever small tree ranked first. A stand where one species
         # is a third of the trees is the monoculture risk this mix exists to
         # avoid, so no species exceeds `cap_share` while others can absorb it.
-        cap_share = 0.30 if len(picks) >= 4 else 0.45
+        #
+        # Santamour 10/20/30, the same rule the design review applies. 10%
+        # is only achievable with ten species or more, so the cap is the
+        # tighter of the rule and what this mix can actually carry - a
+        # four-species mix cannot put any species under 25% however it is
+        # split, and pretending otherwise would just leave trees unplanted.
+        if goal == "avenue":
+            # A street wants uniform crowns; diversity there is handled by
+            # varying between streets, not within one.
+            cap_share = 0.45 if len(picks) < 4 else 0.34
+        elif len(picks) >= 4:
+            cap_share = max(0.10, 1.0 / len(picks))
+        else:
+            cap_share = 0.45
         cap = max(1, int(n_trees * cap_share))
         raw = [max(1, round(n_trees * w / wsum)) for w in weights]
         capped = [min(r, cap) for r in raw]

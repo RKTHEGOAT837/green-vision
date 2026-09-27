@@ -40,6 +40,7 @@ const fs = require("fs");
 const auth = require("./auth");
 const accounts = require("./accounts");
 const win32 = require("./windows");
+const patch = require("./patch");
 const engine = require("./engine");
 
 const PROTOCOL = "greenvision";
@@ -48,9 +49,15 @@ const isDev = !app.isPackaged;
 /* Where the studio lives. Packaged, it is unpacked beside the binary; in
    development it is the repo's own dist_app, so `npm start` runs exactly
    what the installer will ship. */
-const APP_DIR = isDev
+const SHIPPED_DIR = isDev
   ? path.join(__dirname, "..", "dist_app")
   : path.join(process.resourcesPath, "studio");
+
+/* The studio actually rendered, which is the shipped one unless a patch
+   has been downloaded, hash-checked and promoted. See patch.js for why a
+   second, one-megabyte update path exists next to a 1.33 GB installer.
+   Resolved lazily: app.getPath("userData") is not valid before ready. */
+let APP_DIR = SHIPPED_DIR;
 
 let mainWindow = null;
 /* A deep link can arrive before the window exists — Windows launches the
@@ -162,6 +169,10 @@ function createWindow() {
   });
 
   mainWindow.loadFile(path.join(APP_DIR, "index.html"));
+  /* The renderer executed. Whatever studio is active came up, so clear
+     the strike against it - two starts that never reach here roll a
+     patch back on their own. */
+  mainWindow.webContents.once("dom-ready", () => { try { patch.markHealthy(); } catch (e) {} });
   mainWindow.webContents.on("did-finish-load", flushDeepLink);
 
   Menu.setApplicationMenu(win32.buildMenu(mainWindow, { isDev }));
@@ -189,6 +200,21 @@ app.whenReady().then(() => {
 
   registerProtocol();
   accounts.init(app.getPath("userData"));
+
+  /* Resolve the studio BEFORE the window is built.
+
+     A patch downloaded during the last session is promoted here and
+     nowhere else, so the swap happens exactly once and only between
+     runs - never under a window somebody is working in. studioDir then
+     reports what is on disk and verified, and falls back to the shipped
+     copy for anything it cannot stand behind. */
+  try {
+    patch.promoteStaged(m => console.log("[patch] " + m));
+    APP_DIR = patch.studioDir(SHIPPED_DIR, m => console.log("[patch] " + m));
+  } catch (e) {
+    console.error("[patch] " + (e && e.stack || e));
+    APP_DIR = SHIPPED_DIR;
+  }
   auth.init({ accounts, onSignedIn: u => {
     if (mainWindow) mainWindow.webContents.send("gv:signed-in", u);
   }});
@@ -219,6 +245,22 @@ app.whenReady().then(() => {
   engine.start(app, m => console.log("[engine] " + m))
         .then(o => { if (o && mainWindow) mainWindow.webContents.send("gv:engine", o); })
         .catch(e => console.log("[engine] " + e.message));
+
+  /* Look for a studio patch, well behind everything else.
+
+     Deliberately late and deliberately quiet: this is a megabyte over
+     somebody's connection for a fix they have not asked for, and it must
+     never compete with the window or the engine for the first seconds of
+     a start. Whatever it finds applies at the NEXT launch. */
+  setTimeout(() => {
+    patch.check(app.getVersion(), m => console.log("[patch] " + m))
+         .then(p => {
+           if (p && mainWindow && !mainWindow.isDestroyed())
+             mainWindow.webContents.send("gv:patch-staged", {
+               version: p.version, notes: p.notes || "" });
+         })
+         .catch(e => console.log("[patch] " + e.message));
+  }, 12000);
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
@@ -350,6 +392,24 @@ ipcMain.handle("gv:locate", () => new Promise(resolve => {
    the bundled Python engine is stopped rather than left behind as an orphan
    process holding its port. */
 ipcMain.handle("gv:quit", () => { app.quit(); return true; });
+
+/* What studio is running, and a way back to the shipped one.
+
+   A patch that renders but renders WRONGLY is invisible to the automatic
+   rollback, which only catches a studio that never comes up at all. This
+   is the manual door out, and it is in the renderer's reach because the
+   person who needs it is looking at the broken page. */
+ipcMain.handle("gv:patch", (_e, req) => {
+  try {
+    if (req && req.type === "revert") {
+      patch.revert(m => console.log("[patch] " + m));
+      return { ok: true, reverted: true, restart: true };
+    }
+    return { ok: true, ...patch.status(), shipped: app.getVersion() };
+  } catch (e) {
+    return { ok: false, error: String((e && e.message) || e) };
+  }
+});
 
 /* Street view, and anything else the studio wants to SHOW rather than hand
    off. Without this the renderer's window.open went to setWindowOpenHandler,

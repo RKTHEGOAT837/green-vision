@@ -275,6 +275,50 @@ body.gv-fabup #gvaFab{bottom:calc(22px + var(--gv-views-h,50px) + 10px);}
    same reason the legends are: the toolbar wraps to two rows on a narrow
    window, and a fixed allowance sized for one row put the panel's top 8px
    underneath it. */
+/* ---- fixes shipped in 1.4.0 -------------------------------------
+   Five things that were wrong on screen rather than wrong in the numbers,
+   and one of them - the legend - had been swallowing the sentence that
+   tells a reader they can click a cell at all. */
+
+/* The legend's own text was being clipped at the left edge: readers saw
+   "lick a cell for the engine's reasoning" and "umber them on the map".
+   The panel had padding; its children were escaping it. */
+.gv-legend, .gv-legend *{min-width:0;}
+.gv-legend{padding-left:14px;padding-right:12px;overflow-x:hidden;}
+.gv-legend label,.gv-legend p,.gv-legend .gv-legend-note{
+  white-space:normal;overflow-wrap:anywhere;}
+
+/* The base-layer buttons were white-on-light in the light theme - legible
+   in dark, close to invisible in day. They now take the ink colour and
+   only the ACTIVE one is reversed out. */
+body:not(.gv-dark) .gv-baserow button,
+body:not(.gv-dark) .gv-layerrow button{color:var(--ink);}
+body:not(.gv-dark) .gv-baserow button.on,
+body:not(.gv-dark) .gv-layerrow button.on{color:#fff;}
+
+/* The assistant button sat on top of "Sign in" under about 900 px, so the
+   word read "Si". Give the row the FAB's width back. */
+@media (max-width:900px){
+  #gvSignInBtn,.gv-signinbtn{margin-right:56px;}
+}
+
+/* The point report and the area dock overlapped and clipped each other in
+   a narrow window; stack them instead of letting both claim the width. */
+@media (max-width:900px){
+  #panel{max-height:44vh;overflow:auto;}
+  #gvDock{top:auto;}
+}
+
+/* The 3D tools column became unusable below ~900 px - three-line label
+   wrap, species truncated to "Shis...", an inner horizontal scrollbar.
+   A floor width costs a little canvas and returns a usable list. */
+#gv3dTools,.gv3d-tools{min-width:212px;}
+@media (max-width:760px){ #gv3dTools,.gv3d-tools{min-width:184px;font-size:12px;} }
+
+.gv3d-hudwhy{margin:6px 0 0;font-size:11.5px;line-height:1.45;color:var(--ink-soft);}
+.gv-total-land{margin-top:8px;font-size:12.5px;line-height:1.5;color:var(--ink-soft);}
+.gv-total-land b{color:var(--ink);}
+
 #gvaPanel{position:absolute;right:calc(14px + var(--gv-ir,0px));bottom:82px;z-index:1201;width:392px;
   max-width:calc(100vw - var(--gv-il,0px) - var(--gv-ir,0px) - 28px);
   height:min(620px,calc(100vh - var(--gv-it,82px) - 82px));border-radius:20px;display:flex;flex-direction:column;
@@ -1323,7 +1367,7 @@ function initMap(){
     attribution:"Imagery © Esri, Maxar, Earthstar"});
   esriLayer.on("tileerror",e=>{if(e.tile&&!e.tile._fb){e.tile._fb=1;const c=e.coords;e.tile.src=CFG.GOOG_SAT.replace("{x}",c.x).replace("{y}",c.y).replace("{z}",c.z);}});
   esriLayer.addTo(map);
-  osmLayer=L.tileLayer(CFG.MAP_TILE,{maxZoom:19,crossOrigin:true,
+  osmLayer=L.tileLayer(CFG.MAP_TILE,{maxZoom:19,maxNativeZoom:17,crossOrigin:true,
     keepBuffer:1, updateWhenZooming:false, updateWhenIdle:true,
     attribution:"Esri, HERE, Garmin, © OpenStreetMap contributors"});
   /* Same per-tile fallback the satellite layer uses: one retry onto the OSM
@@ -1776,6 +1820,30 @@ function greenDrawLabels(){
   if(marks.length) GVG.labels = L.layerGroup(marks).addTo(map);
 }
 
+/* How many zones the forecast actually covers.
+
+   The three forecast buckets count the zones it could SCORE. A zone needs
+   enough clear monthly NDVI to fit a trend through, and cloud, gaps and
+   short records leave some without it. On Ahmedabad that is 25 + 34 + 73
+   = 132 of 146, and the legend showed the three numbers with nothing to
+   say where the other 14 went - which reads as arithmetic that does not
+   add up rather than as coverage that does not reach. */
+function greenLossCoverageHTML(lossCount) {
+  if (!lossCount) return "";
+  const scored = ["green", "yellow", "red"]
+    .reduce((a, k) => a + (Number(lossCount[k]) || 0), 0);
+  const total = (GVG.loss && Number(GVG.loss.zones)) ||
+                (GV.zonesTotal && Number(GV.zonesTotal)) || 0;
+  if (!scored) return "";
+  if (!total || total <= scored)
+    return '<div class="gl-fine gl-cov">' + scored + ' zones scored.</div>';
+  const gap = total - scored;
+  return '<div class="gl-fine gl-cov">' + scored + ' of ' + total +
+    ' zones scored. The other ' + gap + ' have too few clear months of ' +
+    'satellite greenness to fit a trend through, so the forecast leaves ' +
+    'them out rather than guessing.</div>';
+}
+
 function greenLegend() {
   if (GVG.legend) { GVG.legend.remove(); GVG.legend = null; }
   if (currentView !== "green") return;
@@ -1825,6 +1893,12 @@ function greenLegend() {
             (k === "yellow" ? "Losing cover" : k === "green" ? "Holding" : "Already bare") +
             '<b>' + (lossCount ? lossCount[k] : "") + "</b></div>").join("") +
         "</div>" +
+        /* The three buckets are the zones the forecast could SCORE, and
+           that is not every zone: a cell needs enough clear months of
+           NDVI to fit a trend, and some do not have them. 25 + 34 + 73
+           read as a total of 132 next to a map the app elsewhere calls
+           146 cells, with nothing to explain the 14. Say it. */
+        greenLossCoverageHTML(lossCount) +
         '<label class="gl-tog"><input type="checkbox" id="glForecast"' +
           (GVG.showForecast ? " checked" : "") + "> Show forecast</label>" +
         '<label class="gl-tog"><input type="checkbox" id="glLabels"' +
@@ -1833,9 +1907,9 @@ function greenLegend() {
         '<div class="gl-fine">Amber = green today, predicted to decline. ' +
         'Click a hexagon for its history.</div>'
       : '<div class="gl-fine">Canopy here is a visible-band greenness index from ' +
-        'current imagery — <b>not</b> NDVI, and not a time series. Run ' +
-        '<code>python -m greenplan.server</code> to overlay the engine\'s ' +
-        '42-month forecast.</div>');
+        'current imagery — <b>not</b> NDVI, and not a time series. The ' +
+        'engine\'s 42-month forecast is not available on this map right now, ' +
+        'so this layer shows today only.</div>');
 
   if (GVG.loss) {
     // Only with the engine's forecast in hand: the canopy raster alone is a
@@ -2201,7 +2275,7 @@ async function analyse(lat,lon){
   $("#pEyebrow").textContent="Point Report";
   $("#pTitle").textContent=place; $("#pSub").textContent=sub;
   $("#pBody").innerHTML=
-    `<div class="hero">${ring(green)}<div class="rt"><div class="grade" style="color:${osmOK?grade(green)[1]:"var(--ink-soft)"}">${gLabel}</div><p><b>${vegPct}% canopy</b> from satellite${osmOK?` · ${parks} parks · ${fmt(bld)} buildings`:""}</p>`+
+    `<div class="hero">${ring(green)}<div class="rt"><div class="grade" style="color:${osmOK?grade(green)[1]:"var(--ink-soft)"}">${gLabel}</div><p><b>${vegPct}% canopy</b> in this view${osmOK?` · ${parks} parks · ${fmt(bld)} buildings`:""}</p>`+
     (osmOK?"":`<p style="font-size:11.5px;color:var(--ink-soft);margin:6px 0 0;line-height:1.5">OpenStreetMap did not answer, so parks and water bodies are not counted here. Treat this as a floor, not a grade.</p>`)+`</div></div>`+
     `<div class="section" style="margin-top:16px"><div class="narr" id="pNarr"><div class="ai"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l2 5 5 2-5 2-2 5-2-5-5-2 5-2z"/></svg>Read from this page</div>${narr}</div></div>`+
     `<div class="section"><h3>Live Environment</h3><div class="mgrid">`+
@@ -4423,7 +4497,7 @@ function logHistory(type, d) {
   } else {
     log.push({
       ts: Date.now(), type, id: d.id,
-      name: d.name || "Untitled", place: d.place || d.city || "",
+      name: d.name || gvAutoName(d), place: d.place || d.city || "",
       score: d.review ? d.review.score : null,
       cost: d.cost ? d.cost.grand : null,
       trees: (d.items || []).filter(i => i.k === "tree").length
@@ -5007,7 +5081,7 @@ function openAuth() {
       <div class="gv-mode ${server ? "gv-mode-server" : "gv-mode-local"}">
         ${server
           ? "<b>Verified sign-in.</b> We'll email you a link that signs you in — there's no password to remember or leak."
-          : "<b>This device only.</b> No sign-in service is configured, so your email is just a label on your work and nothing is verified. Designs stay in this browser until you export or publish them. Set <code>AUTH_URL</code> in studio.js to turn on real accounts."}
+          : "<b>This device only.</b> Accounts are not available in this build, so your email is just a label on your work and nothing is verified. Your designs stay in this browser until you export or publish them — export anything you want to keep. The desktop app has real accounts."}
       </div>
     </div>`);
 
@@ -9254,6 +9328,54 @@ function finishDesign() {
    10. COST AND REVIEW PANELS
    ===================================================================== */
 
+/* The land line, next to the headline rather than only 600 px below it.
+
+   The panel's big number is the cost to BUILD, and that is the right
+   headline for a plot the corporation already owns. Choose "to be
+   acquired" and the same panel computes an award under RFCTLARR 2013
+   that can be two orders of magnitude larger - on a 0.99 ha Bodakdev
+   plot, Rs 75.5 crore against a Rs 40.2 lakh build - and the headline
+   did not move. Someone reading the top of the panel, or screenshotting
+   it for a committee, got the ~0.5% of the project that is construction
+   and no sign that the rest existed. The CSV always carried both; the
+   screen did not.
+
+   This says the total the tenure choice implies, immediately under the
+   figure it qualifies, and stays silent when the two are the same. */
+function gvLandHeadline(c) {
+  const L = c && c.land;
+  if (!L || !c.grand_with_land) return "";
+  if (Math.round(c.grand_with_land) <= Math.round(c.grand)) return "";
+  const inr = GV.util.inr, inrFull = GV.util.inrFull;
+  return '<div class="gv-total-land">Land is <b>not</b> in that figure. ' +
+    'On this plot, to be acquired: <b>' + inr(c.grand_with_land) + '</b> ' +
+    'including the award — ' + inrFull(Math.round(c.grand_with_land)) +
+    '. The build is ' + inr(c.grand) + ' of it.</div>';
+}
+
+/* A design called something.
+
+   Everything autosaved arrived in History as "Untitled", so a planner with
+   four afternoons of work had four identical rows and had to open each to
+   tell them apart. There is enough on a design to name it: what it is, how
+   big, and where. */
+function gvAutoName(d) {
+  try {
+    const goal = (d && (d.goal || d.purpose)) || (GV.CFG && GV.CFG.GOAL) || "plan";
+    const nice = { park: "Park", greenbelt: "Green belt", riverfront: "Riverfront",
+                   community: "Community garden", campus: "School campus",
+                   avenue: "Roadside avenue", residential: "Residential",
+                   industrial: "Industrial buffer", wetland: "Wetland edge" };
+    const what = nice[goal] || "Plan";
+    const ha = d && d.plot && d.plot.area_m2
+      ? (d.plot.area_m2 / 10000).toFixed(2) + " ha " : "";
+    const where = (d && (d.place || d.city)) ||
+      (GV.ctx && (GV.ctx.place || GV.ctx.name)) || "";
+    const nm = (ha + what + (where ? " · " + where : "")).trim();
+    return nm || "Untitled";
+  } catch (e) { return "Untitled"; }
+}
+
 function drawCostPanel(keep) {
   const d = GV.design;
   if (d && d.plot && (d.items || []).length >= 4 && window.gvSignInNudge) {
@@ -9273,6 +9395,7 @@ function drawCostPanel(keep) {
       <span class="gv-total-lab">Estimated cost to build</span>
       <div class="gv-total-amt">${inr(c.grand)}</div>
       <div class="gv-total-sub">${inrFull(c.grand)} \u00B7 ${inrFull(round(c.per_m2))}/m&sup2;${c.nTrees ? " \u00B7 " + inrFull(round(c.per_tree)) + " per tree planted" : ""}</div>
+      ${gvLandHeadline(c)}
     ${c.overage_m2 > 1 ? `<div class="gv-overage">The surfaces in this design cover <b>${fmt(round(c.surfaced_m2))} m&sup2;</b> inside a <b>${fmt(round(c.area))} m&sup2;</b> plot — ${fmt(round(c.overage_m2))} m&sup2; more than fits. The cost below includes all of it, so either the plot or the layout needs adjusting before this is quoted.</div>` : ""}
     </div>
 
@@ -9867,6 +9990,79 @@ function gvSignInNudge(what) {
 }
 window.gvSignInNudge = gvSignInNudge;
 
+/* =====================================================================
+   Keyboard and screen-reader repairs
+   =====================================================================
+   Three faults, all found by tabbing through the app rather than by
+   reading it.
+
+   MARKERS ATE THE TAB ORDER. Leaflet gives every marker `tabindex="0"`
+   so a map of a few pins can be walked from the keyboard. A finished
+   design is not a few pins: one 0.99 ha park put 87 of them in front of
+   every control in the app, and reaching the layer buttons meant 87
+   presses through unlabelled divs. The markers here are design items,
+   not navigation - they are listed, named and priced in the Studio panel
+   beside them, which is the accessible route to the same information.
+
+   TABS WERE NOT TABS. The dock's seven buttons carry visible text, so
+   they were announced, but nothing said which one was open.
+
+   CHIPS WERE NOT PRESSED. The purpose chips are a single-choice group
+   and looked like one; they did not say so.
+   ===================================================================== */
+const GVA11Y = {
+  markers(root) {
+    const host = root || document;
+    host.querySelectorAll(
+      '.leaflet-marker-icon[tabindex], .leaflet-interactive[tabindex]'
+    ).forEach(el => {
+      if (el.getAttribute("tabindex") === "-1") return;
+      el.setAttribute("tabindex", "-1");
+      // Keep it announced if something deliberately labelled it.
+      if (!el.getAttribute("aria-label")) el.setAttribute("aria-hidden", "true");
+    });
+  },
+  tabs() {
+    const nav = document.getElementById("gvTabs");
+    if (!nav) return;
+    nav.querySelectorAll("button[data-tab]").forEach(b => {
+      const on = b.classList.contains("on") || b.getAttribute("aria-current") === "page";
+      b.setAttribute("role", "tab");
+      b.setAttribute("aria-selected", on ? "true" : "false");
+    });
+  },
+  chips() {
+    document.querySelectorAll(".gv-goalchip, .gv-goalgrid button, .gv-goalwrap button")
+      .forEach(b => {
+        if (b.getAttribute("aria-haspopup")) return;   // the collapsed picker
+        b.setAttribute("aria-pressed", b.classList.contains("on") ? "true" : "false");
+      });
+  },
+  all() { try { this.markers(); this.tabs(); this.chips(); } catch (e) {} }
+};
+window.GVA11Y = GVA11Y;
+
+/* Leaflet adds markers long after boot and re-adds them on every redraw,
+   so this watches rather than running once. Batched through rAF: a
+   redraw of an 88-item design fires hundreds of mutations and doing the
+   sweep per mutation would make the map stutter. */
+(function gvA11yWatch() {
+  let queued = false;
+  const sweep = () => { queued = false; GVA11Y.all(); };
+  const mo = new MutationObserver(() => {
+    if (queued) return;
+    queued = true;
+    requestAnimationFrame(sweep);
+  });
+  const start = () => {
+    GVA11Y.all();
+    mo.observe(document.body, { childList: true, subtree: true, attributeFilter: ["class"] });
+  };
+  if (document.readyState === "loading")
+    document.addEventListener("DOMContentLoaded", start);
+  else start();
+})();
+
 async function drawGallery() {
   if (gvAccountsPossible() && !GV.auth.isIn()) { dockBody(gvSignInPanel("gallery")); return; }
   /* In the desktop app the Library is a real shared gallery backed by the
@@ -9890,7 +10086,7 @@ async function drawGallery() {
       <h4>The gallery is empty</h4>
       <p>${GV.CFG.COMMUNITY_URL
         ? "Nothing has been published near here yet. Design something and be the first."
-        : "No gallery server is configured, so this shows only what you've saved on this device. Set <code>COMMUNITY_URL</code> in studio.js to share designs between people \u2014 see server_studio.py for the two endpoints it needs."}</p>
+        : "This build has no shared gallery, so this shows only what you have saved on this device. Nothing is lost — it is on this machine, and Export writes any design to a file you can send on."}</p>
       <button class="gv-btn gv-btn-primary" onclick="GV.ui.studio()">Design something</button>
       <button class="gv-btn gv-btn-ghost" id="gvImp">Import a design file</button>
     </div>`);
@@ -9907,7 +10103,7 @@ async function drawGallery() {
       <b>Published designs</b>
       <p>${GV.CFG.COMMUNITY_URL
         ? "Browse what people have shared. Open any card to see its review and flaws, or fork it into your own Studio."
-        : "Your published designs live here. Sharing them with other people needs a server (<code>COMMUNITY_URL</code>) \u2014 until then the Library is your own published shelf. Open any card to reopen or fork it."}</p>
+        : "Your published designs live here. This build has no shared gallery, so the Library is your own published shelf rather than a directory of colleagues. Open any card to reopen or fork it."}</p>
     </div>
     <div class="gv-galtabs">
       <button class="on" data-f="published">Published (${published.length})</button>
@@ -10292,8 +10488,8 @@ function buildShell() {
           <svg viewBox="0 0 24 24" width="16" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M6 6l12 12M18 6L6 18"/></svg>
         </button>
       </header>
-      <nav class="gv-tabs" id="gvTabs">
-        ${TABS.map(t => `<button data-tab="${t.id}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round">${t.ico}</svg><span>${t.label}</span></button>`).join("")}
+      <nav class="gv-tabs" id="gvTabs" role="tablist" aria-label="Report sections">
+        ${TABS.map(t => `<button role="tab" aria-selected="false" data-tab="${t.id}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true">${t.ico}</svg><span>${t.label}</span></button>`).join("")}
       </nav>
       <div class="gv-dockbody" id="gvDockBody"></div>
     </aside>
@@ -13075,6 +13271,28 @@ const CTX3D_ROAD_W = {
    almost as good at 3.5 m a lane, the IRC urban figure. A four-lane road
    tagged `residential` - common on an arterial through a colony - was being
    drawn at 5.5 m, narrower than the cars on it. */
+/* A name, or nothing.
+
+   OpenStreetMap and Overture both carry the building CLASS in a name field
+   often enough that the 3D builder was labelling roofs "yes", "house" and
+   "apartments" as though those were what the buildings were called. A label
+   that repeats the tag is worse than no label: it looks like information.
+   Anything that merely echoes the class, or is bare punctuation or digits,
+   is dropped. */
+const CTX3D_NONAMES = new Set(["yes", "no", "true", "house", "hut", "shed", "roof",
+  "residential", "apartments", "apartment", "commercial", "industrial", "retail",
+  "office", "garage", "garages", "service", "construction", "building", "detached",
+  "semidetached_house", "terrace", "bungalow", "hospital", "school", "unknown"]);
+function ctx3dRealName(name, kind) {
+  const n = String(name == null ? "" : name).trim();
+  if (!n) return null;
+  const k = n.toLowerCase().replace(/[\s_-]+/g, "_");
+  if (CTX3D_NONAMES.has(k)) return null;
+  if (kind && k === String(kind).toLowerCase()) return null;
+  if (!/[A-Za-zऀ-෿]/.test(n)) return null;   // "1", "A-2/3", "---"
+  return n;
+}
+
 function ctx3dRoadWidth(t) {
   const w = parseFloat(String(t.width || t["carriageway_width"] || "").replace(/[^\d.]/g, ""));
   if (isFinite(w) && w >= 1.5 && w <= 60) return w;
@@ -13305,7 +13523,8 @@ function ctx3dShape(j) {
     if (t.building) {
       const hh = ctx3dHeight(t, pts);
       out.buildings.push({ pts, h: hh.h, measured: hh.measured,
-                           kind: String(t.building || "yes"), name: t.name || null });
+                           kind: String(t.building || "yes"),
+                           name: ctx3dRealName(t.name, t.building) });
     }
     else if (t.highway) out.roads.push({ pts, w: ctx3dRoadWidth(t),
       name: t.name || t.ref || null, cls: t.highway });
@@ -15050,7 +15269,8 @@ function updateHud() {
   host.innerHTML = `
     <div class="gv3d-hudrow"><span>Elements</span><b>${B.objects.length}</b></div>
     <div class="gv3d-hudrow"><span>Trees</span><b>${nTrees}</b></div>
-    <div class="gv3d-hudrow gv3d-hudcost"><span>This 3D layout</span><b>${cost ? GV.util.inr(cost.grand) : "\u2014"}</b></div>
+    <div class="gv3d-hudrow gv3d-hudcost"><span>${B.objects.length ? "This 3D layout" : "Site preparation only"}</span><b>${cost ? GV.util.inr(cost.grand) : "—"}</b></div>
+    ${B.objects.length ? "" : `<p class="gv3d-hudwhy">Nothing is placed, so that is the allowance for clearing, grading and topsoiling the whole ${(B.plotAreaM2 / 10000).toFixed(2)} ha — not the cost of this layout. It drops as soon as you place something, because the earthworks are then measured against the ground you actually work.</p>`}
     ${note}`;
 }
 
@@ -15329,7 +15549,7 @@ function priReport(props){
              props.aqi_latest==null ? "\u2014"
                : props.aqi_beyond_index ? "500+"
                : Math.round(props.aqi_latest),
-             "US AQI, latest month",
+             "US AQI · this cell, monthly history — not the live reading in Area",
              props.aqi_latest!=null?clamp(props.aqi_latest/3,0,100):null,
              props.aqi_latest>150?"#ef4444":props.aqi_latest>100?"#f5a623":"#12b981") +
       metric("Air predicted", fmtDelta(props.aqi_pred_delta),
@@ -17806,7 +18026,7 @@ function aBuild() {
     '<button id="gvaFab" class="glass" title="Ask the engine (press A)" aria-label="Open the assistant">' +
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
       '<path d="M12 2l2 5 5 2-5 2-2 5-2-5-5-2 5-2z"/></svg><span>Ask</span></button>' +
-    '<section id="gvaPanel" class="glass" aria-label="Green Vision assistant">' +
+    '<section id="gvaPanel" class="glass" aria-hidden="true" aria-label="Green Vision assistant">' +
       '<header class="gva-h">' +
         '<div><div class="gva-eye">Assistant <i id="gvaDot" class="gva-dot"></i></div>' +
         '<b>Ask the engine</b></div>' +
@@ -17954,7 +18174,15 @@ function aRenderStatus() {
 function aToggle(on) {
   aBuild();
   GVA.open = !!on;
-  document.getElementById("gvaPanel").classList.toggle("on", GVA.open);
+  const _gvaP = document.getElementById("gvaPanel");
+  _gvaP.classList.toggle("on", GVA.open);
+  /* The panel closes with opacity, which hides it from eyes and from
+     nobody else: a screen reader still read the whole transcript, the
+     six suggestion chips and the input, all of it invisible on screen
+     and none of it reachable. inert takes it out of the tree and out of
+     the tab order together, and aria-hidden covers browsers without it. */
+  _gvaP.setAttribute("aria-hidden", GVA.open ? "false" : "true");
+  try { _gvaP.inert = !GVA.open; } catch (e) {}
   document.getElementById("gvaFab").classList.toggle("hide", GVA.open);
   if (GVA.open) {
     const ta = document.getElementById("gvaInput");
@@ -18296,7 +18524,22 @@ async function setLang(code, remember) {
     // Nothing can un-translate the live DOM reliably, and re-rendering every
     // panel by hand would be a second source of truth. A reload is honest,
     // instant from cache, and puts the page back in its source language.
-    if (remember) location.reload();
+    /* A reload here used to throw away whatever was on the plot. Switching
+       back to English mid-design returned the reader to the intro screen
+       with their park gone from the map - recoverable from History, but
+       nobody knew that, and nothing had warned them. Ask first when there
+       is something to lose. */
+    if (remember) {
+      const items = (GV.design && GV.design.items) ? GV.design.items.length : 0;
+      if (items > 0 && !confirm(
+            "Switching back to English reloads the page.\n\n" +
+            "The " + items + " item" + (items === 1 ? "" : "s") +
+            " on your plot are autosaved and will be in History, but the map " +
+            "goes back to the start screen.\n\nSwitch now?")) {
+        return;
+      }
+      location.reload();
+    }
     return;
   }
   applyLangNow();

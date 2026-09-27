@@ -40,6 +40,22 @@ const APP_FILES = ["main.js", "preload.js", "auth.js", "accounts.js", "windows.j
 function rmrf(p) { fs.rmSync(p, { recursive: true, force: true }); }
 function copyDir(from, to) { fs.cpSync(from, to, { recursive: true }); }
 
+/* Every __pycache__ under a tree. Stale .pyc files shadow fresh sources. */
+function listPycacheDirs(root) {
+  const out = [];
+  const walk = d => {
+    let ents; try { ents = fs.readdirSync(d, { withFileTypes: true }); } catch { return; }
+    for (const e of ents) {
+      if (!e.isDirectory()) continue;
+      const full = path.join(d, e.name);
+      if (e.name === "__pycache__") out.push(full); else walk(full);
+    }
+  };
+  walk(root);
+  return out;
+}
+
+
 function main() {
   if (!fs.existsSync(ELECTRON)) {
     console.error("Electron runtime missing. Run: npm install");
@@ -93,6 +109,32 @@ function main() {
      iterating on the UI should not have to wait on a 175 MB copy - but the
      installer is not worth shipping without it, so say so loudly. */
   const engineSrc = path.join(ROOT, "engine");
+
+  /* The engine's Python is a COPY of the repo's greenplan package, and a
+     copy drifts. 1.3.1 shipped with an osmlocal.py six weeks behind the
+     repo's: it had no Overture merge, so the 110 MB of building footprints
+     beside it were never read and half of Ahmedabad answered "no buildings
+     here". Nothing failed loudly because a stale module is a working
+     module - it just answers an older question.
+
+     So the package is re-copied from the repo on every pack, and the one
+     symbol whose absence caused that release is asserted outright. An
+     assertion here is cheap; the alternative is finding out from a user
+     that the app drew a park over their houses. */
+  const gpSrc = path.join(ROOT, "..", "greenplan");
+  const gpDst = path.join(engineSrc, "greenplan");
+  if (fs.existsSync(gpSrc) && fs.existsSync(gpDst)) {
+    for (const d of [gpDst, gpSrc]) {
+      // stale bytecode outlives its source and wins on import
+      for (const pc of listPycacheDirs(d)) fs.rmSync(pc, { recursive: true, force: true });
+    }
+    copyDir(gpSrc, gpDst);
+    const osml = fs.readFileSync(path.join(gpDst, "osmlocal.py"), "utf8");
+    if (!/OVERTURE_NAME/.test(osml))
+      throw new Error("engine greenplan has no Overture merge - refusing to ship it");
+    console.log("  greenplan synced from the repo");
+  }
+
   if (fs.existsSync(path.join(engineSrc, "python", "python.exe"))) {
     copyDir(engineSrc, path.join(OUT, "resources", "engine"));
     console.log("  engine bundled (" + (dirSize(engineSrc) / 1048576).toFixed(0) + " MB)");

@@ -176,6 +176,19 @@ class LocalOSM:
         if not src.is_file():
             return
 
+        # A LOUD FLOOR, because the silent version of this cost a release.
+        #
+        # 1.3.1 shipped 110 MB of Overture footprints next to an engine whose
+        # osmlocal.py predated this method. The data was there, the code to
+        # read it was not, and nothing said so: the index logged its usual
+        # "2,628,067 features loaded" and every building query over half the
+        # city answered zero. The 3D builder drew empty ground over real
+        # houses and the site finder called it clear.
+        #
+        # So the presence of the FILE is now treated as a promise that the
+        # merge will happen, and a merge that produces nothing says so at
+        # WARNING rather than leaving a plausible-looking index behind.
+
         boxes = []
         for flat, flon in self.focus:
             dlat = self.radius_m / 111320.0
@@ -251,6 +264,14 @@ class LocalOSM:
                  "OpenStreetMap maps more thickly",
                  f"{took:,}", f"{lost:,}",
                  100.0 * (gained - lost) / max(lost, 1), f"{left:,}")
+        if took == 0:
+            log.warning(
+                "%s is present (%.0f MB) but not one of its buildings was "
+                "used. Either it holds nothing near the focus, or this engine "
+                "and that file disagree about the record shape. Building "
+                "queries will answer from OpenStreetMap alone, which is thin "
+                "in exactly the neighbourhoods this tool is for.",
+                src.name, src.stat().st_size / 1e6)
 
     def _load(self) -> None:
         if not self.path.is_file():

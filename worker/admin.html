@@ -1,5 +1,9 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8">
+<!-- Served from a public Pages site at a guessable path. Every route it
+     calls is gated on the Worker, so this is exposure and not a hole, but
+     an admin console does not belong in a search index. -->
+<meta name="robots" content="noindex,nofollow,noarchive">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Green Vision · Admin</title>
 <link rel="icon" href="green-vision-mark-128.png">
@@ -142,6 +146,17 @@ button.lnk.open { color: inherit; opacity: .75; }
         <span class="d">Shown on the download page. Leave it blank and that section is hidden, rather than showing a hash that is wrong.</span>
       </label>
 
+      <label>Headline for Macs and for copies that do not say
+        <input id="bTitleOther" placeholder="e.g. Green Vision has been updated">
+        <span class="d">The main headline names a Windows version. A Mac shown
+        &ldquo;Green Vision 1.3.1 is required&rdquo; is being told to install
+        something that does not exist for it, and so is any copy old enough
+        not to report its platform. They get this one instead.</span>
+      </label>
+      <label>macOS: the download <input id="bFileMac" placeholder="leave blank to send Macs to the download page">
+        <span class="d">Never a .exe. Blank is the safe answer: the download
+        page has both columns and says which is which.</span>
+      </label>
       <label>macOS: newest version <input id="bLatestMac" placeholder="leave blank if there is no Mac build to announce"></label>
       <label>macOS: insist below version
         <input id="bMinMac" placeholder="leave blank &mdash; Macs are never forced unless you set this">
@@ -201,15 +216,48 @@ button.lnk.open { color: inherit; opacity: .75; }
     </div>
 
     <div class="bc">
+      <h2>Studio patch</h2>
+      <p class="d">A fix that only touches the studio &mdash; a label, a button, a
+      wrong number &mdash; does not need a 1.33&nbsp;GB installer. It needs about a
+      megabyte. Installed copies check here at every start, download the new
+      studio, <b>verify its SHA-256</b>, and render from it at the next launch.
+      Python, the model and the map index are untouched; those still need a
+      release.</p>
+      <p class="d">Build one with
+      <code>python scripts/make_patch.py --version 1.4.1</code>, push the Pages
+      repo, then paste what it prints here. <b>Check the URL loads first</b> &mdash;
+      a manifest pointing at a 404 makes every copy retry it forever.</p>
+
+      <label>Studio version <input id="pVer" placeholder="1.4.1 — the studio's number, not the app's"></label>
+      <label>URL <input id="pUrl" placeholder="https://rkthegoat837.github.io/green-vision-releases/patch/studio-1.4.1.html"></label>
+      <label>SHA-256
+        <input id="pSha" placeholder="64 hex characters, exactly as make_patch.py printed them">
+        <span class="d">The app executes this file. A byte that does not match
+        this hash is discarded and the copy already installed keeps running.</span>
+      </label>
+      <label>Size in bytes <input id="pBytes" placeholder="optional — shown in the log"></label>
+      <label>Needs app version at least
+        <input id="pMinApp" placeholder="e.g. 1.4.0 — leave blank for any">
+        <span class="d">A studio written against a newer bridge will fail on an
+        older shell. This stops it being offered to one.</span>
+      </label>
+      <label>Note to yourself <input id="pNotes" placeholder="what this fixes"></label>
+      <div class="row">
+        <button id="pSave">Publish the patch</button>
+        <button id="pClear" class="ghost">Withdraw it</button>
+      </div>
+      <p class="d" id="pNow">&nbsp;</p>
+    </div>
+
+    <div class="bc">
       <h2>Reviews</h2>
       <p class="d">What people say about Green Vision, shown at
       <a href="reviews.html" target="_blank" rel="noopener">reviews.html</a> and linked
       from the start screen of the app. Words, a photo or a clip &mdash; the clip plays
       in the page, nobody has to download it.</p>
       <p class="d">Video and images are committed into the downloads repository and
-      served by GitHub Pages. <b>60 MB a file.</b> GitHub Pages refuses to serve anything over
-      100 MB, and the upload is encoded on the way through, so that is the real
-      ceiling rather than a number we picked. Compress a long clip rather than
+      served by GitHub Pages. <b>32 MB a file</b>, measured rather than guessed: the upload is encoded
+      on the way through and the server runs out of memory above roughly 36 MB. Compress a long clip rather than
       trimming it &mdash; review video is usually over-encoded, and 1080p at a sane
       bitrate is a few MB a minute.</p>
 
@@ -302,6 +350,8 @@ async function loadNotice() {
     $("bLatest").value = n.latest || "";
     $("bMin").value = n.min || "";
     $("bMinMac").value = n.min_mac || "";
+    $("bTitleOther").value = n.title_other || "";
+    $("bFileMac").value = n.file_mac || "";
     $("bLatestMac").value = n.latest_mac || "";
     $("bFile").value = n.file || "";
     $("bSize").value = n.size || "";
@@ -350,6 +400,7 @@ async function sendNotice(clear) {
     : { killed: kill, title: $("bTitle").value.trim(), message: $("bMsg").value.trim(),
         latest: $("bLatest").value.trim(), min: $("bMin").value.trim(),
         min_mac: $("bMinMac").value.trim(), latest_mac: $("bLatestMac").value.trim(),
+        title_other: $("bTitleOther").value.trim(), file_mac: $("bFileMac").value.trim(),
         file: $("bFile").value.trim(), size: $("bSize").value.trim(),
         sha256: $("bSha").value.trim(), only: $("bOnly").value.trim() };
 
@@ -406,6 +457,83 @@ async function saveTrafficKey() {
    then written with that path. Two calls rather than one multipart request,
    because a 40 MB body and a form field in the same request is a shape the
    Worker would have to buffer twice. */
+/* The patch channel. The Worker stores a manifest, never the payload:
+   GitHub Pages serves the file for nothing and with a real content-type,
+   and a megabyte of HTML per app start out of a 100,000-request daily
+   budget is a bill waiting to happen. */
+async function loadPatch() {
+  try {
+    const j = await api("/admin/patch");
+    const p = (j && j.patch) || {};
+    if (!p.version) { $("pNow").textContent = "No patch is live. Installed copies run the studio they shipped with."; return; }
+    $("pVer").value = p.version || "";
+    $("pUrl").value = p.url || "";
+    $("pSha").value = p.sha256 || "";
+    $("pBytes").value = p.bytes || "";
+    $("pMinApp").value = p.min_app || "";
+    $("pNotes").value = p.notes || "";
+    $("pNow").textContent = "Studio " + p.version + " is live (" +
+      Math.round((p.bytes || 0) / 1024) + " KB, set " + when(p.updated) + ").";
+  } catch (e) { $("pNow").textContent = "Could not read the current patch."; }
+}
+
+async function savePatch(clear) {
+  const btn = $(clear ? "pClear" : "pSave");
+  btn.disabled = true;
+  try {
+    if (clear) {
+      if (!confirm("Withdraw the patch?
+
+Copies that already applied it keep it " +
+                   "until you publish a newer one; copies that have not will stop " +
+                   "being offered it.")) return;
+      await api("/admin/patch", { clear: true });
+      ["pVer", "pUrl", "pSha", "pBytes", "pMinApp", "pNotes"].forEach(id => { $(id).value = ""; });
+      $("pNow").textContent = "Withdrawn.";
+      return;
+    }
+    const sha = $("pSha").value.trim().toLowerCase();
+    if (!/^[0-9a-f]{64}$/.test(sha)) { $("pNow").textContent = "The SHA-256 must be 64 hex characters."; return; }
+    const url = $("pUrl").value.trim();
+    if (!/^https:\/\//.test(url)) { $("pNow").textContent = "The URL must be https."; return; }
+
+    /* Fetch it and hash it HERE, before recording the manifest. An
+       administrator who mistypes one character publishes a patch that
+       every installed copy downloads, rejects and re-downloads at every
+       start, forever, with nothing on screen to say why. Checking it
+       costs one request now. */
+    $("pNow").textContent = "Checking the file at that URL…";
+    let bytes = 0;
+    try {
+      const r = await fetch(url, { cache: "no-store" });
+      if (!r.ok) { $("pNow").textContent = "That URL returned HTTP " + r.status + ". Push the Pages repo first."; return; }
+      const buf = await r.arrayBuffer();
+      bytes = buf.byteLength;
+      const digest = await crypto.subtle.digest("SHA-256", buf);
+      const got = [...new Uint8Array(digest)].map(b => b.toString(16).padStart(2, "0")).join("");
+      if (got !== sha) {
+        $("pNow").textContent = "The file at that URL hashes to " + got.slice(0, 16) +
+          "… which is not the hash you pasted. Not published.";
+        return;
+      }
+    } catch (e) {
+      $("pNow").textContent = "Could not fetch that URL to check it: " + e.message;
+      return;
+    }
+
+    const j = await api("/admin/patch", {
+      version: $("pVer").value.trim(), url, sha256: sha,
+      bytes: bytes || parseInt($("pBytes").value, 10) || 0,
+      min_app: $("pMinApp").value.trim(), notes: $("pNotes").value.trim()
+    });
+    if (j && j.error) { $("pNow").textContent = j.error; return; }
+    $("pNow").textContent = "Published. Installed copies pick it up at their next start.";
+    loadPatch();
+  } catch (e) {
+    $("pNow").textContent = "Could not publish: " + e.message;
+  } finally { btn.disabled = false; }
+}
+
 async function loadReviews() {
   try {
     const r = await fetch(API + "/api/app/reviews");
@@ -442,10 +570,11 @@ async function addReview() {
   try {
     let media = "";
     if (f) {
-      if (f.size > 60 * 1024 * 1024) {
+      if (f.size > 32 * 1024 * 1024) {
         $("rvState").textContent = "That file is " + Math.round(f.size / 1048576) +
-          " MB. The limit is 60 MB — GitHub Pages will not serve a file over " +
-          "100 MB. Compress the clip rather than trimming it.";
+          " MB. The limit is 32 MB — the file is encoded on the way through " +
+          "and the server runs out of memory above that. Compress the clip rather " +
+          "than trimming it.";
         return;
       }
       $("rvState").textContent = "Uploading " + Math.round(f.size / 1048576) + " MB…";
@@ -491,6 +620,7 @@ async function load() {
   loadNotice();
   loadTrafficKey();
   loadReviews();
+  loadPatch();
 
   $("nUsers").textContent = users.length;
   $("nActive").textContent = users.filter(u => u.sign_ins > 0).length;
@@ -594,6 +724,8 @@ $("out").onclick = signOut;
 $("refresh").onclick = load;
 $("tkSave").onclick = () => saveTrafficKey();
 $("rvAdd").onclick = () => addReview();
+$("pSave").onclick = () => savePatch(false);
+$("pClear").onclick = () => savePatch(true);
 $("bSend").onclick = () => sendNotice(false);
 $("bClear").onclick = () => sendNotice(true);
 

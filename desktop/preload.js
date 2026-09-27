@@ -28,6 +28,7 @@ function emit(channel, payload) {
 // main → renderer
 ipcRenderer.on("gv:signed-in", (_e, user) => emit("signed-in", user));
 ipcRenderer.on("gv:auth-error", (_e, msg) => emit("auth-error", msg));
+ipcRenderer.on("gv:patch-staged", (_e, p) => emit("patch-staged", p));
 [
   "new", "export", "signin", "account", "assistant", "sources", "about",
   "tab:area", "tab:traffic", "tab:studio", "tab:cost", "tab:review"
@@ -80,6 +81,12 @@ contextBridge.exposeInMainWorld("__GV_DESKTOP__", {
   /* Close the app from inside the page. Used by the managed edition's
      sign-in gate, which covers the whole window: an overlay with no way out
      except the title bar is what people force-quit and then distrust. */
+  /* Which studio is running. The app can be patched without being
+     reinstalled (see patch.js), so "version" alone no longer identifies
+     what is on screen - the About box needs both. */
+  patch: () => ipcRenderer.invoke("gv:patch", { type: "status" }),
+  revertPatch: () => ipcRenderer.invoke("gv:patch", { type: "revert" }),
+
   quit: () => ipcRenderer.invoke("gv:quit"),
 
   on

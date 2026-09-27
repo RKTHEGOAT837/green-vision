@@ -131,6 +131,20 @@ const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c =>
 
 const isEmail = e => /^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(e);
 
+/* Compare two dotted versions. -1, 0, 1. Missing parts read as zero, so
+   "1.4" and "1.4.0" are the same version, and anything unparseable sorts
+   low rather than throwing - a malformed version must not be able to make
+   the patch check fail closed in the wrong direction. */
+function cmpVer(a, b) {
+  const pa = String(a || "").split(".").map(n => parseInt(n, 10) || 0);
+  const pb = String(b || "").split(".").map(n => parseInt(n, 10) || 0);
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    const x = pa[i] || 0, y = pb[i] || 0;
+    if (x !== y) return x < y ? -1 : 1;
+  }
+  return 0;
+}
+
 /* ---------- storage helpers ----------
 
    One table, key to JSON. The routes were written against a key/value store
@@ -523,6 +537,13 @@ async function handle(req) {
       const email = String(body.email || "").trim().toLowerCase();
       const state = String(body.state || "");
       if (!isEmail(email)) return json(400, { error: "invalid email" });
+      /* Length, before state. A 60-character local part sailed past
+         isEmail() and then tripped the state check, so the caller was told
+         "missing state" about a state that was present and correct - and
+         went looking for a bug in their own code. RFC 5321 caps the local
+         part at 64 and the whole address at 254; say which one it is. */
+      if (email.length > 254 || email.split("@")[0].length > 64)
+        return json(400, { error: "email address too long" });
       if (!state || state.length < 16) return json(400, { error: "missing state" });
 
       /* Refused before the rate limiter and before any mail goes out. A
@@ -750,6 +771,13 @@ async function handle(req) {
       const email = String(body.email || "").trim().toLowerCase();
       const state = String(body.state || "");
       if (!isEmail(email)) return json(400, { error: "invalid email" });
+      /* Length, before state. A 60-character local part sailed past
+         isEmail() and then tripped the state check, so the caller was told
+         "missing state" about a state that was present and correct - and
+         went looking for a bug in their own code. RFC 5321 caps the local
+         part at 64 and the whole address at 254; say which one it is. */
+      if (email.length > 254 || email.split("@")[0].length > 64)
+        return json(400, { error: "email address too long" });
       if (!state || state.length < 16) return json(400, { error: "missing state" });
 
       const now = Date.now();
@@ -783,6 +811,57 @@ async function handle(req) {
        FAIL-OPEN is the rule on the app side, not here. This endpoint being
        unreachable must never disable anybody: the app runs offline by
        design, and an aeroplane must not look like a revoked licence. */
+    /* ---------- the patch channel --------------------------------------
+
+       WHY A SECOND, SMALLER UPDATE PATH EXISTS.
+
+       The installer is 1.33 GB, and almost none of it is the app. It is a
+       CPython build, a 1.5-billion-parameter model and a map index of 3.2
+       million buildings - none of which change when a label is wrong, a
+       button is dead, or a cost line double-counts. The thing that changes
+       is the studio: one HTML file with about 870 KB of JavaScript in it.
+
+       Before this, fixing a typo meant asking every user to download 1.33
+       GB again, and asking that often enough that they stop doing it. So
+       the studio can now be replaced on its own: the app fetches a patch
+       manifest at startup, and if there is a newer studio than the one it
+       shipped with, it downloads roughly a megabyte, checks the hash, and
+       renders from that instead.
+
+       THE HASH IS THE WHOLE SECURITY MODEL. The patch is a page the app
+       executes, so a patch nobody verified is arbitrary code execution
+       with extra steps. The Worker stores a SHA-256 recorded by an
+       administrator; the app refuses anything that does not match it, byte
+       for byte, and keeps running the copy it already trusted.
+
+       What a patch CANNOT do is change Python, the model, the map index or
+       Electron's own main process. Those still need the installer, and
+       `min_app` is how a patch says which builds it is safe on. */
+    if (method === "GET" && path === "/app/patch") {
+      const pt = (await get("patch")) || {};
+      if (!pt.version || !pt.url || !pt.sha256) return json(200, { ok: true, patch: null });
+
+      /* A patch is written against a particular app. Handing a 1.5.x studio
+         to a 1.3.x shell gives the reader a page calling into a bridge that
+         does not exist yet, which fails in a way nobody can act on. */
+      const running = String(url.searchParams.get("v") || "").slice(0, 20);
+      if (pt.min_app && running && cmpVer(running, pt.min_app) < 0)
+        return json(200, { ok: true, patch: null, why: "needs app " + pt.min_app });
+
+      return json(200, {
+        ok: true,
+        patch: {
+          version: pt.version,          // the studio's version, not the app's
+          url: pt.url,                  // served by GitHub Pages, not by us
+          sha256: pt.sha256,
+          bytes: pt.bytes || 0,
+          notes: pt.notes || "",
+          min_app: pt.min_app || "",
+          updated: pt.updated || 0
+        }
+      });
+    }
+
     if (method === "GET" && path === "/app/notice") {
       const n = (await get("app:notice")) || {};
       /* Which build is asking.
@@ -806,26 +885,48 @@ async function handle(req) {
          right default for a platform that can fall behind. */
       const platform = String(url.searchParams.get("platform") || "").toLowerCase();
       const isMac = platform === "mac" || platform === "darwin";
+      /* A copy that does not SAY what it runs on is not a Windows copy.
+         `platform` shipped in 1.3.1, so every Mac still on 1.3.0 - which
+         is every Mac, because Mac is deliberately held back - sends
+         nothing at all. Treating silence as Windows handed those Macs the
+         Windows floor of 1.3.1 and a blocking screen pointing at an .exe
+         they cannot run and a version that does not exist for them.
+         Unknown means unknown: no floor, and no claim about what the
+         newest build is. Only a copy that names its platform gets held to
+         that platform's numbers. */
+      const known = platform === "mac" || platform === "darwin" ||
+                    platform === "windows" || platform === "win32";
       return json(200, {
         ok: true,
         edition: managed ? "managed" : "open",
         killed: !!n.killed,
         message: n.message || "",
-        title: n.title || "",
+        /* A title naming a Windows-only version is wrong on a Mac and
+           wrong on a copy that never said. Both get the neutral one. */
+        title: (known && !isMac) ? (n.title || "") : (n.title_other || ""),
         /* The floor, below which the app stops and insists.
            `min_managed` applies it to the managed edition alone, so the
            invited build can be held at a current version without blocking
            the open build, which people run offline and for free and which
            has no account to enforce anything against. */
-        min: isMac
-               ? (n.min_mac || "")
-               : ((managed && n.min_managed) ? n.min_managed : (n.min || "")),
+        min: !known
+               ? ""
+               : isMac
+                 ? (n.min_mac || "")
+                 : ((managed && n.min_managed) ? n.min_managed : (n.min || "")),
         /* The newest build FOR THIS PLATFORM. Announcing a Windows version
            number to a Mac makes every Mac look out of date forever. */
-        latest: isMac ? (n.latest_mac || "") : (n.latest || ""),
+        latest: !known ? "" : isMac ? (n.latest_mac || "") : (n.latest || ""),
         download: managed ? (ENV.DOWNLOAD_MANAGED_PAGE || (DOWNLOAD.replace(/\/?$/, "/") + "managed.html"))
                           : DOWNLOAD,    // the friendly page, per edition
-        file: managed ? DOWNLOAD_MANAGED : (n.file || DOWNLOAD_FILE),
+        /* Never hand a Mac a .exe. With no Mac artefact recorded, the
+           download PAGE is the honest answer - it has both columns on it
+           and says which is which. */
+        file: managed ? DOWNLOAD_MANAGED
+              : isMac ? (n.file_mac || DOWNLOAD)
+              : !known ? DOWNLOAD
+              : (n.file || DOWNLOAD_FILE),
+        sha256_mac: n.sha256_mac || "",
         sha256: n.sha256 || "",
         size: n.size || "",
         // When set, only this signed-in address should act on the notice.
@@ -946,17 +1047,24 @@ async function handle(req) {
       const buf = new Uint8Array(await req.arrayBuffer());
       const bytes = buf.byteLength;
 
-      /* THE CEILING IS NOT OURS TO CHOOSE. GitHub Pages refuses to serve
-         any file over 100 MB, and the Contents API refuses to accept one,
-         so a bigger number here would only move the failure later and make
-         it somebody else's error message. 60 MB leaves room for the
-         encoding inside the Worker's 128 MB and stays well under both. */
-      const MAX = 60 * 1024 * 1024;
+      /* 32 MB, and the number is measured rather than reasoned about.
+
+         A Worker has 128 MB of memory and this handler has to hold the
+         file, its base64 (a third larger again) and the JSON wrapping that
+         - so the real ceiling is well under what GitHub would accept.
+         Tested against this deployment: 8, 16, 24, 32 and 36 MB all
+         succeed; 40 MB dies with Cloudflare error 1102, "exceeded
+         resource limits", after seven seconds and no useful message.
+
+         32 leaves a margin under the lowest observed failure instead of
+         sitting on the edge of it, because the failure mode is a timeout
+         with an opaque code rather than a clean refusal. */
+      const MAX = 32 * 1024 * 1024;
       if (!bytes) return json(400, { error: "no file" });
       if (bytes > MAX) {
         return json(413, { error: "that file is " + Math.round(bytes / 1048576) +
-          " MB. The limit is 60 MB, because GitHub Pages will not serve a file " +
-          "over 100 MB and the upload has to be encoded on the way through. " +
+          " MB. The limit is 32 MB: the file has to be encoded on the way " +
+          "through and the server runs out of memory above that. " +
           "Compress the clip rather than trimming it - review video at this size " +
           "is usually over-encoded, and 1080p at a sane bitrate is a few MB a minute." });
       }
@@ -1015,6 +1123,35 @@ async function handle(req) {
        stops asking for a personal key. Signed out, or no shared key -> it
        offers the personal one exactly as before. Anonymous callers are told
        nothing is available, which is also true for them. */
+    /* Record a patch. Administrator only, and deliberately just a
+       manifest: the Worker never holds the payload, because a megabyte of
+       HTML per request out of a 100,000-request daily budget is a bill
+       waiting to happen and GitHub Pages serves it for nothing. What is
+       stored here is the URL, the hash the app must check it against, and
+       the floor it is safe on. */
+    if (path === "/admin/patch") {
+      const adm = bearer ? await getFresh("adm:" + bearer) : null;
+      if (!adm) return json(401, { error: "sign in first" });
+      if (method === "GET") return json(200, { ok: true, patch: (await get("patch")) || {} });
+      if (method !== "POST") return json(405, { error: "POST or GET" });
+      if (body.clear) { await set("patch", {}); return json(200, { ok: true, cleared: true }); }
+      const version = String(body.version || "").slice(0, 20);
+      const purl = String(body.url || "").slice(0, 500);
+      const sha = String(body.sha256 || "").toLowerCase().trim();
+      if (!version) return json(400, { error: "version is required" });
+      if (!/^https:\/\//.test(purl)) return json(400, { error: "url must be https" });
+      if (!/^[0-9a-f]{64}$/.test(sha)) return json(400, { error: "sha256 must be 64 hex characters" });
+      const rec = {
+        version, url: purl, sha256: sha,
+        bytes: Math.max(0, parseInt(body.bytes, 10) || 0),
+        notes: String(body.notes || "").slice(0, 2000),
+        min_app: String(body.min_app || "").slice(0, 20),
+        updated: Date.now()
+      };
+      await set("patch", rec);
+      return json(200, { ok: true, patch: rec });
+    }
+
     if (method === "GET" && path === "/app/services") {
       const s = bearer ? await getFresh("sess:" + bearer) : null;
       if (!s) return json(200, { ok: true, signed_in: false, traffic: false });
@@ -1077,6 +1214,12 @@ async function handle(req) {
         // macOS, on its own release cadence. Empty means never forced.
         min_mac: String(body.min_mac || "").slice(0, 20),
         latest_mac: String(body.latest_mac || "").slice(0, 20),
+        /* A headline and a download that are not Windows-only. Shown to
+           Macs, and to any copy old enough not to report its platform -
+           which is every Mac still on 1.3.0, because `platform` only
+           started being sent in 1.3.1. */
+        title_other: String(body.title_other || "").slice(0, 200),
+        file_mac: String(body.file_mac || "").slice(0, 500),
         // What the download page shows about the current build. Kept here
         // rather than hard-coded into the page so a new release is one form
         // on the admin screen, not an edit and a redeploy.
@@ -1527,7 +1670,16 @@ async function handle(req) {
       return json(200, { ok: true, sent: to, isNew: !had, edition });
     }
 
-    /* ---------- everything below needs a user session ---------- */
+    /* ---------- everything below needs a user session ----------
+
+       But an unknown path is not an authentication problem, and saying
+       "sign in first" to a typo sends whoever is debugging it looking for
+       a credential fault that does not exist. Routes are named here so a
+       path nobody serves gets the 404 it deserves, signed in or not. */
+    const AUTHED = new Set(["/me", "/projects", "/projects/delete", "/library",
+      "/library/delete", "/chats", "/chats/clear", "/history"]);
+    if (!AUTHED.has(path)) return json(404, { error: "not found", path });
+
     const sess = bearer ? await getFresh("sess:" + bearer) : null;
     if (!sess) return json(401, { error: "sign in first" });
     const email = sess.email;
