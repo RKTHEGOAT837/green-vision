@@ -484,8 +484,24 @@ async function handle(req) {
      top of the handler is where it belongs. */
   const bearer = (req.headers.get("authorization") || "").replace(/^Bearer\s+/i, "").trim();
 
+  /* ONE ROUTE SENDS A FILE, NOT JSON, AND MUST NOT COME THROUGH HERE.
+
+     Every non-GET request used to be read as text and capped at 900 KB
+     before routing. That cap is right for the JSON this API otherwise
+     takes - a 900 KB design is already implausible - and fatal for an
+     upload: a review clip was refused at 413 "too large" no matter how
+     small it was, because 1 MB is over the limit too.
+
+     Worse than the cap: `req.text()` CONSUMES the body. Raising the number
+     alone would have moved the failure to `req.arrayBuffer()` returning
+     nothing, which reads as a corrupt upload rather than a rejected one.
+
+     So the media route is excluded and reads its own body, with its own
+     limit, in its own handler. */
+  const rawBodyRoute = method === "POST" && path === "/admin/reviews/media";
+
   let body = {};
-  if (method !== "GET") {
+  if (method !== "GET" && !rawBodyRoute) {
     try {
       const raw = await req.text();
       if (raw.length > LIMITS.bodyBytes) return json(413, { error: "too large" });
