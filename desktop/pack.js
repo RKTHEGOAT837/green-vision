@@ -35,7 +35,50 @@ const OUT = path.join(ROOT, "release", "GreenVision-win32-x64");
 const ELECTRON = path.join(ROOT, "node_modules", "electron", "dist");
 const STUDIO_SRC = path.join(ROOT, "..", "dist_app");
 
-const APP_FILES = ["main.js", "preload.js", "auth.js", "accounts.js", "windows.js", "engine.js", "config.json"];
+/* ONE LIST, NOT TWO.
+ *
+ * This was a hand-written array sitting next to package.json's own
+ * build.files, and the two drifted the moment anything was added. 1.4.0
+ * shipped without patch.js because it was added to build.files and not
+ * here: main.js requires it on line 43, the require threw before any
+ * window was created, and the app started and vanished with no error
+ * anywhere a user could see. The same fault in the same shape lost
+ * engine.js on macOS two releases ago.
+ *
+ * So the list is now READ from package.json, which electron-builder also
+ * reads, and assertPackaged() below refuses to hand over a build that is
+ * missing something main.js requires. */
+const APP_FILES = (() => {
+  const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, "package.json"), "utf8"));
+  const files = ((pkg.build || {}).files || []).filter(f => !f.includes("*"));
+  if (!files.includes("main.js"))
+    throw new Error("package.json build.files has no main.js - refusing to guess");
+  return files;
+})();
+
+/* Every local module main.js and its dependencies pull in, resolved by
+ * reading the sources rather than by remembering. A require that cannot
+ * resolve at runtime is a silent, windowless start; caught here it is a
+ * failed build, which is the cheap version of the same information. */
+function assertPackaged(appDir) {
+  const seen = new Set();
+  const walk = f => {
+    if (seen.has(f)) return;
+    seen.add(f);
+    let src;
+    try { src = fs.readFileSync(path.join(ROOT, f), "utf8"); } catch { return; }
+    for (const m of src.matchAll(/require\(\s*["'](\.\/[^"']+)["']\s*\)/g)) {
+      let dep = m[1].replace(/^\.\//, "");
+      if (!/\.(js|json)$/.test(dep)) dep += ".js";
+      if (!fs.existsSync(path.join(appDir, dep)))
+        throw new Error("packaged app is missing " + dep + ", required by " + f +
+                        " - it would start and quit with no window");
+      walk(dep);
+    }
+  };
+  walk("main.js");
+  console.log("  every required module is present (" + seen.size + " checked)");
+}
 
 function rmrf(p) { fs.rmSync(p, { recursive: true, force: true }); }
 function copyDir(from, to) { fs.cpSync(from, to, { recursive: true }); }
@@ -98,6 +141,12 @@ function main() {
     description: pkg.description, author: pkg.author, main: pkg.main,
     appId: (pkg.build || {}).appId || null
   }, null, 2) + "\n", "utf8");
+
+  /* Now that every file is in place, refuse to hand over a build whose
+     main process cannot finish loading. Deliberately AFTER the manifest
+     is written: main.js requires ./package.json for the appId, and a
+     check that ran before it existed failed on its own first run. */
+  assertPackaged(appDir);
 
   // 3. the studio
   copyDir(STUDIO_SRC, path.join(OUT, "resources", "studio"));

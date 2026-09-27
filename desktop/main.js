@@ -40,7 +40,34 @@ const fs = require("fs");
 const auth = require("./auth");
 const accounts = require("./accounts");
 const win32 = require("./windows");
-const patch = require("./patch");
+/* A MISSING OPTIONAL MODULE MUST NOT COST THE WINDOW.
+ *
+ * 1.4.0 shipped without patch.js, this require threw on line 43, and
+ * everything below it - including createWindow() - never ran. The app
+ * started, adopted the engine, and exited with no window and nothing on
+ * screen to explain it. engine.js did exactly this on macOS two releases
+ * ago, and the lesson evidently did not stick.
+ *
+ * The patch channel is a convenience: without it the app runs the studio
+ * it was installed with, which is a perfectly good app. It is not worth
+ * a single failed start, so a require that fails leaves a stub behind
+ * and says so in the log. */
+const patch = (() => {
+  try { return require("./patch"); }
+  catch (e) {
+    console.error("[patch] channel unavailable (" + e.message + ") - " +
+                  "running the studio that shipped with this build");
+    return {
+      studioDir: d => d,
+      check: async () => null,
+      promoteStaged: () => {},
+      markHealthy: () => {},
+      status: () => ({ active: null, staged: null, rolledBack: null }),
+      revert: () => {},
+      dir: () => ""
+    };
+  }
+})();
 const engine = require("./engine");
 
 const PROTOCOL = "greenvision";

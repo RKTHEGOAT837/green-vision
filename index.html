@@ -1828,12 +1828,40 @@ function greenDrawLabels(){
    = 132 of 146, and the legend showed the three numbers with nothing to
    say where the other 14 went - which reads as arithmetic that does not
    add up rather than as coverage that does not reach. */
+/* Ask the engine once, in the background, and redraw the legend when the
+   answer lands. The count is only knowable from the engine, the legend
+   is built synchronously, and a reader who never opened the priority
+   view would otherwise get the half-sentence. */
+let _gvZonesAsked = false;
+function gvEnsureZonesTotal() {
+  if (_gvZonesAsked || (GV && GV.zonesTotal)) return;
+  _gvZonesAsked = true;
+  try {
+    fetch(gvEngineUrl("/api/health"), { cache: "no-cache" })
+      .then(r => r.ok ? r.json() : null)
+      .then(h => {
+        if (!h || !h.zones) return;
+        GV.zonesTotal = Number(h.zones) || 0;
+        if (currentView === "green") greenLegend();     // redraw with the number
+      })
+      .catch(() => {});
+  } catch (e) {}
+}
+
 function greenLossCoverageHTML(lossCount) {
+  gvEnsureZonesTotal();
   if (!lossCount) return "";
   const scored = ["green", "yellow", "red"]
     .reduce((a, k) => a + (Number(lossCount[k]) || 0), 0);
-  const total = (GVG.loss && Number(GVG.loss.zones)) ||
-                (GV.zonesTotal && Number(GV.zonesTotal)) || 0;
+  /* The engine names it total_zones. Reading a field that does not exist
+     made this fall back to the bare count - "132 zones scored." - which
+     is the half of the sentence that was never the problem. */
+  /* The city's cell count, from /api/health - NOT greenloss's own
+     total_zones, which reports how many it scored and so always equals
+     the sum of the buckets. The whole question a reader has is why 25 +
+     34 + 73 is 132 when the app says 146 elsewhere, and only health
+     knows the 146. */
+  const total = Number((GV && GV.zonesTotal) || 0);
   if (!scored) return "";
   if (!total || total <= scored)
     return '<div class="gl-fine gl-cov">' + scored + ' zones scored.</div>';
@@ -13383,6 +13411,11 @@ async function gvWhyNoContext() {
     clearTimeout(t);
     if (r.ok) {
       const h = await r.json();
+      /* Remember how many cells the engine actually has. The green
+         legend needs it to explain the gap between the zones its
+         forecast could score and the zones that exist, and this is the
+         only call that knows. */
+      if (h && h.zones) { try { GV.zonesTotal = Number(h.zones) || 0; } catch (e) {} }
       /* The engine calls this field `osm_local`, and this read asked for
          `osm`. `o` was therefore ALWAYS undefined, both branches below were
          unreachable, and every caller fell through to the bare
@@ -15638,6 +15671,10 @@ function priRender(gj){
   try { map.fitBounds(GVP.layer.getBounds(), {padding:[40,40]}); } catch(e){}
   priDrawLabels();
   priLegend(true);
+  /* The city's cell count, recorded where it is known for certain. The
+     green legend needs it to explain why its three buckets do not sum
+     to the number the rest of the app quotes. */
+  try { GV.zonesTotal = gj.features.length; } catch (e) {}
   toast(gj.features.length + " ranked cells from the engine");
 }
 
