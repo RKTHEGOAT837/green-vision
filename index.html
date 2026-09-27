@@ -5198,7 +5198,18 @@ function openAuth() {
     try {
       const c = new AbortController();
       const kill = setTimeout(() => c.abort(), 6000);
-      const q = edition ? "?edition=" + encodeURIComponent(edition) : "";
+      /* Which PLATFORM is asking, as well as which edition.
+
+         The update floor is one number for everybody, and the Mac build is
+         released on its own cadence - so a floor set for a Windows release
+         locks every Mac out and sends them to a download that is still the
+         version they already have. That is a loop with no way out of it.
+         The server can only avoid it if it knows who is asking. */
+      const D = window.__GV_DESKTOP__;
+      const plat = (D && D.platform) || "";
+      const q = "?" + [edition ? "edition=" + encodeURIComponent(edition) : "",
+                       plat ? "platform=" + encodeURIComponent(plat) : ""]
+                      .filter(Boolean).join("&");
       const r = await fetch(GVU.base + "/app/notice" + q, { signal: c.signal });
       clearTimeout(kill);
       if (r.ok) n = await r.json();

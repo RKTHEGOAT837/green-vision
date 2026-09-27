@@ -142,6 +142,13 @@ button.lnk.open { color: inherit; opacity: .75; }
         <span class="d">Shown on the download page. Leave it blank and that section is hidden, rather than showing a hash that is wrong.</span>
       </label>
 
+      <label>macOS: newest version <input id="bLatestMac" placeholder="leave blank if there is no Mac build to announce"></label>
+      <label>macOS: insist below version
+        <input id="bMinMac" placeholder="leave blank &mdash; Macs are never forced unless you set this">
+        <span class="d">The Mac build ships on its own cadence. Leave this empty and
+        a Windows release never locks a Mac out of a version it cannot get yet.</span>
+      </label>
+
       <label>Insist below version
         <input id="bMin" placeholder="leave blank to only inform">
         <span class="d">Anyone older than this is told they must update, rather than simply informed.</span>
@@ -200,9 +207,11 @@ button.lnk.open { color: inherit; opacity: .75; }
       from the start screen of the app. Words, a photo or a clip &mdash; the clip plays
       in the page, nobody has to download it.</p>
       <p class="d">Video and images are committed into the downloads repository and
-      served by GitHub Pages. <b>40 MB a file</b>: GitHub's upload API takes base64,
-      which inflates a file by a third, and the server has to hold both. Compress a
-      long clip before uploading it rather than trimming it to fit.</p>
+      served by GitHub Pages. <b>60 MB a file.</b> GitHub Pages refuses to serve anything over
+      100 MB, and the upload is encoded on the way through, so that is the real
+      ceiling rather than a number we picked. Compress a long clip rather than
+      trimming it &mdash; review video is usually over-encoded, and 1080p at a sane
+      bitrate is a few MB a minute.</p>
 
       <label>Name <input id="rvName" placeholder="Priya Sharma"></label>
       <label>Role and organisation <input id="rvRole" placeholder="Horticulture Officer, Ahmedabad Municipal Corporation"></label>
@@ -292,6 +301,8 @@ async function loadNotice() {
     $("bMsg").value = n.message || "";
     $("bLatest").value = n.latest || "";
     $("bMin").value = n.min || "";
+    $("bMinMac").value = n.min_mac || "";
+    $("bLatestMac").value = n.latest_mac || "";
     $("bFile").value = n.file || "";
     $("bSize").value = n.size || "";
     $("bSha").value = n.sha256 || "";
@@ -332,11 +343,13 @@ async function sendNotice(clear) {
   }
 
   const body = clear
-    ? { killed: false, title: "", message: "", latest: "", min: "", only: "",
+    ? { killed: false, title: "", message: "", latest: "", min: "",
+        min_mac: "", latest_mac: "", only: "",
         file: $("bFile").value.trim(), size: $("bSize").value.trim(),
         sha256: $("bSha").value.trim() }
     : { killed: kill, title: $("bTitle").value.trim(), message: $("bMsg").value.trim(),
         latest: $("bLatest").value.trim(), min: $("bMin").value.trim(),
+        min_mac: $("bMinMac").value.trim(), latest_mac: $("bLatestMac").value.trim(),
         file: $("bFile").value.trim(), size: $("bSize").value.trim(),
         sha256: $("bSha").value.trim(), only: $("bOnly").value.trim() };
 
@@ -422,17 +435,6 @@ async function loadReviews() {
   } catch (e) { /* the rest of the page still works */ }
 }
 
-function fileToBase64(f) {
-  return new Promise(function (res, rej) {
-    const fr = new FileReader();
-    fr.onload = function () {
-      const s = String(fr.result || "");
-      res(s.slice(s.indexOf(",") + 1));       // strip the data: prefix
-    };
-    fr.onerror = rej;
-    fr.readAsDataURL(f);
-  });
-}
 
 async function addReview() {
   const f = $("rvFile").files && $("rvFile").files[0];
@@ -440,16 +442,23 @@ async function addReview() {
   try {
     let media = "";
     if (f) {
-      if (f.size > 40 * 1024 * 1024) {
-        $("rvState").textContent = "That file is " +
-          Math.round(f.size / 1048576) + " MB. The limit is 40 MB.";
+      if (f.size > 60 * 1024 * 1024) {
+        $("rvState").textContent = "That file is " + Math.round(f.size / 1048576) +
+          " MB. The limit is 60 MB — GitHub Pages will not serve a file over " +
+          "100 MB. Compress the clip rather than trimming it.";
         return;
       }
       $("rvState").textContent = "Uploading " + Math.round(f.size / 1048576) + " MB…";
+      /* The file itself, not a base64 copy of it inside JSON. Encoding in
+         the browser inflated it by a third before it even left, and the
+         server then held a second copy while parsing - which is what kept
+         the ceiling low. */
       const up = await fetch(API + "/api/admin/reviews/media", {
         method: "POST",
-        headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" },
-        body: JSON.stringify({ filename: f.name, data: await fileToBase64(f) })
+        headers: { Authorization: "Bearer " + token,
+                   "Content-Type": "application/octet-stream",
+                   "X-GV-Filename": f.name },
+        body: f
       });
       const uj = await readJson(up);
       if (!up.ok) { $("rvState").textContent = "Upload failed — " + (uj.error || up.status); return; }

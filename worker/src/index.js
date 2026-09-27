@@ -776,19 +776,30 @@ async function handle(req) {
          and have to be updated by hand once - there is no way to tell them
          apart from here, because they never said. */
       const managed = url.searchParams.get("edition") === "managed";
+      /* macOS is built by a separate workflow on a separate cadence, so a
+         floor set when Windows ships would lock every Mac out and offer
+         them the version they are already running. `min_mac` is its own
+         number: leave it empty and Macs are never forced, which is the
+         right default for a platform that can fall behind. */
+      const platform = String(url.searchParams.get("platform") || "").toLowerCase();
+      const isMac = platform === "mac" || platform === "darwin";
       return json(200, {
         ok: true,
         edition: managed ? "managed" : "open",
         killed: !!n.killed,
         message: n.message || "",
         title: n.title || "",
-        latest: n.latest || "",          // newest version available
         /* The floor, below which the app stops and insists.
            `min_managed` applies it to the managed edition alone, so the
            invited build can be held at a current version without blocking
            the open build, which people run offline and for free and which
            has no account to enforce anything against. */
-        min: (managed && n.min_managed) ? n.min_managed : (n.min || ""),
+        min: isMac
+               ? (n.min_mac || "")
+               : ((managed && n.min_managed) ? n.min_managed : (n.min || "")),
+        /* The newest build FOR THIS PLATFORM. Announcing a Windows version
+           number to a Mac makes every Mac look out of date forever. */
+        latest: isMac ? (n.latest_mac || "") : (n.latest || ""),
         download: managed ? (ENV.DOWNLOAD_MANAGED_PAGE || (DOWNLOAD.replace(/\/?$/, "/") + "managed.html"))
                           : DOWNLOAD,    // the friendly page, per edition
         file: managed ? DOWNLOAD_MANAGED : (n.file || DOWNLOAD_FILE),
@@ -892,18 +903,48 @@ async function handle(req) {
         return json(503, { error: "no GITHUB_TOKEN is set on this worker, so " +
                                   "media cannot be published" });
       }
-      const name = String(body.filename || "").replace(/[^A-Za-z0-9._-]/g, "").slice(0, 80);
+      const name = String(req.headers.get("x-gv-filename") || "")
+                     .replace(/[^A-Za-z0-9._-]/g, "").slice(0, 80);
       if (!name || !/\.(mp4|webm|mov|png|jpe?g|gif|webp|avif)$/i.test(name)) {
         return json(400, { error: "filename must end in mp4, webm, mov, png, jpg, gif, webp or avif" });
       }
-      const b64 = String(body.data || "");
-      const bytes = Math.floor(b64.length * 3 / 4);
-      const MAX = 40 * 1024 * 1024;
-      if (!b64) return json(400, { error: "no file" });
+
+      /* RAW BINARY IN, base64 out.
+         
+         This used to take the file as base64 inside a JSON body, which is
+         the worst shape available: the browser inflates the file by a
+         third, then JSON.parse holds a second copy of that. A Worker has
+         128 MB, so a 40 MB clip was already near the edge and anything
+         larger died mid-upload.
+
+         Taking the bytes raw and encoding them here costs one buffer plus
+         one string instead of two strings plus a buffer, which is what
+         lets the ceiling go up rather than the failures. */
+      const buf = new Uint8Array(await req.arrayBuffer());
+      const bytes = buf.byteLength;
+
+      /* THE CEILING IS NOT OURS TO CHOOSE. GitHub Pages refuses to serve
+         any file over 100 MB, and the Contents API refuses to accept one,
+         so a bigger number here would only move the failure later and make
+         it somebody else's error message. 60 MB leaves room for the
+         encoding inside the Worker's 128 MB and stays well under both. */
+      const MAX = 60 * 1024 * 1024;
+      if (!bytes) return json(400, { error: "no file" });
       if (bytes > MAX) {
         return json(413, { error: "that file is " + Math.round(bytes / 1048576) +
-                                  " MB; the limit is 40 MB" });
+          " MB. The limit is 60 MB, because GitHub Pages will not serve a file " +
+          "over 100 MB and the upload has to be encoded on the way through. " +
+          "Compress the clip rather than trimming it - review video at this size " +
+          "is usually over-encoded, and 1080p at a sane bitrate is a few MB a minute." });
       }
+
+      // Chunked, because String.fromCharCode over a whole 60 MB array
+      // blows the argument limit long before it blows the memory.
+      let bin = "";
+      for (let i = 0; i < buf.length; i += 0x8000) {
+        bin += String.fromCharCode.apply(null, buf.subarray(i, i + 0x8000));
+      }
+      const b64 = btoa(bin);
 
       const repo = ENV.PAGES_REPO || "RKTHEGOAT837/green-vision-releases";
       const stamped = Date.now().toString(36) + "-" + name;
@@ -917,10 +958,7 @@ async function handle(req) {
           "User-Agent": "green-vision-admin",
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({
-          message: "Reviews: add " + stamped,
-          content: b64
-        })
+        body: JSON.stringify({ message: "Reviews: add " + stamped, content: b64 })
       });
       if (!r.ok) {
         const t = await r.text();
@@ -1013,6 +1051,9 @@ async function handle(req) {
         min: String(body.min || "").slice(0, 20),
         // The same floor, for the managed edition only.
         min_managed: String(body.min_managed || "").slice(0, 20),
+        // macOS, on its own release cadence. Empty means never forced.
+        min_mac: String(body.min_mac || "").slice(0, 20),
+        latest_mac: String(body.latest_mac || "").slice(0, 20),
         // What the download page shows about the current build. Kept here
         // rather than hard-coded into the page so a new release is one form
         // on the admin screen, not an edit and a redeploy.
