@@ -26,7 +26,10 @@ const TMP = path.join(DIR, ".render.tmp.html");
 const FONTS = "https://fonts.googleapis.com/css2?family=Sora:wght@800&family=Manrope:wght@700&display=swap";
 
 const JOBS = [
-  { svg: "green-vision-mark.svg",        out: "green-vision-mark",        sizes: [1024, 512, 256, 128, 64] },
+  /* 48, 32 and 16 are here for the Windows icon rather than for anyone to
+     ask for directly: an .ico that downscales one large bitmap to 16px is
+     visibly softer than one carrying a 16px render. */
+  { svg: "green-vision-mark.svg",        out: "green-vision-mark",        sizes: [1024, 512, 256, 128, 64, 48, 32, 16] },
   { svg: "green-vision-lockup.svg",      out: "green-vision-lockup",      sizes: [1600, 800, 400] },
   { svg: "green-vision-lockup-dark.svg", out: "green-vision-lockup-dark", sizes: [1600, 800, 400], dark: true }
 ];
@@ -75,5 +78,49 @@ app.whenReady().then(async () => {
 
   try { fs.unlinkSync(TMP); } catch (e) {}
   console.log(`\n${made} PNGs written to brand/`);
+
+  /* THE WINDOWS ICON, from the same render as everything else.
+
+     It used to be made by hand somewhere else, which is exactly how it came
+     to be the one file still showing the previous mark after the logo was
+     updated everywhere. Built here, it cannot drift again.
+
+     An .ico is a small container and nothing more: a 6-byte header, a 16-byte
+     directory entry per image, then the payloads. Windows has read PNG-
+     compressed entries since Vista, so the PNGs just written go in verbatim -
+     no re-encoding, no image library. 256 is stored as 0 in the directory,
+     which is the format's way of saying "256". */
+  try {
+    const ICO_SIZES = [16, 32, 48, 64, 128, 256];
+    const imgs = ICO_SIZES.map(s => ({
+      size: s, buf: fs.readFileSync(path.join(DIR, `green-vision-mark-${s}.png`))
+    }));
+    const header = Buffer.alloc(6);
+    header.writeUInt16LE(0, 0);              // reserved
+    header.writeUInt16LE(1, 2);              // 1 = icon
+    header.writeUInt16LE(imgs.length, 4);
+
+    let offset = 6 + imgs.length * 16;
+    const dir = [];
+    for (const im of imgs) {
+      const e = Buffer.alloc(16);
+      e.writeUInt8(im.size >= 256 ? 0 : im.size, 0);   // width
+      e.writeUInt8(im.size >= 256 ? 0 : im.size, 1);   // height
+      e.writeUInt8(0, 2);                               // palette
+      e.writeUInt8(0, 3);                               // reserved
+      e.writeUInt16LE(1, 4);                            // colour planes
+      e.writeUInt16LE(32, 6);                           // bits per pixel
+      e.writeUInt32LE(im.buf.length, 8);
+      e.writeUInt32LE(offset, 12);
+      offset += im.buf.length;
+      dir.push(e);
+    }
+    const ico = path.join(DIR, "green-vision.ico");
+    fs.writeFileSync(ico, Buffer.concat([header, ...dir, ...imgs.map(i => i.buf)]));
+    console.log(`  green-vision.ico                   ${ICO_SIZES.join(", ")}  ` +
+                `${(fs.statSync(ico).size / 1024).toFixed(0)} KB`);
+  } catch (err) {
+    console.error("  FAILED green-vision.ico: " + (err && err.message));
+  }
   app.exit(0);
 });

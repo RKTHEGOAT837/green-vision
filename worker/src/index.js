@@ -894,8 +894,23 @@ async function handle(req) {
          Unknown means unknown: no floor, and no claim about what the
          newest build is. Only a copy that names its platform gets held to
          that platform's numbers. */
-      const known = platform === "mac" || platform === "darwin" ||
-                    platform === "windows" || platform === "win32";
+      /* ...but "no floor for anyone who did not say" exempted precisely the
+         builds a compulsory update is FOR. A managed 1.3.0 asks with nothing
+         but `edition`, so it was handed min:"" and never showed the blocking
+         screen, however high the floor was set. The oldest copies - the ones
+         most likely to be broken - were the only ones escaping it.
+
+         So silence is read as Windows, but ONLY while no Mac artefact is
+         recorded. Nothing in `min_mac`, `latest_mac` or `file_mac` means no
+         Mac build has been published, and a copy that did not name its
+         platform can only be a Windows one. Record any of those three and
+         this reverts on its own: silence goes back to meaning unknown, and
+         no Mac is handed a Windows floor it cannot satisfy. The blocking
+         screen's link is the download PAGE for the edition, not an .exe, so
+         even a wrong guess here points somewhere a reader can act on. */
+      const macPublished = !!(n.min_mac || n.latest_mac || n.file_mac);
+      const known = isMac || platform === "windows" || platform === "win32" ||
+                    !macPublished;
       return json(200, {
         ok: true,
         edition: managed ? "managed" : "open",
@@ -1714,9 +1729,17 @@ async function handle(req) {
       }
       if (method === "PUT") {
         const p = { ...(acct.profile || {}) };
+        /* 2,000 characters is right for a name, an organisation, a line about
+           your work - and far too short for `photo`, which is a data: URI.
+           Truncating one does not shorten a picture, it produces a JPEG that
+           ends mid-scan and will not decode, so the studio kept photos local
+           rather than store something broken here. The picture gets its own
+           ceiling: 192x192 JPEG is ~10 KB, 300 KB leaves generous headroom
+           and still sits far under the 900 KB body cap. */
+        const LIMIT = k => (k === "photo" ? 300000 : 2000);
         for (const [k, v] of Object.entries(body.profile || {})) {
           if (v === null) delete p[k];
-          else if (v !== "") p[k] = typeof v === "string" ? v.slice(0, 2000) : v;
+          else if (v !== "") p[k] = typeof v === "string" ? v.slice(0, LIMIT(k)) : v;
         }
         await set("acct:" + email, { ...acct, profile: p, updated: Date.now() });
         return json(200, { ok: true, profile: p });

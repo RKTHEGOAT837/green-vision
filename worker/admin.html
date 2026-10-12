@@ -482,9 +482,7 @@ async function savePatch(clear) {
   btn.disabled = true;
   try {
     if (clear) {
-      if (!confirm("Withdraw the patch?
-
-Copies that already applied it keep it " +
+      if (!confirm("Withdraw the patch?\n\nCopies that already applied it keep it " +
                    "until you publish a newer one; copies that have not will stop " +
                    "being offered it.")) return;
       await api("/admin/patch", { clear: true });

@@ -84,11 +84,34 @@ function readState() {
   try { return JSON.parse(fs.readFileSync(statePath(), "utf8")) || {}; }
   catch { return {}; }
 }
-function writeState(s) {
-  try {
-    fs.mkdirSync(dir(), { recursive: true });
-    fs.writeFileSync(statePath(), JSON.stringify(s, null, 2));
-  } catch (e) { /* a patch we cannot record is a patch we will not use */ }
+function writeState(s, log = () => {}) {
+  /* A WRITE THAT FAILS SILENTLY IS WORSE THAN ONE THAT THROWS.
+
+     On 2026-10-01 a transient file lock meant the app downloaded patch
+     1.4.2, hash-verified it, wrote the payload, and then failed to record
+     it. The patch sat unused for about fourteen hours with nothing on
+     screen and nothing in any log to say why - because this swallowed the
+     error and returned as though it had worked.
+
+     One retry, because the common cause is a lock that clears in
+     milliseconds, and a log line either way so the next person has
+     something to find. */
+  const body = JSON.stringify(s, null, 2);
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      fs.mkdirSync(dir(), { recursive: true });
+      fs.writeFileSync(statePath(), body);
+      return true;
+    } catch (e) {
+      if (attempt === 2) {
+        log("COULD NOT RECORD PATCH STATE (" + (e && e.message) + ") - the " +
+            "studio on disk and the state file now disagree, so the patch " +
+            "will not be used until this is writable: " + statePath());
+        return false;
+      }
+    }
+  }
+  return false;
 }
 
 /* GET, following redirects, with a ceiling and a deadline. GitHub Pages
@@ -137,6 +160,35 @@ function studioDir(shippedDir, log = () => {}) {
 
   const p = path.join(dir(), st.active.version);
   const idx = path.join(p, "index.html");
+
+  /* WHAT THE STUDIO LOADS BESIDE ITSELF.
+
+     A patch is one HTML file dropped into a directory of its own, and the
+     studio asks for `gv-engine.js` and `data/i18n/*.json` by relative path.
+     In that directory both are 404 - so a patched copy silently lost the
+     in-page planner and fourteen of its fifteen languages, with no error
+     anywhere, just a language picker that had collapsed to English.
+
+     Payloads built from October 2026 carry both inside the page and need
+     none of this. Older ones do not, and a copy that applied one before
+     updating is exactly the copy that cannot be reached by a new payload.
+     So anything missing is linked in from the studio that shipped in the
+     installer, which is always present and always matches this build. */
+    try {
+      for (const name of ["gv-engine.js", "data", "brand"]) {
+        const want = path.join(p, name);
+        const have = path.join(shippedDir, name);
+        if (!fs.existsSync(want) && fs.existsSync(have)) {
+          fs.cpSync(have, want, { recursive: true });
+          log("patch " + st.active.version + ": supplied missing " + name +
+              " from the shipped studio");
+        }
+      }
+    } catch (e) {
+      log("could not supply the patch's sibling files (" + (e && e.message) +
+          ") - the studio may fall back to English only");
+    }
+
   if (!fs.existsSync(idx)) {
     log("patch " + st.active.version + " is recorded but missing on disk — using the shipped studio");
     return shippedDir;
@@ -149,13 +201,25 @@ function studioDir(shippedDir, log = () => {}) {
      with this patch never got that far: the page threw during parse, or
      the app was killed on a white screen. Twice is a pattern, and a
      broken studio cannot be fixed from inside itself. */
-  if ((st.failures || 0) >= 2) {
+  /* THREE, NOT TWO.
+
+     `failures` counts starts that never reached dom-ready. A patch that
+     throws during parse does that every time and is caught on the third
+     start instead of the second - one extra launch. But a machine put to
+     sleep mid-start, a force-quit, or an installer restarting the app also
+     look exactly like it, and two of those in a row is not rare: it
+     happened here during development and rolled back a perfectly good
+     studio, which then quietly served stale code for a day.
+
+     The asymmetry matters. Rolling back wrongly is silent and lasting;
+     rolling back one launch later costs one launch. */
+  if ((st.failures || 0) >= 3) {
     log("patch " + st.active.version + " failed to come up twice — rolled back to the shipped studio");
-    writeState({ ...st, active: null, rolledBack: st.active, failures: 0 });
+    writeState({ ...st, active: null, rolledBack: st.active, failures: 0 }, log);
     return shippedDir;
   }
 
-  writeState({ ...st, failures: (st.failures || 0) + 1 });
+  writeState({ ...st, failures: (st.failures || 0) + 1 }, log);
   log("studio patch " + st.active.version + " in use (" + p + ")");
   return p;
 }

@@ -29,6 +29,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import json
 import shutil
 import subprocess
 import sys
@@ -64,7 +65,63 @@ def bake(out: Path) -> Path:
         raise SystemExit("no index.html came out of the bake")
     out.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy2(src, out)
+    inline_siblings(out, tmp)
     return out
+
+
+def inline_siblings(page: Path, built: Path) -> None:
+    """Fold the files the studio loads BY RELATIVE PATH into the page itself.
+
+    A patch is one HTML file, and the app drops it into a directory of its
+    own. Everything the studio asks for beside itself - gv-engine.js, and
+    data/i18n/*.json - is a 404 there.
+
+    The symptom is not an error. The language picker falls back to its
+    one-item English list and the assistant reports "offline-engine (LLM
+    unavailable)", and neither of those points at a missing file. Every
+    patch published so far has shipped that way.
+
+    So they travel inside the payload. It roughly doubles the download, once
+    per release, and buys fifteen languages that work with the machine
+    offline - which is what the rest of this product claims about itself.
+    """
+    html = page.read_text(encoding="utf-8")
+    bs = chr(92)
+
+    # --- the dictionaries -------------------------------------------------
+    i18n_dir = built / "data" / "i18n"
+    if i18n_dir.is_dir():
+        packs = {}
+        for f in sorted(i18n_dir.glob("*.json")):
+            try:
+                packs[f.stem] = json.loads(f.read_text(encoding="utf-8"))
+            except Exception as exc:
+                print("  WARNING: " + f.name + " is not valid JSON, left out (" + str(exc) + ")")
+        if packs:
+            blob = json.dumps(packs, separators=(",", ":"), ensure_ascii=False)
+            # "</" inside a string literal would close the script block early.
+            blob = blob.replace("</", "<" + bs + bs + "/")
+            anchor = chr(60) + 'script src="gv-engine.js"'
+            if anchor not in html:
+                raise SystemExit("could not find the engine script tag to anchor the bundle")
+            tag = chr(60) + "script>window.GV_I18N=" + blob + ";" + chr(60) + "/script>\n"
+            html = html.replace(anchor, tag + anchor, 1)
+            print("  bundled " + str(len(packs)) + " language packs ("
+                  + format(len(blob) / 1024, ".0f") + " KB) into the page")
+
+    # --- the in-page planner ---------------------------------------------
+    eng = built / "gv-engine.js"
+    if eng.is_file():
+        js = eng.read_text(encoding="utf-8").replace(chr(60) + "/script",
+                                                     chr(60) + bs + bs + "/script")
+        old_tag = chr(60) + 'script src="gv-engine.js" onerror="void 0">' + chr(60) + "/script>"
+        if old_tag in html:
+            html = html.replace(old_tag, chr(60) + "script>" + js + chr(60) + "/script>", 1)
+            print("  bundled gv-engine.js (" + format(len(js) / 1024, ".0f") + " KB) into the page")
+        else:
+            print("  WARNING: engine script tag not found - gv-engine.js NOT bundled")
+
+    page.write_text(html, encoding="utf-8")
 
 
 def main() -> None:
