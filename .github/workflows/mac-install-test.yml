@@ -1,0 +1,63 @@
+# Prove the one-line Mac installer works, on a Mac nobody has touched.
+#
+# Runs the exact command a person pastes into Terminal - fetched from the
+# public URL, not from this checkout - then checks the app landed, opens,
+# and brings up its engine. Then runs it a second time with the app open,
+# which is the update path and the one most likely to go wrong.
+name: macOS installer test
+
+on:
+  workflow_dispatch:
+
+jobs:
+  install:
+    runs-on: macos-14          # Apple Silicon, same as the build
+    timeout-minutes: 45
+    steps:
+      - name: Run the one-line installer exactly as published
+        run: |
+          set -eux
+          curl -fsSL https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/scripts/install-mac.sh \
+            | bash -s -- --no-open
+
+      - name: It installed where it said
+        run: |
+          set -eux
+          APP="/Applications/Green Vision.app"
+          test -d "$APP"
+          defaults read "$APP/Contents/Info" CFBundleShortVersionString
+          codesign --verify --deep --strict "$APP"
+          # no quarantine left, so macOS will not refuse the first open
+          if xattr -p com.apple.quarantine "$APP" >/dev/null 2>&1; then echo "::error::still quarantined"; exit 1; fi
+
+      - name: It opens, and the engine answers
+        run: |
+          set -eux
+          open "/Applications/Green Vision.app"
+          OK=""
+          for i in $(seq 1 60); do
+            sleep 5
+            for PORT in 8000 8010 8020 8030 8040; do
+              curl -fsS --max-time 3 "http://127.0.0.1:$PORT/api/health" -o /tmp/health.json && { OK=$PORT; break 2; }
+            done
+          done
+          test -n "$OK"
+          echo "engine answered on port $OK"
+          screencapture -x /tmp/after-install.png || true
+
+      - name: Running it again updates in place, with the app open
+        run: |
+          set -eux
+          curl -fsSL https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/scripts/install-mac.sh \
+            | bash -s -- --no-open
+          test -d "/Applications/Green Vision.app"
+          if pgrep -f "Green Vision.app/Contents/MacOS"; then echo "::error::old copy left running"; exit 1; fi
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mac-installer-test
+          path: |
+            /tmp/after-install.png
+            /tmp/health.json
+          if-no-files-found: warn
