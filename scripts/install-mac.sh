@@ -75,9 +75,39 @@ say "Finding the newest Green Vision for Mac…"
 # rather than quietly installing the version before it.
 for ATTEMPT in 1 2 3 4 5 6 7 8 9 10; do
 API_JSON_FILE="$(mktemp -t greenvision-releases)"
-curl -fsSL -H "Accept: application/vnd.github+json" \
-  "https://api.github.com/repos/$REPO/releases?per_page=20" -o "$API_JSON_FILE" \
-  || die "Could not reach GitHub. Check the internet connection and try again."
+AUTH=()
+TOKEN="${GH_TOKEN:-${GITHUB_TOKEN:-}}"
+[ -n "$TOKEN" ] && AUTH=(-H "Authorization: Bearer $TOKEN")
+HTTP="$(curl -sSL ${AUTH[@]+"${AUTH[@]}"} -H "Accept: application/vnd.github+json" -w "%{http_code}" \
+  "https://api.github.com/repos/$REPO/releases?per_page=20" -o "$API_JSON_FILE" 2>/dev/null || echo 000)"
+
+[ -n "${GV_FORCE_FEED:-}" ] && HTTP=403     # test hook: exercise the feed path
+if [ "$HTTP" = "000" ]; then
+  rm -f "$API_JSON_FILE"
+  die "Could not reach GitHub. Check the internet connection and try again."
+fi
+
+if [ "$HTTP" != "200" ]; then
+  # Usually 403: the hourly limit for anonymous API calls from this network.
+  # The Atom feed is a normal page and is not limited the same way.
+  rm -f "$API_JSON_FILE"
+  [ "$ATTEMPT" = 1 ] && warn "GitHub's API said $HTTP (usually its hourly limit); using the releases feed instead."
+  FEED_VER="$(curl -fsSL "https://github.com/$REPO/releases.atom" 2>/dev/null \
+    | grep -o 'releases/tag/mac-v[0-9][0-9.]*' | sed 's#.*mac-v##' \
+    | sort -t. -k1,1n -k2,2n -k3,3n | tail -1 || true)"
+  [ -n "$FEED_VER" ] || die "Could not find a macOS release on GitHub. Try again in a few minutes."
+  NEWEST_TAG="$FEED_VER"
+  ZIP_NAME="GreenVision-$FEED_VER-mac-arm64-beta.zip"
+  ZIP_URL="https://github.com/$REPO/releases/download/mac-v$FEED_VER/$ZIP_NAME"
+  EXPECT_SHA=""
+  # A HEAD request tells a published file from one still uploading.
+  if curl -fsIL -o /dev/null "$ZIP_URL" 2>/dev/null; then VERSION="$FEED_VER"; break; fi
+  VERSION=""
+  [ "$ATTEMPT" = 10 ] && die "Version $NEWEST_TAG is still being published. Try again in a few minutes."
+  warn "Version $NEWEST_TAG is still being uploaded; waiting 30 seconds..."
+  sleep 30
+  continue
+fi
 
 # Parse with the JavaScript engine built into macOS (osascript -l JavaScript):
 # a stock Mac has no jq and no working python3, and grep/sed over JSON breaks

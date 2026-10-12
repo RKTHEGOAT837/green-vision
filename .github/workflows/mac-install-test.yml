@@ -19,7 +19,9 @@ jobs:
     runs-on: macos-14          # Apple Silicon, same as the build
     timeout-minutes: 45
     steps:
-      - name: Run the one-line installer exactly as published
+      - name: Run the one-line installer exactly as published (via the releases feed, as if the API were rate-limited)
+        env:
+          GV_FORCE_FEED: "1"
         run: |
           set -eux
           curl -fsSL https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/scripts/install-mac.sh \
@@ -52,7 +54,9 @@ jobs:
           echo "engine answered on port $OK"
           screencapture -x /tmp/after-install.png || true
 
-      - name: Running it again updates in place, with the app open
+      - name: Running it again updates in place, with the app open (via the API)
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -eux
           curl -fsSL https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/scripts/install-mac.sh \
