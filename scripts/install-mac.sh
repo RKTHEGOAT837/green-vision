@@ -21,6 +21,17 @@
 
 set -euo pipefail
 
+# EVERYTHING IS INSIDE main(), CALLED ON THE LAST LINE.
+#
+# Run as `curl ... | bash`, bash reads this script from the same pipe the
+# commands inherit as their input. Any command that reads input swallows
+# the rest of the script and bash then stops - silently, with success. The
+# first test of this installer did exactly that, right after unpacking. A
+# function has to be read in full before it can be called, and main's input
+# is pointed at /dev/null so nothing inside it can eat anything.
+main() {
+
+
 REPO="RKTHEGOAT837/green-vision"
 APP_NAME="Green Vision"
 DEST="/Applications"
@@ -60,6 +71,9 @@ FREE_GB=$(( $(df -k "$HOME" | awk 'NR==2 {print $4}') / 1024 / 1024 ))
 
 # ---- 3. the newest macOS release ----------------------------------------
 say "Finding the newest Green Vision for Mac…"
+# A release being re-published has no file for a few seconds. Wait for it
+# rather than quietly installing the version before it.
+for ATTEMPT in 1 2 3 4 5 6 7 8 9 10; do
 API_JSON_FILE="$(mktemp -t greenvision-releases)"
 curl -fsSL -H "Accept: application/vnd.github+json" \
   "https://api.github.com/repos/$REPO/releases?per_page=20" -o "$API_JSON_FILE" \
@@ -73,16 +87,27 @@ PARSED="$(osascript -l JavaScript -e '
 function run(argv) {
   ObjC.import("Foundation");
   var s = $.NSString.stringWithContentsOfFileEncodingError(argv[0], $.NSUTF8StringEncoding, null).js;
-  var rel = JSON.parse(s);
+  var rel = JSON.parse(s), best = null;
+  // HIGHEST VERSION, NOT FIRST IN THE LIST. Re-publishing a release deletes
+  // its zip before uploading the new one, and for those seconds the newest
+  // release has no file at all - taking the first match then installed
+  // 1.3.0 on a clean Mac while 1.5.0 was being re-uploaded.
+  function v(name) { var m = /GreenVision-([0-9.]+)-mac/.exec(name); return m ? m[1].split(".").map(Number) : [0]; }
+  function newer(a, b) { for (var k = 0; k < Math.max(a.length, b.length); k++) { var x = a[k] || 0, y = b[k] || 0; if (x !== y) return x > y; } return false; }
   for (var i = 0; i < rel.length; i++) {
     if (rel[i].draft) continue;
     var a = rel[i].assets || [];
     for (var j = 0; j < a.length; j++) {
-      if (/mac-arm64.*\.zip$/.test(a[j].name)) {
-        return [a[j].browser_download_url, a[j].name, (a[j].digest || "").replace(/^sha256:/, "")].join("\n");
-      }
+      if (/mac-arm64.*\.zip$/.test(a[j].name) && a[j].state === "uploaded" &&
+          (!best || newer(v(a[j].name), v(best.name)))) best = a[j];
     }
   }
+  var top = [0];
+  for (var t = 0; t < rel.length; t++) {
+    var mt = /^mac-v([0-9.]+)$/.exec(rel[t].tag_name || "");
+    if (mt && !rel[t].draft && newer(mt[1].split(".").map(Number), top)) top = mt[1].split(".").map(Number);
+  }
+  if (best) return [best.browser_download_url, best.name, (best.digest || "").replace(/^sha256:/, ""), top.join(".")].join("\n");
   return "";
 }' "$API_JSON_FILE" 2>/dev/null || true)"
 rm -f "$API_JSON_FILE"
@@ -92,6 +117,12 @@ ZIP_NAME="$(printf '%s\n' "$PARSED" | sed -n 2p)"
 EXPECT_SHA="$(printf '%s\n' "$PARSED" | sed -n 3p)"
 [ -n "$ZIP_URL" ] || die "No macOS build was found on the releases page."
 VERSION="$(printf '%s' "$ZIP_NAME" | sed -n 's/^GreenVision-\([0-9.]*\)-mac.*/\1/p')"
+NEWEST_TAG="$(printf '%s\n' "$PARSED" | sed -n 4p)"
+if [ -z "$NEWEST_TAG" ] || [ "$NEWEST_TAG" = "$VERSION" ]; then break; fi
+[ "$ATTEMPT" = 10 ] && die "Version $NEWEST_TAG is still being published. Try again in a few minutes."
+warn "Version $NEWEST_TAG is still being uploaded; waiting 30 seconds..."
+sleep 30
+done
 
 INSTALLED=""
 if [ -d "$DEST/$APP_NAME.app" ]; then
@@ -175,3 +206,6 @@ if [ "$OPEN_AFTER" = "1" ]; then
   say "Opening it… (the first start takes up to a minute while the engine loads)"
   open "$DEST/$APP_NAME.app"
 fi
+}
+
+main "$@" < /dev/null

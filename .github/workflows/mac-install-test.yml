@@ -8,6 +8,11 @@ name: macOS installer test
 
 on:
   workflow_dispatch:
+    inputs:
+      expect:
+        description: Version the installer must end up installing
+        required: true
+        default: "1.5.0"
 
 jobs:
   install:
@@ -25,7 +30,9 @@ jobs:
           set -eux
           APP="/Applications/Green Vision.app"
           test -d "$APP"
-          defaults read "$APP/Contents/Info" CFBundleShortVersionString
+          GOT=$(defaults read "$APP/Contents/Info" CFBundleShortVersionString)
+          echo "installed $GOT, expected ${{ inputs.expect }}"
+          [ "$GOT" = "${{ inputs.expect }}" ] || { echo "::error::installed $GOT, not ${{ inputs.expect }}"; exit 1; }
           codesign --verify --deep --strict "$APP"
           # no quarantine left, so macOS will not refuse the first open
           if xattr -p com.apple.quarantine "$APP" >/dev/null 2>&1; then echo "::error::still quarantined"; exit 1; fi
