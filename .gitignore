@@ -60,3 +60,6 @@ desktop/site-report/
 data/geti_tiles/
 desktop/.engine-cache/
 server/node_modules/
+
+# temporary build output of scripts/make_patch.py
+dist_patch/
