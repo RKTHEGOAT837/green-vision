@@ -24,11 +24,14 @@ set -euo pipefail
 # EVERYTHING IS INSIDE main(), CALLED ON THE LAST LINE.
 #
 # Run as `curl ... | bash`, bash reads this script from the same pipe the
-# commands inherit as their input. Any command that reads input swallows
-# the rest of the script and bash then stops - silently, with success. The
-# first test of this installer did exactly that, right after unpacking. A
-# function has to be read in full before it can be called, and main's input
-# is pointed at /dev/null so nothing inside it can eat anything.
+# commands inherit as their input. Any command that reads input would
+# swallow the rest of the script. A function has to be read in full before
+# it can be called, and main's input is /dev/null, so nothing can.
+#
+# KEEP THIS FILE ASCII OUTSIDE COMMENTS. A Mac's bash 3.2 in the C locale
+# reads the first byte of a character like an ellipsis as part of the
+# variable name before it: "$DEST..." with a real ellipsis became an
+# unbound variable and killed the install right after unpacking.
 main() {
 
 
@@ -70,7 +73,7 @@ FREE_GB=$(( $(df -k "$HOME" | awk 'NR==2 {print $4}') / 1024 / 1024 ))
 [ "$FREE_GB" -ge "$NEED_GB" ] || die "Needs about ${NEED_GB} GB free; only ${FREE_GB} GB is available."
 
 # ---- 3. the newest macOS release ----------------------------------------
-say "Finding the newest Green Vision for Mac…"
+say "Finding the newest Green Vision for Mac..."
 # A release being re-published has no file for a few seconds. Wait for it
 # rather than quietly installing the version before it.
 for ATTEMPT in 1 2 3 4 5 6 7 8 9 10; do
@@ -170,14 +173,14 @@ cleanup() { rm -rf "$WORK"; }
 trap cleanup EXIT
 
 ZIP="$WORK/$ZIP_NAME"
-say "Downloading $ZIP_NAME (about 1.1 GB)…"
+say "Downloading $ZIP_NAME (about 1.1 GB)..."
 # --retry covers a dropped connection; -C - resumes instead of starting over.
 curl -fL --retry 5 --retry-delay 3 -C - --progress-bar -o "$ZIP" "$ZIP_URL" \
   || die "The download did not finish. Run the command again; it resumes where it stopped."
 
 # ---- 5. is it the file that was published -------------------------------
 if [ -n "$EXPECT_SHA" ]; then
-  say "Checking the download is intact…"
+  say "Checking the download is intact..."
   GOT_SHA="$(shasum -a 256 "$ZIP" | awk '{print $1}')"
   [ "$GOT_SHA" = "$EXPECT_SHA" ] || die "Checksum mismatch: the download is damaged or not the published file. Nothing was installed."
 else
@@ -185,7 +188,7 @@ else
 fi
 
 # ---- 6. unpack ----------------------------------------------------------
-say "Unpacking…"
+say "Unpacking..."
 # ditto, not unzip: it keeps the symlinks and extended attributes an .app
 # bundle depends on, which unzip can flatten into a bundle that will not run.
 ditto -x -k "$ZIP" "$WORK/x"
@@ -194,7 +197,7 @@ NEW_APP="$(find "$WORK/x" -maxdepth 2 -name "*.app" -type d | head -1)"
 
 # ---- 7. replace any running / installed copy ----------------------------
 if pgrep -f "$APP_NAME.app/Contents/MacOS" >/dev/null 2>&1; then
-  say "Closing the running copy of $APP_NAME…"
+  say "Closing the running copy of $APP_NAME..."
   osascript -e "tell application \"$APP_NAME\" to quit" >/dev/null 2>&1 || true
   for _ in 1 2 3 4 5 6 7 8 9 10; do
     pgrep -f "$APP_NAME.app/Contents/MacOS" >/dev/null 2>&1 || break
@@ -212,7 +215,7 @@ if [ ! -w "$DEST" ]; then
   SUDO="sudo"
 fi
 
-say "Installing to $DEST…"
+say "Installing to $DEST..."
 $SUDO rm -rf "$DEST/$APP_NAME.app"
 $SUDO ditto "$NEW_APP" "$DEST/$APP_NAME.app"
 
@@ -233,7 +236,7 @@ echo "    To update later, run the same command again."
 
 # ---- 8. open it ---------------------------------------------------------
 if [ "$OPEN_AFTER" = "1" ]; then
-  say "Opening it… (the first start takes up to a minute while the engine loads)"
+  say "Opening it... (the first start takes up to a minute while the engine loads)"
   open "$DEST/$APP_NAME.app"
 fi
 }

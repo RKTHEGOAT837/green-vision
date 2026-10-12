@@ -23,13 +23,13 @@ jobs:
         env:
           GV_FORCE_FEED: "1"
         run: |
-          set -eux
+          set -euxo pipefail
           curl -fsSL https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/scripts/install-mac.sh \
             | bash -s -- --no-open
 
       - name: It installed where it said
         run: |
-          set -eux
+          set -euxo pipefail
           APP="/Applications/Green Vision.app"
           test -d "$APP"
           GOT=$(defaults read "$APP/Contents/Info" CFBundleShortVersionString)
@@ -41,7 +41,7 @@ jobs:
 
       - name: It opens, and the engine answers
         run: |
-          set -eux
+          set -euxo pipefail
           open "/Applications/Green Vision.app"
           OK=""
           for i in $(seq 1 60); do
@@ -58,7 +58,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          set -eux
+          set -euxo pipefail
           curl -fsSL https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/scripts/install-mac.sh \
             | bash -s -- --no-open
           test -d "/Applications/Green Vision.app"
