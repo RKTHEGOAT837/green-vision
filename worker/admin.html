@@ -326,6 +326,26 @@ async function readJson(r) {
 }
 let token = null, users = [];
 
+/* The patch section was written against an api() helper that was never
+   added, so loading it said "Could not read the current patch" and
+   Publish said "api is not defined" - the patch channel could not be
+   driven from this page at all. Same shape as every other admin call on
+   it: /api/admin/..., the bearer token, JSON in and out, and a 401 signs
+   you out rather than failing quietly. A body makes it a POST. */
+async function api(path, body) {
+  const opt = { headers: { Authorization: "Bearer " + token } };
+  if (body !== undefined) {
+    opt.method = "POST";
+    opt.headers["Content-Type"] = "application/json";
+    opt.body = JSON.stringify(body);
+  }
+  const r = await fetch(API + "/api" + path, opt);
+  if (r.status === 401) { signOut(); throw new Error("signed out - please sign in again"); }
+  const j = await readJson(r);
+  if (!r.ok && !(j && j.error)) throw new Error("HTTP " + r.status);
+  return j;
+}
+
 try { token = sessionStorage.getItem("gv_admin") || null; } catch (e) {}
 
 function when(ts) {

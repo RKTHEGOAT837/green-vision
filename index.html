@@ -3791,6 +3791,36 @@ textarea.gva-in{ min-height:74px; resize:vertical; font-size:14px; }
   display:flex; align-items:center; justify-content:center;
   box-shadow:0 3px 9px -2px rgba(0,0,0,.4); cursor:pointer; }
 .gv-el svg{ width:15px; height:15px; }
+/* Real symbols: photographs of the 3D models, at true scale on the map. */
+.gv-real-wrap{ background:none; border:0; }
+.gv-real{ display:block; cursor:pointer; filter:drop-shadow(2px 4px 3px rgba(0,0,0,.45)); transition:filter .15s; user-select:none; }
+.gv-real-wrap:hover .gv-real{ filter:drop-shadow(0 0 2px #fff) drop-shadow(0 0 5px #12b981) drop-shadow(2px 4px 3px rgba(0,0,0,.5)); }
+path.gv-surf{ filter:drop-shadow(1px 2px 1.5px rgba(0,0,0,.35)); }
+path.gv-surf:hover{ filter:drop-shadow(0 0 4px #12b981); }
+.gv-chip-img{ width:30px; height:30px; flex:none; object-fit:contain; margin:-6px -2px -6px -5px; filter:drop-shadow(0 2px 2px rgba(0,0,0,.28)); }
+.gv3d-swatch:has(.gv-swimg){ width:40px; height:40px; border-radius:11px; background:radial-gradient(circle at 50% 38%,#ffffff,#dfe9e3); }
+.gv-swimg{ width:38px; height:38px; object-fit:contain; display:block; }
+#gv3dPalette{ overflow-x:hidden; }
+.gv3d-tool{ min-width:0; }
+.gv3d-tipdim{ display:block; font-style:normal; margin-top:6px; font-weight:800; color:#0e9f6e; }
+.leaflet-tooltip.gv-htip{ background:transparent; border:0; box-shadow:none; padding:0; white-space:normal; }
+.leaflet-tooltip.gv-htip:before{ display:none; }
+.gv-hcard{ width:282px; padding:12px 13px 11px; border-radius:15px; background:rgba(11,22,19,.95); color:#e6f1ec;
+  border:1px solid rgba(18,185,129,.38); box-shadow:0 14px 34px -10px rgba(0,0,0,.6); font:500 11.5px/1.4 'Manrope',sans-serif;
+  backdrop-filter:blur(8px); text-align:left; }
+.gv-hc-top{ display:flex; gap:11px; align-items:center; margin-bottom:9px; }
+.gv-hc-top img{ width:58px; height:58px; flex:none; border-radius:11px; object-fit:contain;
+  background:radial-gradient(circle at 50% 38%,#ffffff,#cfe0d6); }
+.gv-hc-top b{ display:block; font:800 14px/1.2 'Sora','Manrope',sans-serif; color:#fff; }
+.gv-hc-top span{ display:block; margin-top:3px; font-size:11px; color:#7fd8b4; font-style:italic; }
+.gv-hcard dl{ display:grid; grid-template-columns:auto 1fr; gap:4px 10px; margin:0; padding:8px 0 0; border-top:1px solid rgba(255,255,255,.1); }
+.gv-hcard dt{ color:#93ada3; white-space:nowrap; }
+.gv-hcard dd{ margin:0; font-weight:750; color:#f2faf6; }
+.gv-hc-dim{ font-weight:500; color:#93ada3; }
+.gv-hcard p{ margin:9px 0 0; padding-top:8px; border-top:1px solid rgba(255,255,255,.1); color:#b8cbc3; font-size:11px; }
+.gv3d-hover{ position:absolute; z-index:40; pointer-events:none; }
+.gv3d-hover-act{ margin-top:6px; text-align:center; font:700 10.5px 'Manrope',sans-serif; color:#0b1613;
+  background:rgba(255,255,255,.88); border-radius:9px; padding:4px 8px; }
 .gv-plot{ animation:gvRing .5s ease; }
 
 /* The review's plain-words read-out. Set apart from the checks above it,
@@ -8830,7 +8860,7 @@ function drawStudioPanel() {
       <div class="gv-palette">
         ${sp.map(s => `
           <button class="gv-chip gv-chip-tree${s.fit < 0.42 && known ? " gv-chip-poor" : ""}${s.warn ? " gv-chip-warn" : ""}" data-tree="${s.key}" title="${chipTitle(s)}">
-            ${elIcon(treeGlyph(s))}
+            ${gvChipIcon("tree", s)}
             <span>${s.name}</span>
             ${counts[s.key] ? `<b>${counts[s.key]}</b>` : ""}
             <em>${inr(s.sapling)}</em>
@@ -8844,8 +8874,8 @@ function drawStudioPanel() {
         <h5 class="gv-h5">${c}</h5>
         <div class="gv-palette">
           ${ELEMENTS.filter(e => e.cat === c).map(e => `
-            <button class="gv-chip" data-el="${e.id}" title="${(e.note || "").replace(/"/g, "&quot;")}" style="--ec:${elCol(e)}">
-              ${elIcon(e.icon)}
+            <button class="gv-chip" data-el="${e.id}" title="${[e.note, gvDefForRef(e.id) ? gvDimLine(gvDefForRef(e.id)) : ""].filter(Boolean).join("\n").replace(/"/g, "&quot;")}" style="--ec:${elCol(e)}">
+              ${gvChipIcon("el", e)}
               <span>${e.name}</span>
               ${counts[e.id] ? `<b>${counts[e.id]}</b>` : ""}
               <em>${inr(e.rate)}/${e.unit === "m2" ? "m\u00B2" : e.unit === "m" ? "m" : "ea"}</em>
@@ -9176,7 +9206,7 @@ const GLYPH_COL = {
    showing up as dropped frames while panning. */
 const GV_SYMBOL_LIMIT = 140;
 
-function drawItem(it, idx) {
+function drawItemBasic(it, idx) {
   if (!studioLayer) return;
   const rnd = gvRenderer();
   if (it.k === "tree") {
@@ -12030,7 +12060,7 @@ function gvWelcome(opts) {
   const who = (GV.auth && GV.auth.isIn && GV.auth.isIn() && GV.auth.label()) || "";
   const first = String(who).trim().split(/\s+/)[0];
 
-  sheet(first ? "Hello " + first + "," : "Hello,", `
+  sheet(first ? "Hello " + first + "," : "Hello there,", `
     <div class="gv-welcome">
       <h3 class="gv-wtitle">Welcome to Green Vision</h3>
 
@@ -14351,6 +14381,20 @@ GV.util = { uid, inr, inrFull, fmt, round, clamp, sum, haversine, logHistory, es
 Object.assign(GV.ui, { openDock, closeDock, railDock });
 Object.defineProperty(GV.ui, "dockTab", { get: () => dockTab, configurable: true });
 
+/* The real symbols and hover cards live outside this closure, next to the
+   3D models they are photographs of. These are the names they need. */
+GV.studio = { ELEMENTS, speciesList, lineLenM, elIcon, elCol, removeItem, gvRenderer,
+  GLYPH_COL, GV_SYMBOL_LIMIT, get layer() { return studioLayer; } };
+
+/* One placed item on the map: the to-scale photograph of its 3D model when
+   that can be drawn, the plain symbol otherwise. */
+function drawItem(it, idx) {
+  if (!studioLayer) return;
+  try { if (typeof window.gvDrawReal === "function" && window.gvDrawReal(it, idx)) return; }
+  catch (e) { console.warn("[plan] real symbol failed", e); }
+  return drawItemBasic(it, idx);
+}
+
 if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
 else boot();
 
@@ -15509,13 +15553,17 @@ function addRealContext(B, ctx, plotShapePts) {
     if (inPlot(x, z)) continue;
     const r = t.r || 2.6, h = t.h || 7.5;
     const trunkH = Math.max(1.2, h - r * 1.3);
-    const g = new THREE.Group();
-    const tr = new THREE.Mesh(
-      new THREE.CylinderGeometry(r * 0.085, r * 0.115, trunkH, 6), tTrunk);
-    tr.position.y = trunkH / 2;
-    const cr = new THREE.Mesh(new THREE.SphereGeometry(r, 10, 8), tCrown);
-    cr.position.y = trunkH + r * 0.65; cr.scale.y = 0.86;
-    g.add(tr); g.add(cr);
+    let g;
+    try { g = gvContextTree(r, h); }
+    catch (e) {
+      g = new THREE.Group();
+      const tr = new THREE.Mesh(
+        new THREE.CylinderGeometry(r * 0.085, r * 0.115, trunkH, 6), tTrunk);
+      tr.position.y = trunkH / 2;
+      const cr = new THREE.Mesh(new THREE.SphereGeometry(r, 10, 8), tCrown);
+      cr.position.y = trunkH + r * 0.65; cr.scale.y = 0.86;
+      g.add(tr); g.add(cr);
+    }
     g.position.set(x, 0, z);
     g.traverse(o => { o.castShadow = true; o.userData.context = true; });
     g.userData.context = true;
@@ -15760,6 +15808,7 @@ function b3dRedrawGround() {
   B.plotXZ.forEach(([x, z], i) => (i ? shape.lineTo(x, -z) : shape.moveTo(x, -z)));
   const geo = new THREE.ShapeGeometry(shape);
   geo.rotateX(-Math.PI / 2);
+  if (typeof gvGroundUV === "function") gvGroundUV(geo);
   B.ground = new THREE.Mesh(geo, B.groundMat);
   B.ground.receiveShadow = true; B.ground.name = "__ground";
   B.scene.add(B.ground);
@@ -16200,7 +16249,7 @@ function buildOverlay(land, base, plotRing, siteCtx) {
   scene.add(new THREE.HemisphereLight(0xffffff, 0x88aa77, 0.85));
   const sun = new THREE.DirectionalLight(0xfff4e0, 0.9);
   sun.position.set(60, 90, 40); sun.castShadow = true;
-  sun.shadow.mapSize.set(1024, 1024);
+  sun.shadow.mapSize.set(2048, 2048);
   const sc = sun.shadow.camera; sc.left=-70; sc.right=70; sc.top=70; sc.bottom=-70; sc.near=1; sc.far=260;
   scene.add(sun);
 
@@ -16218,12 +16267,14 @@ function buildOverlay(land, base, plotRing, siteCtx) {
     plotXZ = [[-h, -h], [h, -h], [h, h], [-h, h]];
   }
 
-  const groundMat = new THREE.MeshStandardMaterial({ color: land === "empty" ? 0x9ec97a : 0xa8c47e, roughness: 1 });
+  const groundMat = new THREE.MeshStandardMaterial({ color: land === "empty" ? 0xd2dcc4 : 0xd6d2c2, roughness: 1,
+    map: (typeof gvTex === "function") ? gvTex("ground") : null });
   const gShape = new THREE.Shape();
   // Same mirror correction as the context footprints - see shapeFrom().
   plotXZ.forEach(([x, z], i) => (i ? gShape.lineTo(x, -z) : gShape.moveTo(x, -z)));
   const gGeo = new THREE.ShapeGeometry(gShape);
   gGeo.rotateX(-Math.PI / 2);
+  if (typeof gvGroundUV === "function") gvGroundUV(gGeo);
   const ground = new THREE.Mesh(gGeo, groundMat);
   ground.receiveShadow = true; ground.name = "__ground";
   scene.add(ground);
@@ -16366,6 +16417,7 @@ function buildOverlay(land, base, plotRing, siteCtx) {
   };
 
   wireBuilderInput(root, canvas);
+  try { b3dWireHover(root, canvas); } catch (e) { console.warn("[builder] hover cards unavailable", e); }
   buildPalette();
   updateHud();
 
@@ -16539,7 +16591,7 @@ function buildPalette() {
             esc((e.name + " " + (e.ref || "") + " " + (e.tip || "")).toLowerCase()) + '">' +
             '<span class="gv3d-swatch" style="--sw:#' +
               (e.foliage || e.color).toString(16).padStart(6, "0") + '">' +
-              b3dIcon(e.icon) + '</span>' +
+              gvToolIcon(e) + '</span>' +
             '<span class="gv3d-toolname">' + esc(e.name) + '</span>' +
             /* The rank is the app's own answer to "what should I plant
                here", carried onto the button that plants it. */
@@ -16549,7 +16601,7 @@ function buildPalette() {
               ? '<span class="gv3d-tip">' +
                   (e.off ? '<b>Not on this area’s shortlist</b> — it ranks #' +
                            e.rank + ' for here. ' : "") +
-                  esc(e.tip || "") + '</span>'
+                  esc(e.tip || "") + '<em class="gv3d-tipdim">' + esc(gvDimLine(e)) + '</em></span>'
               : "") +
           "</button>").join("") +
       "</div>").join("");
@@ -16638,10 +16690,10 @@ function wireBuilderInput(root, canvas) {
 let _matCache = {};
 function mat(color, opts) {
   const k = color + JSON.stringify(opts||{});
-  return _matCache[k] || (_matCache[k] = new B.THREE.MeshStandardMaterial(Object.assign({ color, roughness: .85 }, opts)));
+  return _matCache[k] || (_matCache[k] = new window.THREE.MeshStandardMaterial(Object.assign({ color, roughness: .85 }, opts)));
 }
-function makeModel(def) {
-  const THREE = B.THREE, g = new THREE.Group();
+function makeModelBasic(def) {
+  const THREE = window.THREE, g = new THREE.Group();
   if (def.kind === "tree") {
     const trunkH = def.h * 0.42;
     const trunk = new THREE.Mesh(new THREE.CylinderGeometry(def.r*0.12, def.r*0.16, trunkH, 6), mat(0x7a5230));
@@ -16992,13 +17044,77 @@ function b3dPaintUndo() {
    out in a single sentence. Both are right for a click and wrong here. */
 let _b3dBatch = false;
 
+/* WHERE THE PLOT IS NOW.
+
+   B.plotM and the scene origin describe the plot as the builder OPENED it.
+   The plot controls move it (B.plotXZ shifts) and resize it (B.plotXZ
+   scales) without touching either - so anything measured against them is
+   measured against a plot that is no longer there. Placement used to clamp
+   into that stale square: after one nudge, a click in the middle of the
+   visible plot landed outside it and was pushed onto its edge, and every
+   object ended up in a line along one side. Everything below asks the plot
+   outline itself. */
+function b3dPlotCentre() {
+  const p = B && B.plotXZ;
+  if (!p || !p.length) return { x: 0, z: 0 };
+  return { x: p.reduce((a, q) => a + q[0], 0) / p.length,
+           z: p.reduce((a, q) => a + q[1], 0) / p.length };
+}
+
+/* Half the plot's width, from its outline - for laying out a grid. */
+function b3dPlotHalf() {
+  const p = B && B.plotXZ;
+  if (!p || p.length < 3) return (B && B.plotM ? B.plotM : 100) / 2;
+  const xs = p.map(q => q[0]), zs = p.map(q => q[1]);
+  return Math.min(Math.max(...xs) - Math.min(...xs), Math.max(...zs) - Math.min(...zs)) / 2;
+}
+
+/* Inside the outline AND at least `margin` metres from every edge. */
+function b3dInPlot(x, z, margin) {
+  const p = B && B.plotXZ;
+  if (!p || p.length < 3) return true;
+  let inside = false;
+  for (let i = 0, j = p.length - 1; i < p.length; j = i++) {
+    const xi = p[i][0], zi = p[i][1], xj = p[j][0], zj = p[j][1];
+    if ((zi > z) !== (zj > z) && x < ((xj - xi) * (z - zi)) / (zj - zi) + xi) inside = !inside;
+  }
+  if (!inside) return false;
+  if (margin > 0) {
+    for (let i = 0, j = p.length - 1; i < p.length; j = i++) {
+      if (b3dSegDist(x, z, p[j][0], p[j][1], p[i][0], p[i][1]) < margin) return false;
+    }
+  }
+  return true;
+}
+
+/* Bring a point onto the plot: unchanged if it is already there, otherwise
+   the nearest spot on the line back towards the plot's centre that is. A
+   click always lands on the ground mesh, which IS the plot, so in practice
+   this only ever moves a point an assistant layout aimed past the edge. */
+function b3dKeepOnPlot(point, margin) {
+  if (!B || !B.plotXZ || B.plotXZ.length < 3) {
+    const c = b3dPlotCentre(), lim = (B && B.plotM ? B.plotM : 100) / 2 - margin;
+    point.x = Math.max(c.x - lim, Math.min(c.x + lim, point.x));
+    point.z = Math.max(c.z - lim, Math.min(c.z + lim, point.z));
+    return point;
+  }
+  if (b3dInPlot(point.x, point.z, margin)) return point;
+  const c = b3dPlotCentre();
+  let lo = 0, hi = 1;                    // fraction of the way from centre to point
+  for (let k = 0; k < 24; k++) {
+    const t = (lo + hi) / 2;
+    if (b3dInPlot(c.x + (point.x - c.x) * t, c.z + (point.z - c.z) * t, margin)) lo = t; else hi = t;
+  }
+  point.x = c.x + (point.x - c.x) * lo;
+  point.z = c.z + (point.z - c.z) * lo;
+  return point;
+}
+
 function placeObject(toolId, point, quiet) {
   const def = B3D_ELEMENTS.find(e => e.id === toolId);
   if (!def) return false;
-  // keep it on the plot
-  const lim = B.plotM/2 - 2;
-  point.x = Math.max(-lim, Math.min(lim, point.x));
-  point.z = Math.max(-lim, Math.min(lim, point.z));
+  // keep it on the plot - the plot as it is now, moved or resized
+  b3dKeepOnPlot(point, 2);
 
   /* REFUSE, rather than draw it through a wall.
 
@@ -17108,18 +17224,21 @@ function b3dAssistantBuild(spec) {
         || null;
   };
 
-  const lim = Math.max(6, B.plotM / 2 - 2);
+  /* Laid out around where the plot IS, not where it started: after the
+     plot is moved, a grid round the origin put the whole planting off to
+     one side and clamped half of it onto an edge. */
+  const C = b3dPlotCentre();
+  const lim = Math.max(6, b3dPlotHalf() - 2);
   const spacing = Math.max(2.5, Math.min(20, +spec.spacing_m || 8));
   const pts = [];
   for (let x = -lim; x <= lim; x += spacing) {
     for (let z = -lim; z <= lim; z += spacing) {
-      pts.push({
-        x: +(x + (Math.random() - 0.5) * spacing * 0.35).toFixed(2),
-        z: +(z + (Math.random() - 0.5) * spacing * 0.35).toFixed(2)
-      });
+      const px = C.x + x + (Math.random() - 0.5) * spacing * 0.35;
+      const pz = C.z + z + (Math.random() - 0.5) * spacing * 0.35;
+      if (b3dInPlot(px, pz, 2)) pts.push({ x: +px.toFixed(2), z: +pz.toFixed(2) });
     }
   }
-  pts.sort((a, b) => (a.x * a.x + a.z * a.z) - (b.x * b.x + b.z * b.z));
+  pts.sort((a, b) => ((a.x - C.x) ** 2 + (a.z - C.z) ** 2) - ((b.x - C.x) ** 2 + (b.z - C.z) ** 2));
 
   let i = 0, placed = 0, blocked = 0;
   const by = {}, missing = [];
@@ -17142,7 +17261,8 @@ function b3dAssistantBuild(spec) {
       for (const q of plan) {
         const def = findDef(q.ref);
         if (!def) { if (missing.indexOf(String(q.ref)) < 0) missing.push(String(q.ref)); continue; }
-        if (placeObject(def.id, { x: +q.x || 0, z: +q.z || 0 }, true)) {
+        // plan positions are metres from the plot centre (gvParkPlan)
+        if (placeObject(def.id, { x: C.x + (+q.x || 0), z: C.z + (+q.z || 0) }, true)) {
           placed++; by[def.name] = (by[def.name] || 0) + 1;
         } else blocked++;
       }
@@ -21831,6 +21951,21 @@ else gvBootUI();
       body: "Works offline, needs no keys, and every number tells you where it came from. <b>Click anywhere on the map</b> to read a place and start planning." }
   ];
 
+  /* THE WEB EDITION. Sign in, History and the Library are locked in the
+     browser, so the steps that open them would stop on the lock - and the
+     closing "works offline" is true of the app, not of a browser tab. The
+     three are folded into one step that says where they live. */
+  if (!window.__GV_DESKTOP__) {
+    const drop = { "Your account": 1, "History": 1, "Library": 1 };
+    for (let k = STEPS.length - 1; k >= 0; k--) if (drop[STEPS[k].title]) STEPS.splice(k, 1);
+    const last = STEPS.length - 1;
+    STEPS.splice(last, 0, {
+      sel: "#gvwFab", title: "Even more in the desktop app",
+      body: "<b>Sign in</b>, your <b>Library</b> of saved and published designs, and your full <b>History</b> live in the free desktop app - along with an AI that runs on your own computer. This button gets it."
+    });
+    STEPS[STEPS.length - 1].body = "Needs no keys, and every number tells you where it came from. <b>Click anywhere on the map</b> to read a place and start planning.";
+  }
+
   /* ---- the engine ------------------------------------------------------ */
   let root = null, i = 0, steps = [], busy = false, raf = 0, token = 0;
   let lastKey = "";
@@ -22124,6 +22259,1915 @@ else gvBootUI();
   window.gvTour = { start, stop: () => end(false), reset() { try { localStorage.removeItem(DONE_KEY); } catch (e) {} } };
 })();
 
+/* =====================================================================
+   REAL-LOOKING MODELS, TO-SCALE PLAN SYMBOLS AND HOVER CARDS
+   =====================================================================
+   Every element used to be a box or a ball in a flat colour, and the map
+   showed the same thing as a line glyph in a coloured square. A bench was
+   two planks, a borewell a stick, a pavilion a cone on four poles, and a
+   Banyan was a green sphere on a cylinder - which tells a ward committee
+   nothing about what they are being asked to pay for.
+
+   Now one model per element, built to its real dimensions (GV_REAL), with
+   real surfaces painted procedurally (no image downloads, so it works
+   offline). The SAME model is photographed from above for the map symbol,
+   at true scale, and from three-quarters for the palette icon - so the
+   thing in the palette, the thing on the map and the thing in 3D are
+   visibly one object. Hovering any of them says what it is, what it is
+   made of, how big it is and what it costs.
+   ===================================================================== */
+
+/* Real sizes, in metres. w = east-west, d = north-south, h = height above
+   ground, depth = below ground, t = surface thickness. For linear elements
+   w is the width of the line. These are the sizes the 3D models are built
+   to, so a hover card and the model it describes cannot disagree. */
+const GV_REAL = {
+  path_stone:  { t: 0.15, spec: "Kota / sandstone flags, 40 mm on a 100 mm concrete bed" },
+  path_gravel: { t: 0.10, spec: "20 mm crushed stone over compacted murram" },
+  lawn:        { h: 0.05, spec: "Doob (Bermuda) grass turf on 150 mm topsoil" },
+  meadow:      { h: 0.6,  spec: "Native grasses and wildflowers, cut twice a year" },
+  mulch:       { h: 0.5,  spec: "Flowering perennials in 75 mm wood-chip mulch, stone edging" },
+  shrub:       { h: 1.2,  spec: "Mixed shrubs at 3 per m², 1–1.5 m tall" },
+  hedge:       { w: 0.8, h: 1.2, spec: "Clipped Duranta / Murraya, 4 plants per metre" },
+  pond:        { depth: 1.0, spec: "Lined pond 1 m deep, boulder edge, lilies and reeds" },
+  swale:       { w: 1.6, depth: 0.45, spec: "Grassed channel with river-stone bed" },
+  rwh:         { w: 1.4, d: 1.4, h: 0.12, depth: 3, spec: "1.2 m Ø pit, 3 m deep, filter media, cast-iron grated cover" },
+  drip:        { h: 0.3, spec: "16 mm LLDPE laterals, drippers every 30 cm" },
+  bench:       { w: 1.8, d: 0.65, h: 0.85, spec: "Hardwood slats on cast-iron ends, seat at 45 cm" },
+  gazebo:      { w: 7.4, d: 7.4, h: 4.9, spec: "Hexagonal pavilion: stone plinth, timber posts, clay-tile roof" },
+  play:        { w: 6.4, d: 5.2, h: 3.5, spec: "Tower with slide and ladder, two-seat swing, rubber safety mat" },
+  gym:         { w: 3.2, d: 2.2, h: 2.2, spec: "Galvanised pull-up bar, parallel bars and sit-up bench" },
+  light:       { w: 0.9, d: 0.5, h: 4.3, spec: "4 m pole, 30 W LED, integrated solar panel and battery" },
+  tap:         { w: 1.0, d: 1.0, h: 1.2, spec: "Stainless-steel drinking fountain with bottle filler" },
+  toilet:      { w: 6.6, d: 5.6, h: 3.9, spec: "Brick block: men, women and accessible WC, rooftop tank" },
+  compost:     { w: 3.8, d: 1.4, h: 1.1, spec: "Three timber-slatted bays on a concrete base, turned in sequence" },
+  paver_perm:  { t: 0.08, spec: "80 mm interlocking concrete blocks on a sand bed" },
+  track:       { t: 0.05, spec: "Red murram or EPDM rubber, 1.2 m lanes" },
+  amphi:       { h: 1.3, spec: "Three stone steps, 42 cm rise" },
+  kerb:        { w: 0.3, h: 0.3, spec: "Precast concrete kerb, 300 × 150 mm" },
+  miyawaki:    { h: 4, spec: "3–4 native saplings per m² in three canopy layers" },
+  greenwall:   { w: 0.4, h: 2, spec: "Climbers on a galvanised mesh frame over a planter" },
+  percolation: { w: 0.6, depth: 1.0, spec: "Gravel-filled trench, 0.6 m wide and 1 m deep" },
+  sump:        { w: 2.6, d: 2.6, h: 1.4, depth: 2, spec: "10,000 L underground RCC tank with a brick pump room" },
+  borewell:    { w: 1.6, d: 1.6, h: 1.3, depth: 150, spec: "India Mark II hand pump on a 150 mm cased bore" },
+  court:       { w: 15.4, d: 8.2, h: 3.9, spec: "Acrylic-coated slab, badminton and basketball markings" },
+  cycle:       { w: 4, d: 1.8, h: 1.0, spec: "Five galvanised Sheffield hoops for ten cycles" },
+  signage:     { w: 1.65, d: 0.4, h: 1.9, spec: "Printed panel on two steel posts, angled to read" },
+  bin:         { w: 3.2, d: 1.1, h: 1.5, spec: "Wet / dry / reject bins under a small roof" },
+  ramp:        { w: 6, d: 1.8, h: 1.3, spec: "1:12 concrete ramp, steel handrails both sides" },
+  cctv:        { w: 1.0, d: 0.7, h: 4.8, spec: "4.6 m pole, camera, solar panel and battery" },
+  fence:       { w: 0.2, h: 1.5, spec: "Galvanised posts every 2 m with chain-link infill" },
+  gate:        { w: 6, d: 0.85, h: 3.6, spec: "Stone pillars, steel double gate and name board" },
+  chabutro:    { w: 2.7, d: 2.7, h: 6.2, spec: "Octagonal bird tower on a stone plinth" },
+  otla:        { w: 0.5, h: 0.5, spec: "Stone-clad plinth seat with Kota coping, 45 cm high" },
+  picnic:      { w: 1.8, d: 1.6, h: 0.76, spec: "Timber table with fixed bench seats" },
+  pergola:     { w: 1.8, h: 2.7, spec: "Timber posts and rafters with climbers trained over" },
+  sandpit:     { depth: 0.4, spec: "Washed river sand, 40 cm deep, timber edge" },
+  butterfly:   { h: 0.9, spec: "Lantana, ixora, milkweed and host plants" },
+  herb:        { h: 0.6, spec: "Raised beds of tulsi, lemongrass, ajwain and aloe" },
+  nursery:     { h: 2.2, spec: "Shade-net house over saplings in poly bags" },
+  yoga:        { t: 0.15, spec: "Raised timber / WPC deck" },
+  birdbath:    { w: 0.8, d: 0.8, h: 0.95, spec: "Stone bowl on a pedestal, 5 cm of water" },
+  catchbasin:  { w: 1.1, d: 0.8, h: 0.06, depth: 1.2, spec: "Cast-iron grating over a silt trap" },
+  sculpture:   { w: 1.4, d: 1.4, h: 2.9, spec: "Bronze piece on a stone plinth" },
+  bollard:     { w: 0.2, h: 0.9, spec: "Steel bollards at 1.2 m centres, reflective band" },
+  solarcanopy: { w: 6.2, d: 4.2, h: 3.4, spec: "Steel frame carrying a 3 kW solar roof" }
+};
+
+/* The surface each ground element is drawn with, in 3D and on the map. */
+const GV_SURF = {
+  path_stone: "flags", path_gravel: "gravel", lawn: "grass", meadow: "meadow",
+  mulch: "flowerbed", shrub: "shrubtop", pond: "water", drip: "drip",
+  paver_perm: "paver", track: "track", amphi: "steps", miyawaki: "canopy",
+  sandpit: "sand", yoga: "wood", butterfly: "butterfly", herb: "herbbed",
+  nursery: "nursery", swale: "swale", percolation: "gravel", hedge: "hedge",
+  kerb: "concrete", greenwall: "hedge", fence: "fence", otla: "stone",
+  pergola: "pergola", bollard: "bollard"
+};
+
+/* The 2D studio is a closed module. What the symbols and cards need from
+   it is handed out on GV.studio (see the end of that module), and reached
+   through these, so nothing here depends on names it cannot see. */
+function gvS() { return (window.GV && GV.studio) || {}; }
+function gvEls() { return gvS().ELEMENTS || []; }
+function gvSpecies() { try { return gvS().speciesList ? gvS().speciesList() : []; } catch (e) { return []; } }
+
+/* ---------- procedural surfaces -------------------------------------- */
+function gvRng(seed) {
+  let a = (seed >>> 0) || 1;
+  return () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+}
+function gvHsl(h, s, l, a) { return "hsla(" + h + "," + s + "%," + l + "%," + (a == null ? 1 : a) + ")"; }
+
+/* Each painter fills an n x n canvas that stands for GV_TEXM[name] metres. */
+const GV_TEXM = {
+  grass: 4, meadow: 4, flowerbed: 2.5, shrubtop: 3, flags: 3, gravel: 1.2, paver: 1.2,
+  track: 4, wood: 2, sand: 2, water: 6, soil: 2, bark: 1.2, leaf: 1.6, concrete: 2,
+  brick: 1.6, tiles: 1.6, stone: 2, solar: 1.6, grate: 0.9, chainlink: 1, shadenet: 1,
+  canopy: 4, nursery: 2.5, herbbed: 2, butterfly: 2.5, hedge: 1.5, steps: 2.5,
+  drip: 2.5, swale: 2, fence: 2, pergola: 2, bollard: 2.4, ground: 6, mulch: 1.5, frond: 1
+};
+const GV_PAINT = {
+  grass(c, n, r) {
+    c.fillStyle = "#4a7531"; c.fillRect(0, 0, n, n);
+    for (let i = 0; i < 4; i++) { c.fillStyle = i % 2 ? "rgba(255,255,255,.025)" : "rgba(0,0,0,.025)"; c.fillRect(0, i * n / 4, n, n / 4); }
+    for (let i = 0; i < n * 16; i++) {
+      const x = r() * n, y = r() * n, l = 1.5 + r() * 4;
+      c.strokeStyle = gvHsl(72 + r() * 34, 32 + r() * 22, 20 + r() * 24, .8); c.lineWidth = .7 + r() * .6;
+      c.beginPath(); c.moveTo(x, y); c.lineTo(x + (r() - .5) * 2, y - l); c.stroke();
+    }
+  },
+  ground(c, n, r) { GV_PAINT.grass(c, n, r);
+    for (let i = 0; i < 30; i++) { c.fillStyle = gvHsl(45 + r() * 50, 30, 25 + r() * 25, .16);
+      c.beginPath(); c.ellipse(r() * n, r() * n, 10 + r() * 40, 8 + r() * 30, r() * 3, 0, 7); c.fill(); } },
+  meadow(c, n, r) {
+    c.fillStyle = "#7b9a43"; c.fillRect(0, 0, n, n);
+    for (let i = 0; i < n * 12; i++) {
+      const x = r() * n, y = r() * n, l = 3 + r() * 8;
+      c.strokeStyle = gvHsl(60 + r() * 40, 40 + r() * 25, 30 + r() * 30, .85); c.lineWidth = .8;
+      c.beginPath(); c.moveTo(x, y); c.quadraticCurveTo(x + 2, y - l / 2, x + (r() - .5) * 5, y - l); c.stroke();
+    }
+    const fl = ["#ffffff", "#f6d74a", "#b98be0", "#f08cb5", "#ff9f43"];
+    for (let i = 0; i < n * .9; i++) { c.fillStyle = fl[(r() * fl.length) | 0];
+      c.beginPath(); c.arc(r() * n, r() * n, 1.2 + r() * 1.8, 0, 7); c.fill(); }
+  },
+  soil(c, n, r) {
+    c.fillStyle = "#5a4130"; c.fillRect(0, 0, n, n);
+    for (let i = 0; i < n * 30; i++) { c.fillStyle = gvHsl(25 + r() * 15, 25 + r() * 20, 14 + r() * 22, .55);
+      c.fillRect(r() * n, r() * n, 1 + r() * 2.5, 1 + r() * 2.5); }
+  },
+  mulch(c, n, r) {
+    c.fillStyle = "#6b4a30"; c.fillRect(0, 0, n, n);
+    for (let i = 0; i < n * 9; i++) { c.save(); c.translate(r() * n, r() * n); c.rotate(r() * 6.3);
+      c.fillStyle = gvHsl(22 + r() * 16, 40 + r() * 25, 22 + r() * 28); c.fillRect(-4, -1.3, 4 + r() * 6, 2 + r() * 1.6); c.restore(); }
+  },
+  flowerbed(c, n, r) { GV_PAINT.mulch(c, n, r);
+    const fl = ["#e84a6f", "#f7b32b", "#a66bff", "#ff7b39", "#ffffff", "#f25c9a"];
+    for (let i = 0; i < 26; i++) { const x = r() * n, y = r() * n, R = 9 + r() * 12;
+      c.fillStyle = gvHsl(100 + r() * 30, 45, 24 + r() * 10); c.beginPath(); c.arc(x, y, R, 0, 7); c.fill();
+      c.fillStyle = gvHsl(100, 45, 38, .6); c.beginPath(); c.arc(x - R * .3, y - R * .3, R * .5, 0, 7); c.fill();
+      const col = fl[(r() * fl.length) | 0];
+      for (let k = 0; k < 9; k++) { c.fillStyle = col; c.beginPath(); c.arc(x + (r() - .5) * R * 1.5, y + (r() - .5) * R * 1.5, 1.8 + r() * 1.6, 0, 7); c.fill(); } }
+  },
+  shrubtop(c, n, r) {
+    c.fillStyle = "#3f5d2c"; c.fillRect(0, 0, n, n);
+    for (let i = 0; i < 70; i++) { const x = r() * n, y = r() * n, R = 10 + r() * 16, h = 90 + r() * 40;
+      c.fillStyle = gvHsl(h, 40, 18, .7); c.beginPath(); c.arc(x + 3, y + 4, R, 0, 7); c.fill();
+      c.fillStyle = gvHsl(h, 42, 28 + r() * 10); c.beginPath(); c.arc(x, y, R, 0, 7); c.fill();
+      c.fillStyle = gvHsl(h, 45, 42, .55); c.beginPath(); c.arc(x - R * .35, y - R * .35, R * .45, 0, 7); c.fill(); }
+  },
+  canopy(c, n, r) {
+    c.fillStyle = "#1f3d1f"; c.fillRect(0, 0, n, n);
+    for (let i = 0; i < 120; i++) { const x = r() * n, y = r() * n, R = 8 + r() * 18, h = 95 + r() * 40;
+      c.fillStyle = gvHsl(h, 45, 12, .7); c.beginPath(); c.arc(x + 3, y + 4, R, 0, 7); c.fill();
+      c.fillStyle = gvHsl(h, 40, 20 + r() * 14); c.beginPath(); c.arc(x, y, R, 0, 7); c.fill();
+      c.fillStyle = gvHsl(h, 40, 36, .5); c.beginPath(); c.arc(x - R * .3, y - R * .3, R * .4, 0, 7); c.fill(); }
+  },
+  flags(c, n, r) {
+    c.fillStyle = "#4f4a42"; c.fillRect(0, 0, n, n);
+    const rows = 5; let y = 0;
+    for (let j = 0; j < rows; j++) { const hgt = n / rows; let x = -r() * 40;
+      while (x < n) { const w = 40 + r() * 70; const L = 47 + r() * 14;
+        c.fillStyle = gvHsl(30 + r() * 15, 18 + r() * 18, L); c.fillRect(x + 2, y + 2, w - 4, hgt - 4);
+        for (let k = 0; k < 40; k++) { c.fillStyle = gvHsl(30, 15, L - 10 + r() * 20, .35); c.fillRect(x + 2 + r() * (w - 4), y + 2 + r() * (hgt - 4), 2, 2); }
+        x += w; }
+      y += hgt; }
+  },
+  gravel(c, n, r) {
+    c.fillStyle = "#6f665a"; c.fillRect(0, 0, n, n);
+    for (let i = 0; i < n * 9; i++) { const x = r() * n, y = r() * n, R = 1.5 + r() * 3.2, L = 34 + r() * 32;
+      c.fillStyle = "rgba(0,0,0,.25)"; c.beginPath(); c.ellipse(x + 1, y + 1.2, R, R * .75, 0, 0, 7); c.fill();
+      c.fillStyle = gvHsl(30 + r() * 20, 8 + r() * 14, L); c.beginPath(); c.ellipse(x, y, R, R * .75, r() * 3, 0, 7); c.fill(); }
+  },
+  paver(c, n, r) {
+    c.fillStyle = "#6e6a64"; c.fillRect(0, 0, n, n);
+    const bw = n / 6, bh = n / 12;
+    for (let j = 0; j < 12; j++) for (let i = -1; i < 7; i++) {
+      const x = i * bw + (j % 2 ? bw / 2 : 0), y = j * bh, L = 52 + r() * 14, red = r() < .5;
+      c.fillStyle = red ? gvHsl(12, 30, L - 8) : gvHsl(30, 8, L); c.fillRect(x + 1.5, y + 1.5, bw - 3, bh - 3);
+      c.fillStyle = "rgba(255,255,255,.12)"; c.fillRect(x + 1.5, y + 1.5, bw - 3, 2); }
+  },
+  track(c, n, r) {
+    c.fillStyle = "#a6512f"; c.fillRect(0, 0, n, n);
+    for (let i = 0; i < n * 20; i++) { c.fillStyle = gvHsl(12 + r() * 12, 50, 28 + r() * 18, .5); c.fillRect(r() * n, r() * n, 1.5, 1.5); }
+    c.fillStyle = "rgba(255,255,255,.9)"; for (const y of [n * .02, n * .32, n * .62, n * .92]) c.fillRect(0, y, n, 3);
+  },
+  wood(c, n, r) {
+    const pw = n / 8;
+    for (let i = 0; i < 8; i++) { const L = 40 + r() * 12;
+      c.fillStyle = gvHsl(28 + r() * 6, 45, L); c.fillRect(0, i * pw, n, pw);
+      for (let k = 0; k < 14; k++) { c.strokeStyle = gvHsl(26, 45, L - 10, .35); c.lineWidth = 1;
+        c.beginPath(); const yy = i * pw + r() * pw; c.moveTo(0, yy); c.bezierCurveTo(n * .3, yy + 3, n * .6, yy - 3, n, yy + 1); c.stroke(); }
+      c.fillStyle = "rgba(0,0,0,.45)"; c.fillRect(0, i * pw, n, 2);
+      c.fillRect(((i * 97) % 8) * n / 8, i * pw, 2, pw); }
+  },
+  sand(c, n, r) {
+    c.fillStyle = "#c9b17c"; c.fillRect(0, 0, n, n);
+    for (let i = 0; i < n * 40; i++) { c.fillStyle = gvHsl(40 + r() * 10, 40 + r() * 20, 60 + r() * 25, .5); c.fillRect(r() * n, r() * n, 1.2, 1.2); }
+  },
+  water(c, n, r) {
+    const g = c.createLinearGradient(0, 0, n, n); g.addColorStop(0, "#2d6f96"); g.addColorStop(1, "#3c88a8");
+    c.fillStyle = g; c.fillRect(0, 0, n, n);
+    for (let i = 0; i < 90; i++) { c.strokeStyle = "rgba(255,255,255," + (.08 + r() * .18) + ")"; c.lineWidth = 1 + r() * 1.5;
+      const x = r() * n, y = r() * n, w = 10 + r() * 34; c.beginPath(); c.moveTo(x, y); c.quadraticCurveTo(x + w / 2, y - 3, x + w, y); c.stroke(); }
+  },
+  bark(c, n, r) {
+    c.fillStyle = "#5b4332"; c.fillRect(0, 0, n, n);
+    for (let i = 0; i < 160; i++) { c.strokeStyle = gvHsl(25, 25 + r() * 15, 12 + r() * 25, .7); c.lineWidth = 1 + r() * 3;
+      const x = r() * n; c.beginPath(); c.moveTo(x, 0); c.bezierCurveTo(x + (r() - .5) * 12, n * .3, x + (r() - .5) * 12, n * .7, x + (r() - .5) * 6, n); c.stroke(); }
+  },
+  leaf(c, n, r) {
+    c.fillStyle = "#a9a9a9"; c.fillRect(0, 0, n, n);
+    for (let i = 0; i < n * 5; i++) { const x = r() * n, y = r() * n, L = 35 + r() * 75, s = 2.5 + r() * 4.5;
+      c.save(); c.translate(x, y); c.rotate(r() * 6.3); c.fillStyle = "hsl(0,0%," + L + "%)";
+      c.beginPath(); c.ellipse(0, 0, s, s * .45, 0, 0, 7); c.fill(); c.restore(); }
+  },
+  concrete(c, n, r) {
+    c.fillStyle = "#aaa59b"; c.fillRect(0, 0, n, n);
+    for (let i = 0; i < n * 30; i++) { c.fillStyle = gvHsl(40, 6, 45 + r() * 35, .35); c.fillRect(r() * n, r() * n, 1.4, 1.4); }
+    c.fillStyle = "rgba(0,0,0,.18)"; c.fillRect(0, 0, n, 1.5); c.fillRect(0, 0, 1.5, n);
+  },
+  stone(c, n, r) {
+    c.fillStyle = "#7d7568"; c.fillRect(0, 0, n, n);
+    const rows = 4, h = n / rows;
+    for (let j = 0; j < rows; j++) { let x = j % 2 ? -h * .7 : 0;
+      while (x < n) { const w = h * (1.1 + r() * .9), L = 62 + r() * 14;
+        c.fillStyle = gvHsl(35 + r() * 10, 20 + r() * 12, L); c.fillRect(x + 2, j * h + 2, w - 4, h - 4);
+        c.fillStyle = "rgba(255,255,255,.15)"; c.fillRect(x + 2, j * h + 2, w - 4, 3); x += w; } }
+  },
+  brick(c, n, r) {
+    c.fillStyle = "#cfc6b8"; c.fillRect(0, 0, n, n);
+    const bw = n / 4, bh = n / 12;
+    for (let j = 0; j < 12; j++) for (let i = -1; i < 5; i++) {
+      const x = i * bw + (j % 2 ? bw / 2 : 0); c.fillStyle = gvHsl(10 + r() * 10, 45 + r() * 15, 36 + r() * 10);
+      c.fillRect(x + 1.5, j * bh + 1.5, bw - 3, bh - 3); }
+  },
+  tiles(c, n, r) {
+    c.fillStyle = "#6e2a17"; c.fillRect(0, 0, n, n);
+    const rows = 10, h = n / rows, w = n / 8;
+    for (let j = 0; j < rows; j++) for (let i = -1; i < 9; i++) {
+      const x = i * w + (j % 2 ? w / 2 : 0), y = j * h, L = 36 + r() * 10;
+      const g = c.createLinearGradient(x, 0, x + w, 0);
+      g.addColorStop(0, gvHsl(14, 60, L - 10)); g.addColorStop(.5, gvHsl(16, 62, L + 6)); g.addColorStop(1, gvHsl(14, 60, L - 12));
+      c.fillStyle = g; c.fillRect(x + 1, y, w - 2, h - 2); c.fillStyle = "rgba(0,0,0,.35)"; c.fillRect(x, y + h - 3, w, 3); }
+  },
+  solar(c, n, r) {
+    c.fillStyle = "#c9ced4"; c.fillRect(0, 0, n, n);
+    const cells = 8, s = n / cells;
+    for (let j = 0; j < cells; j++) for (let i = 0; i < cells; i++) {
+      const g = c.createLinearGradient(i * s, j * s, i * s + s, j * s + s);
+      g.addColorStop(0, "#1b2d55"); g.addColorStop(1, "#0f1c38"); c.fillStyle = g; c.fillRect(i * s + 1.5, j * s + 1.5, s - 3, s - 3);
+      c.strokeStyle = "rgba(180,200,230,.25)"; c.lineWidth = .7;
+      for (let k = 1; k < 3; k++) { c.beginPath(); c.moveTo(i * s + k * s / 3, j * s); c.lineTo(i * s + k * s / 3, j * s + s); c.stroke(); } }
+  },
+  grate(c, n, r) {
+    c.fillStyle = "#2b2b2b"; c.fillRect(0, 0, n, n);
+    c.fillStyle = "#0b0b0b"; const k = 9;
+    for (let i = 0; i < k; i++) c.fillRect(i * n / k + n / k * .25, n * .06, n / k * .5, n * .88);
+    c.fillStyle = "rgba(255,255,255,.12)"; c.fillRect(0, 0, n, 3);
+  },
+  chainlink(c, n) {
+    c.clearRect(0, 0, n, n); c.strokeStyle = "rgba(200,206,210,.95)"; c.lineWidth = 2.2;
+    const s = n / 8;
+    for (let i = -8; i < 16; i++) { c.beginPath(); c.moveTo(i * s, 0); c.lineTo(i * s + n, n); c.stroke();
+      c.beginPath(); c.moveTo(i * s, n); c.lineTo(i * s + n, 0); c.stroke(); }
+  },
+  shadenet(c, n) {
+    c.fillStyle = "rgba(30,90,40,.55)"; c.fillRect(0, 0, n, n);
+    c.strokeStyle = "rgba(20,60,25,.7)"; c.lineWidth = 1;
+    for (let i = 0; i < n; i += 6) { c.beginPath(); c.moveTo(i, 0); c.lineTo(i, n); c.stroke(); c.beginPath(); c.moveTo(0, i); c.lineTo(n, i); c.stroke(); }
+  },
+  nursery(c, n, r) { GV_PAINT.soil(c, n, r);
+    for (let j = 0; j < 6; j++) for (let i = 0; i < 8; i++) { const x = (i + .5) * n / 8, y = (j + .5) * n / 6;
+      c.fillStyle = "#151515"; c.beginPath(); c.arc(x, y, 9, 0, 7); c.fill();
+      c.fillStyle = gvHsl(100 + r() * 30, 50, 30 + r() * 12); c.beginPath(); c.arc(x, y, 6 + r() * 3, 0, 7); c.fill(); }
+  },
+  herbbed(c, n, r) { GV_PAINT.soil(c, n, r);
+    for (let j = 0; j < 5; j++) for (let i = 0; i < 9; i++) { const x = (i + .5) * n / 9 + (r() - .5) * 6, y = (j + .5) * n / 5 + (r() - .5) * 6;
+      const h = r() < .25 ? 300 : 95 + r() * 40;
+      for (let k = 0; k < 7; k++) { c.fillStyle = gvHsl(h, h > 200 ? 25 : 45, 26 + r() * 18); c.beginPath(); c.ellipse(x + (r() - .5) * 12, y + (r() - .5) * 12, 4, 2, r() * 3, 0, 7); c.fill(); } }
+  },
+  butterfly(c, n, r) { GV_PAINT.mulch(c, n, r);
+    const fl = ["#ff8a1f", "#ffd23f", "#b05cd6", "#ff4f81", "#f2f2f2"];
+    for (let i = 0; i < 30; i++) { const x = r() * n, y = r() * n, R = 10 + r() * 12;
+      c.fillStyle = gvHsl(95 + r() * 30, 45, 22 + r() * 10); c.beginPath(); c.arc(x, y, R, 0, 7); c.fill();
+      for (let k = 0; k < 16; k++) { c.fillStyle = fl[(r() * fl.length) | 0]; c.beginPath(); c.arc(x + (r() - .5) * R * 1.6, y + (r() - .5) * R * 1.6, 2 + r() * 1.5, 0, 7); c.fill(); } }
+  },
+  hedge(c, n, r) {
+    c.fillStyle = "#2f4f23"; c.fillRect(0, 0, n, n);
+    for (let i = 0; i < n * 4; i++) { c.fillStyle = gvHsl(95 + r() * 30, 45, 16 + r() * 26); c.beginPath(); c.arc(r() * n, r() * n, 2 + r() * 4, 0, 7); c.fill(); }
+  },
+  steps(c, n, r) {
+    for (let j = 0; j < 4; j++) { c.fillStyle = gvHsl(35, 12, 62 + j * 4); c.fillRect(0, j * n / 4, n, n / 4);
+      c.fillStyle = "rgba(0,0,0,.35)"; c.fillRect(0, (j + 1) * n / 4 - 6, n, 6);
+      for (let k = 0; k < 220; k++) { c.fillStyle = gvHsl(35, 10, 50 + r() * 30, .3); c.fillRect(r() * n, j * n / 4 + r() * n / 4, 2, 2); } }
+  },
+  drip(c, n, r) { GV_PAINT.soil(c, n, r);
+    for (let j = 0; j < 5; j++) { const y = (j + .5) * n / 5; c.strokeStyle = "#111"; c.lineWidth = 3;
+      c.beginPath(); c.moveTo(0, y); c.lineTo(n, y); c.stroke();
+      for (let i = 0; i < 8; i++) { const x = (i + .5) * n / 8; c.fillStyle = "rgba(40,60,90,.5)"; c.beginPath(); c.arc(x, y, 7, 0, 7); c.fill();
+        c.fillStyle = gvHsl(100, 50, 34); c.beginPath(); c.arc(x, y - 9, 5, 0, 7); c.fill(); } }
+  },
+  swale(c, n, r) { GV_PAINT.grass(c, n, r);
+    c.fillStyle = "rgba(60,110,140,.55)"; c.fillRect(0, n * .3, n, n * .4);
+    for (let i = 0; i < 160; i++) { const x = r() * n, y = n * .3 + r() * n * .4, R = 3 + r() * 6;
+      c.fillStyle = gvHsl(30, 8, 45 + r() * 30); c.beginPath(); c.ellipse(x, y, R, R * .7, r() * 3, 0, 7); c.fill(); }
+  },
+  fence(c, n) {
+    c.fillStyle = "#9aa3aa"; c.fillRect(0, n * .4, n, n * .2);
+    c.fillStyle = "#4b5157"; c.fillRect(0, n * .3, n * .1, n * .4);
+  },
+  pergola(c, n, r) { GV_PAINT.wood(c, n, r);
+    c.fillStyle = "rgba(30,80,30,.75)"; for (let i = 0; i < 40; i++) { c.beginPath(); c.arc(r() * n, r() * n, 6 + r() * 10, 0, 7); c.fill(); }
+  },
+  bollard(c, n) {
+    c.fillStyle = "#b8b2a6"; c.fillRect(0, 0, n, n);
+    c.fillStyle = "#3a3f44"; c.beginPath(); c.arc(n / 2, n / 2, n * .22, 0, 7); c.fill();
+    c.fillStyle = "#f2c230"; c.beginPath(); c.arc(n / 2, n / 2, n * .1, 0, 7); c.fill();
+  },
+  leafcard(c, n, r) {
+    c.clearRect(0, 0, n, n);
+    for (let i = 0; i < 1500; i++) {
+      const rr = n * .45 * Math.pow(r(), .62), a = r() * 6.283, x = n / 2 + Math.cos(a) * rr, y = n / 2 + Math.sin(a) * rr;
+      const L = 10 + r() * 11, l = 30 + r() * 44 - rr / n * 18;
+      c.save(); c.translate(x, y); c.rotate(r() * 6.283);
+      c.fillStyle = "hsl(0,0%," + l + "%)"; c.beginPath(); c.ellipse(0, 0, L / 2, L * .2, 0, 0, 7); c.fill();
+      c.strokeStyle = "hsla(0,0%," + (l - 18) + "%,.8)"; c.lineWidth = .8; c.beginPath(); c.moveTo(-L / 2, 0); c.lineTo(L / 2, 0); c.stroke();
+      c.restore();
+    }
+  },
+  blossom(c, n, r) {
+    c.clearRect(0, 0, n, n);
+    for (let i = 0; i < 300; i++) {
+      const rr = n * .45 * Math.pow(r(), .62), a = r() * 6.283, x = n / 2 + Math.cos(a) * rr, y = n / 2 + Math.sin(a) * rr;
+      const P = 3 + r() * 3, l = 66 + r() * 22;
+      c.fillStyle = "hsl(0,0%," + l + "%)";
+      for (let k = 0; k < 5; k++) { const t = k / 5 * 6.283 + a; c.beginPath(); c.arc(x + Math.cos(t) * P, y + Math.sin(t) * P, P * .75, 0, 7); c.fill(); }
+      c.fillStyle = "hsl(0,0%," + (l - 30) + "%)"; c.beginPath(); c.arc(x, y, P * .45, 0, 7); c.fill();
+    }
+  },
+  frond(c, n) {
+    c.clearRect(0, 0, n, n);
+    c.strokeStyle = "#5e7a2e"; c.lineWidth = n * .02; c.beginPath(); c.moveTo(n / 2, 0); c.lineTo(n / 2, n); c.stroke();
+    for (let i = 0; i < 26; i++) { const y = (i + .5) * n / 26, L = n * .48 * Math.sin(Math.PI * (i + 1) / 27);
+      c.fillStyle = i % 2 ? "#4f8a2c" : "#5d9a34";
+      for (const s of [-1, 1]) { c.beginPath(); c.moveTo(n / 2, y); c.quadraticCurveTo(n / 2 + s * L * .5, y - n * .03, n / 2 + s * L, y + n * .03);
+        c.quadraticCurveTo(n / 2 + s * L * .5, y + n * .01, n / 2, y + n * .012); c.fill(); } }
+  }
+};
+
+const _gvCan = {}, _gvTex = {}, _gvTexUrl = {};
+function gvTexCanvas(name) {
+  if (_gvCan[name]) return _gvCan[name];
+  const n = (name === "frond" || name === "leafcard" || name === "blossom") ? 256 : 512, c = document.createElement("canvas");
+  c.width = c.height = n;
+  (GV_PAINT[name] || GV_PAINT.concrete)(c.getContext("2d"), n, gvRng(name.length * 977 + name.charCodeAt(0) * 31));
+  return (_gvCan[name] = c);
+}
+function gvTex(name) {
+  if (_gvTex[name]) return _gvTex[name];
+  const THREE = window.THREE, t = new THREE.CanvasTexture(gvTexCanvas(name));
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.anisotropy = 8;
+  return (_gvTex[name] = t);
+}
+function gvTexUrl(name) {
+  return _gvTexUrl[name] || (_gvTexUrl[name] = gvTexCanvas(name).toDataURL("image/jpeg", .86));
+}
+
+/* ---------- materials and geometry helpers --------------------------- */
+const _gvMat = {};
+function gvM(key, make) { return _gvMat[key] || (_gvMat[key] = make()); }
+function gvStd(color, o) {
+  return gvM("c" + color + JSON.stringify(o || {}), () =>
+    new window.THREE.MeshStandardMaterial(Object.assign({ color, roughness: .85 }, o || {})));
+}
+/* A textured material. The texture is shared; the colour tints it. */
+function gvTexMat(name, color, o) {
+  const k = "t" + name + ":" + (color == null ? "w" : color) + JSON.stringify(o || {});
+  return gvM(k, () => new window.THREE.MeshStandardMaterial(Object.assign(
+    { map: gvTex(name), color: color == null ? 0xffffff : color, roughness: .9 }, o || {})));
+}
+const GVMAT = {
+  wood:     () => gvTexMat("wood", 0xffffff),
+  darkwood: () => gvTexMat("wood", 0x8a6a52),
+  iron:     () => gvStd(0x2a2e33, { metalness: .55, roughness: .45 }),
+  steel:    () => gvStd(0xc9ced3, { metalness: .85, roughness: .25 }),
+  galv:     () => gvStd(0xa3abb2, { metalness: .7, roughness: .38 }),
+  concrete: () => gvTexMat("concrete"),
+  stone:    () => gvTexMat("stone"),
+  brick:    () => gvTexMat("brick"),
+  tiles:    () => gvTexMat("tiles"),
+  solar:    () => gvTexMat("solar", 0xffffff, { metalness: .45, roughness: .22 }),
+  water:    () => gvM("water", () => new window.THREE.MeshStandardMaterial({ map: gvTex("water"), color: 0xbfe2ff,
+              transparent: true, opacity: .86, roughness: .06, metalness: .35 })),
+  soil:     () => gvTexMat("soil"),
+  leaf:     c => gvM("leaf" + c, () => new window.THREE.MeshStandardMaterial({ map: gvTex("leaf"), bumpMap: gvTex("leaf"),
+              bumpScale: .06, color: c, roughness: .95 })),
+  bark:     () => gvTexMat("bark", 0xffffff, { roughness: 1 }),
+  paint:    c => gvStd(c, { roughness: .5, metalness: .15 }),
+  plastic:  c => gvStd(c, { roughness: .55 }),
+  rubber:   c => gvStd(c, { roughness: 1 })
+};
+function gvScaleUV(geo, su, sv) {
+  const uv = geo.attributes.uv; if (!uv) return geo;
+  for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * su, uv.getY(i) * sv);
+  uv.needsUpdate = true; return geo;
+}
+/* Box standing ON y (not centred on it), optionally textured to scale. */
+function gvBox(g, w, h, d, m, x, y, z, tex) {
+  const THREE = window.THREE, geo = new THREE.BoxGeometry(w, h, d);
+  if (tex) gvScaleUV(geo, Math.max(w, d) / (GV_TEXM[tex] || 2), Math.max(h, Math.min(w, d)) / (GV_TEXM[tex] || 2));
+  const o = new THREE.Mesh(geo, m); o.position.set(x || 0, (y || 0) + h / 2, z || 0); g.add(o); return o;
+}
+/* Flat slab whose TOP face carries the texture at true scale. */
+function gvSlab(g, w, d, h, tex, color, x, y, z) {
+  const THREE = window.THREE, geo = new THREE.BoxGeometry(w, h, d), m = GV_SURF_MAT(tex, color);
+  gvScaleUV(geo, w / (GV_TEXM[tex] || 2), d / (GV_TEXM[tex] || 2));
+  const o = new THREE.Mesh(geo, m); o.position.set(x || 0, (y || 0) + h / 2, z || 0); g.add(o); return o;
+}
+function GV_SURF_MAT(tex, color) { return tex === "water" ? GVMAT.water() : gvTexMat(tex, color); }
+function gvCyl(g, rt, rb, h, m, x, y, z, seg) {
+  const THREE = window.THREE, o = new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, seg || 14), m);
+  o.position.set(x || 0, (y || 0) + h / 2, z || 0); g.add(o); return o;
+}
+/* A rod from point a to point b - limbs, rails, chains, frames. */
+function gvRod(g, a, b, r0, r1, m, seg) {
+  const THREE = window.THREE, A = new THREE.Vector3(a[0], a[1], a[2]), Bv = new THREE.Vector3(b[0], b[1], b[2]);
+  const len = A.distanceTo(Bv); if (len < 1e-4) return null;
+  const o = new THREE.Mesh(new THREE.CylinderGeometry(r1 == null ? r0 : r1, r0, len, seg || 8), m);
+  o.position.copy(A).add(Bv).multiplyScalar(.5);
+  o.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), Bv.clone().sub(A).normalize());
+  g.add(o); return o;
+}
+function gvInst(g, geo, m, list) {
+  const THREE = window.THREE; if (!list.length) return null;
+  const im = new THREE.InstancedMesh(geo, m, list.length), o = new THREE.Object3D(), col = new THREE.Color();
+  list.forEach((p, i) => {
+    o.position.set(p.x, p.y, p.z); o.rotation.set(p.rx || 0, p.ry || 0, p.rz || 0);
+    const s = p.s == null ? 1 : p.s; Array.isArray(s) ? o.scale.set(s[0], s[1], s[2]) : o.scale.setScalar(s);
+    o.updateMatrix(); im.setMatrixAt(i, o.matrix);
+    if (p.c != null && im.setColorAt) im.setColorAt(i, col.set(p.c));
+  });
+  im.instanceMatrix.needsUpdate = true; if (im.instanceColor) im.instanceColor.needsUpdate = true;
+  g.add(im); return im;
+}
+
+/* Lumpy foliage: a sphere pushed in and out by a smooth function of the
+   position itself, so the seam vertices move together and never crack. */
+const _gvLump = {};
+function gvLumpGeo(i) {
+  i = i % 6;
+  if (_gvLump[i]) return _gvLump[i];
+  const THREE = window.THREE, geo = new THREE.SphereGeometry(1, 18, 13), p = geo.attributes.position, v = new THREE.Vector3();
+  const a = 1.7 + i * .37, b = 2.3 + i * .21, c = 2.9 - i * .17, o = i * 1.91;
+  for (let k = 0; k < p.count; k++) {
+    v.fromBufferAttribute(p, k);
+    const n = Math.sin(v.x * a + o) * Math.sin(v.y * b + o * .7) * Math.sin(v.z * c - o)
+            + .45 * Math.sin(v.x * 5.1 + v.z * 4.3 + o) * Math.sin(v.y * 5.7 - o);
+    v.multiplyScalar(1 + .2 * n); p.setXYZ(k, v.x, v.y, v.z);
+  }
+  geo.computeVertexNormals();
+  return (_gvLump[i] = geo);
+}
+function gvShade(hex, f) {
+  const c = new window.THREE.Color(hex), hsl = {}; c.getHSL(hsl);
+  c.setHSL(hsl.h, Math.min(1, hsl.s * (f > 1 ? .92 : 1.05)), Math.max(0, Math.min(1, hsl.l * f)));
+  return c.getHex();
+}
+
+/* ---------- trees, the way they actually grow ------------------------ */
+/* Real crowns are not balls. A tree is a flared trunk that forks into
+   limbs, and the foliage hangs off the ends of those limbs in clumps -
+   darker underneath and inside, catching light on top. That structure is
+   what the eye reads as "tree", so it is what is modelled: the habit
+   (round, spreading umbrella, columnar, shrub, palm) decides where the
+   limbs go, and the clumps are placed on them. Flowering species carry
+   their bloom over a green under-crown, the way a Gulmohar or an Amaltas
+   actually looks in season. */
+function gvTreeModel(g, def) {
+  const THREE = window.THREE, R = Math.max(.6, def.r || 2.5), H = Math.max(1, def.h || 7);
+  const rnd = gvRng(((def.id || "t").length * 131 + Math.round(R * 97 + H * 13) + (Math.random() * 1e6 | 0)));
+  const green = def.bloom ? 0x4c8a3c : (def.foliage || 0x4a8f4e);
+  const bloom = def.bloom || null;
+  const shape = def.icon === "palm" ? "palm" : (def.shape || "round");
+  const bark = GVMAT.bark();
+  const leafM = f => GVMAT.leaf(gvShade(green, f));
+  /* Each clump is a dense leafy core plus a ring of leaf-cluster cards
+     around it. The cards are what make the edge of a crown ragged and
+     see-through, the way a real one is against the sky; the core stops the
+     middle looking hollow. Everything is instanced, so a whole crown costs
+     four draw calls however many clumps it has. */
+  const cores = [[], []], cards = [], bcards = [];
+  const clump = (x, y, z, s, sy, f, col) => {
+    sy = sy || .82;
+    const c = col ? gvShade(col, .7) : gvShade(green, f * .6);
+    cores[(rnd() * 2) | 0].push({ x, y, z, s: [s * (.66 + rnd() * .12), s * sy * .66, s * (.66 + rnd() * .12)], ry: rnd() * 6.3, c });
+    const k = def.lite ? 4 : 12, list = col ? bcards : cards;
+    for (let i = 0; i < k; i++) {
+      const th = rnd() * 6.283, ph = Math.acos(1 - 2 * rnd() * (sy < .7 ? .6 : 1)), d = s * (.3 + rnd() * .5);
+      list.push({ x: x + Math.sin(ph) * Math.cos(th) * d, y: y + Math.cos(ph) * d * sy, z: z + Math.sin(ph) * Math.sin(th) * d,
+        rx: rnd() * 6.3, ry: rnd() * 6.3, rz: rnd() * 6.3, s: s * (1.2 + rnd() * .65),
+        c: col ? gvShade(col, .92 + rnd() * .3) : gvShade(green, f * (.85 + rnd() * .38)) });
+    }
+  };
+  const flush = () => {
+    gvInst(g, gvLumpGeo(0), GVMAT.leaf(0xffffff), cores[0]);
+    gvInst(g, gvLumpGeo(3), GVMAT.leaf(0xffffff), cores[1]);
+    gvInst(g, gvCardGeo(), gvCardMat("leafcard"), cards);
+    gvInst(g, gvCardGeo(), gvCardMat("blossom"), bcards);
+  };
+
+  if (shape === "palm") {
+    let p = [0, 0, 0]; const segs = 7, lean = (rnd() - .5) * .5;
+    for (let i = 0; i < segs; i++) {
+      const t = (i + 1) / segs, q = [lean * H * t * t, H * .9 * t, lean * .4 * H * t * t];
+      gvRod(g, p, q, .19 - .06 * t + .04, .19 - .06 * t, bark, 9); p = q;
+    }
+    const fm = gvM("frond", () => new THREE.MeshStandardMaterial({ map: gvTex("frond"), alphaTest: .5,
+      side: THREE.DoubleSide, roughness: .9 }));
+    const top = new THREE.Vector3(p[0], p[1], p[2]);
+    for (let k = 0; k < 12; k++) {
+      const L = Math.max(2.6, R * 1.15) * (.85 + rnd() * .3), geo = new THREE.PlaneGeometry(L * .42, L, 1, 8), pos = geo.attributes.position;
+      for (let v = 0; v < pos.count; v++) { const y = pos.getY(v) + L / 2; pos.setZ(v, -Math.pow(y / L, 2) * L * .55); pos.setY(v, y); }
+      geo.computeVertexNormals();
+      const f = new THREE.Mesh(geo, fm); f.position.copy(top);
+      f.rotation.order = "YXZ"; f.rotation.y = k * Math.PI / 6 + rnd() * .3; f.rotation.x = -(.5 + rnd() * .7);
+      g.add(f);
+    }
+    clump(p[0], p[1], p[2], .35, 1, .7);
+    flush();
+    return;
+  }
+
+  /* root flare + trunk */
+  const shrub = shape === "bush";
+  const trunkH = shrub ? H * .18 : shape === "cone" ? H * .2 : shape === "umbrella" ? H * .42 : H * .36;
+  const tr = Math.max(.07, Math.min(.55, R * (shape === "cone" ? .07 : .085)));
+  if (!shrub) {
+    gvCyl(g, tr * 1.05, tr * 1.7, .45, bark, 0, 0, 0, 10);
+    gvRod(g, [0, .3, 0], [(rnd() - .5) * .25, trunkH, (rnd() - .5) * .25], tr * 1.15, tr * .8, bark, 10);
+  }
+
+  /* where the foliage mass sits */
+  const cy = shape === "cone" ? H * .55 : shape === "umbrella" ? H - R * .32 : shrub ? H * .5 : Math.max(trunkH + R * .55, H - R * .8);
+  const ry = shape === "cone" ? H * .46 : shape === "umbrella" ? R * .34 : shrub ? H * .5 : R * .8;
+  const rx = shape === "cone" ? R : R;
+  const n = def.lite ? 5 : Math.max(7, Math.min(24, Math.round(6 + R * 2.6 + (shape === "cone" ? 6 : 0))));
+
+  /* limbs: from the top of the trunk out to the clump centres */
+  const base = [0, trunkH, 0], nLimb = (shrub || def.lite) ? 0 : shape === "cone" ? 0 : shape === "umbrella" ? 5 : 4;
+  for (let i = 0; i < nLimb; i++) {
+    const a = i / nLimb * 6.283 + rnd() * .6, rr = rx * (.45 + rnd() * .3);
+    const end = [Math.cos(a) * rr, cy + (shape === "umbrella" ? -ry * .1 : -ry * .15 + rnd() * ry * .4), Math.sin(a) * rr];
+    gvRod(g, base, end, tr * .55, tr * .22, bark, 7);
+  }
+  if (shape === "cone") gvRod(g, base, [0, H * .92, 0], tr * .7, tr * .2, bark, 7);
+
+  /* clumps: shell first (lighter on top), then a dark core so no light
+     leaks through the middle of the crown */
+  const cs = shape === "cone" ? R * .62 : shape === "umbrella" ? R * .42 : shrub ? R * .55 : R * .5;
+  clump(0, cy, 0, Math.min(rx, ry) * .85, shape === "umbrella" ? .55 : .9, .72);
+  for (let i = 0; i < n; i++) {
+    const u = rnd(), th = rnd() * 6.283;
+    let x, y, z;
+    if (shape === "cone") {
+      const t = i / (n - 1), w = rx * (1 - t * .78) * (.55 + rnd() * .35);
+      y = H * .14 + t * (H * .86 - cs * .4); x = Math.cos(th) * w; z = Math.sin(th) * w;
+    } else {
+      const ph = Math.acos(1 - u * (shape === "umbrella" ? .9 : 1.6)), rr = .62 + rnd() * .3;
+      x = Math.sin(ph) * Math.cos(th) * rx * rr; z = Math.sin(ph) * Math.sin(th) * rx * rr; y = cy + Math.cos(ph) * ry * rr;
+      if (shrub) y = Math.max(cs * .5, y);
+    }
+    const lift = (y - (cy - ry)) / (2 * ry + 1e-6);
+    const s = cs * (.7 + rnd() * .45) * (shape === "cone" ? (1 - i / n * .5) : 1);
+    const isBloom = bloom && (lift > .25 ? rnd() < .9 : rnd() < .5);
+    clump(x, y, z, s, shape === "umbrella" ? .6 : .82, .78 + lift * .5, isBloom ? gvShade(bloom, .9 + rnd() * .25) : null);
+  }
+  /* sub-clumps break up the outline so no two crowns read as the same blob */
+  if (!def.lite) {
+    const prim = cores[0].concat(cores[1]).slice(1);
+    for (const p of prim) if (rnd() < .7) {
+      const sc = p.s[0] * (.45 + rnd() * .2), th = rnd() * 6.283;
+      const lift = Math.max(0, Math.min(1, (p.y - (cy - ry)) / (2 * ry + 1e-6)));
+      const isB = bloom && rnd() < (lift > .25 ? .88 : .45);
+      clump(p.x + Math.cos(th) * p.s[0] * .8, p.y + (rnd() - .3) * p.s[1] * .7, p.z + Math.sin(th) * p.s[0] * .8,
+            sc, shape === "umbrella" ? .6 : .8, .8 + lift * .45, isB ? gvShade(bloom, .95 + rnd() * .2) : null);
+    }
+  }
+  flush();
+  /* hanging flower chains on golden-shower type trees */
+  if (bloom && def.hang) {
+    const m = gvStd(bloom, { roughness: .8 });
+    for (let i = 0; i < 18; i++) { const th = rnd() * 6.283, w = rx * (.5 + rnd() * .45);
+      const c = new THREE.Mesh(new THREE.ConeGeometry(.12, .7, 5), m);
+      c.position.set(Math.cos(th) * w, cy - ry * .45 - rnd() * .3, Math.sin(th) * w); c.rotation.x = Math.PI; g.add(c); }
+  }
+}
+function gvCardGeo() { return gvM("cardgeo", () => new window.THREE.PlaneGeometry(1, 1)); }
+function gvCardMat(name) {
+  return gvM("card" + name, () => new window.THREE.MeshStandardMaterial({ map: gvTex(name), alphaTest: .42,
+    side: window.THREE.DoubleSide, roughness: .92, color: 0xffffff }));
+}
+/* The bloom colour lives on the def as foliage. Separate it back out so
+   the tree keeps a green under-crown. */
+function gvTreeDef(def) {
+  const d = Object.assign({}, def);
+  const key = def.ref || def.name;
+  if (typeof B3D_BLOOM !== "undefined" && B3D_BLOOM[key]) { d.bloom = B3D_BLOOM[key]; d.hang = /Amaltas/i.test(key); }
+  if (/palm|coconut|areca/i.test(key || "")) d.icon = "palm";
+  return d;
+}
+
+/* ---------- everything else ------------------------------------------ */
+const GV_MODELS = {
+  bench(g) {
+    for (const sx of [-.8, .8]) {
+      gvBox(g, .06, .45, .06, GVMAT.iron(), sx, 0, .22);
+      const back = gvBox(g, .06, .88, .06, GVMAT.iron(), sx, 0, -.24); back.rotation.x = .12;
+      gvBox(g, .06, .05, .56, GVMAT.iron(), sx, .4, -.01);
+      gvBox(g, .07, .04, .46, GVMAT.iron(), sx, .64, .02);
+      gvBox(g, .05, .2, .05, GVMAT.iron(), sx, .44, .22);
+    }
+    for (let i = 0; i < 5; i++) gvBox(g, 1.8, .035, .085, GVMAT.wood(), 0, .45, .2 - i * .1);
+    for (let i = 0; i < 3; i++) { const s = gvBox(g, 1.8, .085, .03, GVMAT.wood(), 0, .53 + i * .11, -.27 - i * .013); s.rotation.x = -.12; }
+  },
+  picnic(g) {
+    for (let i = 0; i < 4; i++) gvBox(g, 1.8, .045, .18, GVMAT.wood(), 0, .72, -.29 + i * .195);
+    for (const sz of [-.66, .66]) for (let i = 0; i < 2; i++) gvBox(g, 1.8, .04, .14, GVMAT.wood(), 0, .44, sz + (i - .5) * .15);
+    for (const sx of [-.68, .68]) {
+      for (const s of [-1, 1]) gvRod(g, [sx, 0, s * .75], [sx, .72, s * .12], .035, .035, GVMAT.darkwood(), 6);
+      gvBox(g, .06, .05, 1.6, GVMAT.darkwood(), sx, .39, 0);
+    }
+  },
+  lamp(g) {
+    gvCyl(g, .22, .26, .2, GVMAT.concrete(), 0, 0, 0, 12);
+    gvCyl(g, .045, .075, 4, GVMAT.galv(), 0, .2, 0, 10);
+    gvRod(g, [0, 3.95, 0], [.55, 4.02, 0], .025, .025, GVMAT.galv(), 6);
+    gvBox(g, .5, .07, .2, GVMAT.iron(), .62, 3.95, 0);
+    gvBox(g, .44, .015, .16, gvStd(0xfff4cf, { emissive: 0xffe39a, emissiveIntensity: 1 }), .62, 3.94, 0);
+    const p = gvBox(g, .75, .04, .48, GVMAT.solar(), -.05, 4.18, 0); p.rotation.z = .35;
+    gvBox(g, .22, .34, .14, gvStd(0xe9ecef), 0, 2.4, .09);
+  },
+  rwh(g) {
+    gvCyl(g, 1.0, 1.0, .03, GVMAT.soil(), 0, 0, 0, 24);
+    gvCyl(g, .7, .72, .12, GVMAT.concrete(), 0, 0, 0, 24);
+    const gr = gvCyl(g, .6, .6, .13, gvTexMat("grate", 0xffffff, { metalness: .5, roughness: .5 }), 0, 0, 0, 24);
+    gr.material = gvTexMat("grate", 0xffffff, { metalness: .5, roughness: .5 });
+    gvRod(g, [.68, .05, 0], [1.5, .05, 0], .07, .07, gvStd(0x8f969c), 10);
+  },
+  tap(g) {
+    gvBox(g, 1, .08, 1, GVMAT.concrete(), 0, 0, 0);
+    gvBox(g, .5, .02, .12, gvTexMat("grate"), 0, .08, .32);
+    gvCyl(g, .13, .16, .86, GVMAT.steel(), 0, .08, 0, 16);
+    gvCyl(g, .3, .17, .14, GVMAT.steel(), 0, .92, 0, 20);
+    gvCyl(g, .26, .26, .01, gvStd(0x9fb4c2, { metalness: .6, roughness: .2 }), 0, 1.05, 0, 20);
+    gvBox(g, .32, .55, .07, GVMAT.steel(), 0, .92, -.24);
+    gvRod(g, [0, 1.1, -.2], [0, 1.12, -.05], .015, .015, GVMAT.steel(), 6);
+  },
+  gazebo(g) {
+    const THREE = window.THREE;
+    const pl = gvCyl(g, 3.25, 3.4, .35, GVMAT.stone(), 0, 0, 0, 6); pl.rotation.y = 0;
+    gvCyl(g, 3.0, 3.0, .03, gvTexMat("flags"), 0, .35, 0, 6);
+    for (let k = 0; k < 6; k++) {
+      const a = k * Math.PI / 3, x = Math.sin(a) * 2.75, z = Math.cos(a) * 2.75;
+      gvCyl(g, .13, .15, 2.75, GVMAT.darkwood(), x, .38, z, 10);
+      gvBox(g, .38, .12, .38, GVMAT.stone(), x, .35, z);
+      const a2 = (k + 1) * Math.PI / 3; gvRod(g, [x, 3.1, z], [Math.sin(a2) * 2.75, 3.1, Math.cos(a2) * 2.75], .1, .1, GVMAT.darkwood(), 6);
+      if (k % 2 === 0) { const b = gvBox(g, 2.2, .07, .45, GVMAT.wood(), Math.sin(a + Math.PI / 6) * 2.25, .8, Math.cos(a + Math.PI / 6) * 2.25);
+        b.rotation.y = a + Math.PI / 6 + Math.PI / 2; }
+    }
+    const roof = new THREE.Mesh(gvScaleUV(new THREE.ConeGeometry(3.7, 1.65, 6, 1), 6, 3), GVMAT.tiles());
+    roof.position.y = 3.15 + .82; g.add(roof);
+    const fas = new THREE.Mesh(new THREE.CylinderGeometry(3.72, 3.72, .16, 6, 1, true), GVMAT.darkwood());
+    fas.position.y = 3.2; g.add(fas);
+    gvCyl(g, .05, .1, .45, gvStd(0xc9a04a, { metalness: .8, roughness: .3 }), 0, 4.8, 0, 8);
+  },
+  play(g) {
+    gvSlab(g, 6.4, 5.2, .05, "concrete", 0xa94a35, 0, 0, 0).material = gvStd(0xa64a33, { roughness: 1 });
+    const Y = GVMAT.paint(0xf2b705), Bl = GVMAT.paint(0x1f6fd1), Rd = GVMAT.paint(0xd8332a);
+    const tx = -1.7, tz = -1.1;
+    for (const [dx, dz] of [[-.65, -.65], [.65, -.65], [-.65, .65], [.65, .65]]) gvCyl(g, .06, .06, 2.7, Y, tx + dx, .05, tz + dz, 10);
+    gvBox(g, 1.4, .08, 1.4, GVMAT.wood(), tx, 1.25, tz);
+    for (const s of [-1, 1]) { gvBox(g, 1.3, .5, .04, Rd, tx, 1.35, tz + s * .65); }
+    gvBox(g, .04, .5, 1.3, Rd, tx - .65, 1.35, tz);
+    const roof = new window.THREE.Mesh(new window.THREE.ConeGeometry(1.1, .85, 4), Rd);
+    roof.position.set(tx, 2.75 + .42, tz); roof.rotation.y = Math.PI / 4; g.add(roof);
+    const L = 2.9, ang = Math.atan2(1.25, L);
+    const sl = gvBox(g, Math.hypot(L, 1.25), .05, .55, Bl, tx + .65 + L / 2, .62, tz); sl.rotation.z = -ang;
+    for (const s of [-1, 1]) { const w = gvBox(g, Math.hypot(L, 1.25), .18, .04, Bl, tx + .65 + L / 2, .7, tz + s * .28); w.rotation.z = -ang; }
+    for (const s of [-.25, .25]) gvRod(g, [tx - 1.5, 0, tz + s], [tx - .7, 1.3, tz + s], .03, .03, Y, 6);
+    for (let i = 1; i < 5; i++) { const t = i / 5; gvRod(g, [tx - 1.5 + .8 * t, 1.3 * t, tz - .25], [tx - 1.5 + .8 * t, 1.3 * t, tz + .25], .022, .022, Y, 6); }
+    const sz = 1.5;
+    for (const sx of [-1.6, 1.6]) for (const s of [-1, 1]) gvRod(g, [sx, 0, sz + s * .6], [sx, 2.3, sz], .05, .05, Bl, 8);
+    gvRod(g, [-1.6, 2.3, sz], [1.6, 2.3, sz], .055, .055, Bl, 8);
+    for (const x of [-.6, .6]) {
+      gvBox(g, .45, .04, .18, GVMAT.rubber(0x222222), x, .45, sz);
+      for (const s of [-.2, .2]) gvRod(g, [x + s, .48, sz], [x + s, 2.28, sz], .008, .008, GVMAT.steel(), 4);
+    }
+  },
+  gym(g) {
+    gvSlab(g, 3.2, 2.2, .05, "concrete").material = gvStd(0x2f6b45, { roughness: 1 });
+    const G = GVMAT.paint(0x2e9e4f), Yl = GVMAT.paint(0xf2b705);
+    for (const x of [-1.3, -.3]) gvCyl(g, .05, .05, 2.2, G, x, .05, -.6, 10);
+    gvRod(g, [-1.3, 2.15, -.6], [-.3, 2.15, -.6], .03, .03, Yl, 8);
+    for (const x of [.4, 1.3]) for (const z of [-.75, -.3]) gvCyl(g, .04, .04, 1.1, G, x, .05, z, 8);
+    for (const z of [-.75, -.3]) gvRod(g, [.4, 1.15, z], [1.3, 1.15, z], .025, .025, Yl, 8);
+    const b = gvBox(g, 1.2, .06, .36, gvStd(0x2b2b2b, { roughness: .7 }), 0, .45, .6); b.rotation.z = -.25;
+    gvCyl(g, .04, .04, .55, G, -.5, .05, .6, 8); gvCyl(g, .04, .04, .3, G, .5, .05, .6, 8);
+  },
+  toilet(g) {
+    gvBox(g, 6.4, .3, 4.4, GVMAT.concrete(), 0, 0, -.5, "concrete");
+    gvBox(g, 6, 2.7, 4, GVMAT.brick(), 0, .3, -.5, "brick");
+    gvBox(g, 6.6, .18, 4.6, GVMAT.concrete(), 0, 3.0, -.5, "concrete");
+    gvCyl(g, .55, .55, .9, GVMAT.plastic(0x1d1d1d), 2.2, 3.18, -1.6, 18);
+    const doors = [[-2, 0x2f6f8f], [0, 0xa8447a], [2, 0x2f6f8f]];
+    for (const [x, c] of doors) { gvBox(g, .95, 2.05, .06, gvStd(c, { roughness: .6 }), x, .3, 1.52);
+      gvBox(g, .35, .35, .03, gvStd(c === 0xa8447a ? 0xf06ba8 : 0x2f86d6, { emissive: 0x111111 }), x, 2.5, 1.53); }
+    for (const x of [-2.6, -1, 1, 2.6]) gvBox(g, .6, .25, .04, gvStd(0x30363b, { metalness: .3 }), x, 2.6, 1.52);
+    const r = gvBox(g, 2.4, .06, 1.2, GVMAT.concrete(), 0, .12, 2.1); r.rotation.x = .12;
+  },
+  compost(g) {
+    gvBox(g, 3.8, .1, 1.4, GVMAT.concrete(), 0, 0, 0, "concrete");
+    const W = GVMAT.wood();
+    for (let i = 0; i < 4; i++) gvBox(g, 3.7, .13, .04, W, 0, .14 + i * .24, -.62);
+    for (const x of [-1.83, -.61, .61, 1.83]) { for (let i = 0; i < 4; i++) gvBox(g, .04, .13, 1.2, W, x, .14 + i * .24, 0);
+      gvBox(g, .09, 1.1, .09, GVMAT.darkwood(), x, .1, .6); gvBox(g, .09, 1.1, .09, GVMAT.darkwood(), x, .1, -.6); }
+    const cols = [0x3d2b1c, 0x4f3a22, 0x5b5a2c];
+    [-1.22, 0, 1.22].forEach((x, i) => { const m = new window.THREE.Mesh(gvLumpGeo(i), gvTexMat("soil", cols[i] === 0x5b5a2c ? 0xc8d08a : 0xffffff));
+      m.position.set(x, .3, 0); m.scale.set(.5, .3 + i * .05, .5); g.add(m); });
+  },
+  gate(g) {
+    for (const sx of [-2.65, 2.65]) {
+      gvBox(g, .75, 3.0, .75, GVMAT.stone(), sx, 0, 0, "stone");
+      gvBox(g, .9, .16, .9, GVMAT.concrete(), sx, 3.0, 0);
+      const l = new window.THREE.Mesh(new window.THREE.SphereGeometry(.2, 14, 10), gvStd(0xfff3cf, { emissive: 0xffe2a0, emissiveIntensity: .6 }));
+      l.position.set(sx, 3.4, 0); g.add(l);
+    }
+    const P = GVMAT.paint(0x1f2a24);
+    for (const s of [-1, 1]) {
+      const x0 = s * .02, x1 = s * 2.25;
+      for (const y of [.15, 1.0, 1.9]) gvRod(g, [x0, y, 0], [x1, y, 0], .03, .03, P, 6);
+      for (let i = 0; i <= 14; i++) { const x = x0 + (x1 - x0) * i / 14; gvRod(g, [x, .1, 0], [x, 2.0, 0], .014, .014, P, 5);
+        const tip = new window.THREE.Mesh(new window.THREE.ConeGeometry(.03, .1, 5), gvStd(0xc9a04a, { metalness: .8 })); tip.position.set(x, 2.05, 0); g.add(tip); }
+    }
+    const board = gvBox(g, 5.0, .55, .12, gvM("parkboard", () => new window.THREE.MeshStandardMaterial({ map: gvBoardTex("PUBLIC PARK"), roughness: .6 })), 0, 2.9, 0);
+    board.rotation.y = 0;
+  },
+  sump(g) {
+    gvBox(g, 2.6, .3, 2.6, GVMAT.concrete(), 0, 0, 0, "concrete");
+    gvCyl(g, .36, .36, .32, gvTexMat("grate", 0xffffff, { metalness: .5 }), -.4, 0, .4, 20);
+    gvBox(g, 1.0, 1.1, .9, GVMAT.brick(), .7, .3, -.7, "brick");
+    gvBox(g, 1.15, .1, 1.05, GVMAT.concrete(), .7, 1.4, -.7);
+    gvBox(g, .5, .8, .03, gvStd(0x52606b, { metalness: .5 }), .7, .32, -.24);
+    gvRod(g, [.2, .45, -.7], [-1.3, .45, -.7], .05, .05, gvStd(0x2e6fae, { roughness: .5 }), 10);
+  },
+  borewell(g) {
+    gvCyl(g, .78, .82, .15, GVMAT.concrete(), 0, 0, 0, 22);
+    gvBox(g, .25, .06, .9, GVMAT.concrete(), 0, .15, .8);
+    const P = GVMAT.paint(0x3c6a8e);
+    gvCyl(g, .1, .14, .5, P, 0, .15, 0, 14);
+    gvCyl(g, .11, .11, .55, P, 0, .65, 0, 14);
+    gvBox(g, .26, .2, .34, P, 0, 1.2, 0);
+    const h = gvBox(g, 1.15, .05, .05, GVMAT.iron(), .5, 1.25, 0); h.rotation.z = -.22;
+    gvRod(g, [0, .85, .1], [0, .8, .38], .03, .028, P, 8);
+  },
+  court(g) {
+    const THREE = window.THREE;
+    gvBox(g, 15.4, .12, 8.2, GVMAT.concrete(), 0, 0, 0, "concrete");
+    const top = new THREE.Mesh(new THREE.BoxGeometry(13.4, .02, 6.1),
+      gvM("courttop", () => new THREE.MeshStandardMaterial({ map: gvCourtTex(), roughness: .6 })));
+    top.position.y = .13; g.add(top);
+    for (const s of [-1, 1]) gvCyl(g, .04, .04, 1.55, GVMAT.galv(), 0, .12, s * 3.25, 8);
+    const net = new THREE.Mesh(new THREE.PlaneGeometry(6.5, .76),
+      gvM("net", () => { const t = gvTex("chainlink").clone(); t.needsUpdate = true; t.repeat.set(16, 2);
+        return new THREE.MeshStandardMaterial({ map: t, color: 0x222222, transparent: true, alphaTest: .3, side: THREE.DoubleSide }); }));
+    net.position.set(0, 1.25, 0); net.rotation.y = Math.PI / 2; g.add(net);
+    for (const s of [-1, 1]) {
+      gvCyl(g, .08, .09, 3.6, GVMAT.paint(0x1d3f6e), s * 7.3, .12, 0, 10);
+      gvRod(g, [s * 7.3, 3.4, 0], [s * 6.55, 3.4, 0], .05, .05, GVMAT.paint(0x1d3f6e), 6);
+      gvBox(g, .05, 1.05, 1.8, gvStd(0xf7f7f7), s * 6.5, 2.65, 0);
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(.23, .018, 6, 24), GVMAT.paint(0xe2541b));
+      ring.rotation.x = Math.PI / 2; ring.position.set(s * 6.2, 3.05, 0); g.add(ring);
+    }
+  },
+  cycle(g) {
+    gvSlab(g, 4, 1.8, .08, "paver");
+    const THREE = window.THREE;
+    for (let i = 0; i < 5; i++) { const x = -1.6 + i * .8;
+      const t = new THREE.Mesh(new THREE.TorusGeometry(.36, .025, 6, 18, Math.PI), GVMAT.galv());
+      t.position.set(x, .45, 0); t.rotation.y = Math.PI / 2; g.add(t);
+      for (const s of [-.36, .36]) gvCyl(g, .025, .025, .45, GVMAT.galv(), x, .05, s, 6); }
+    gvBike(g, -1.2, 0xc0392b); gvBike(g, .4, 0x2471a3);
+  },
+  sign(g) {
+    for (const s of [-.68, .68]) gvCyl(g, .045, .045, 1.8, GVMAT.galv(), s, 0, 0, 8);
+    const p = gvBox(g, 1.5, .95, .05, gvM("signpanel", () => new window.THREE.MeshStandardMaterial({ map: gvSignTex(), roughness: .5 })), 0, .85, .03);
+    p.rotation.x = -.12;
+    gvBox(g, 1.65, .06, .3, GVMAT.paint(0x24553a), 0, 1.84, 0);
+  },
+  bin(g) {
+    gvBox(g, 3.2, .08, 1.1, GVMAT.concrete(), 0, 0, 0);
+    gvBox(g, 3.0, 1.35, .05, GVMAT.wood(), 0, .08, -.48);
+    for (const s of [-1.5, 1.5]) gvBox(g, .07, 1.45, .07, GVMAT.galv(), s, .08, -.45);
+    const r = gvBox(g, 3.2, .05, 1.1, GVMAT.paint(0x2c6b47), 0, 1.45, -.05); r.rotation.x = .1;
+    const cols = [0x2e8b3a, 0x1f5fbf, 0x5a5f66];
+    cols.forEach((c, i) => { const x = (i - 1) * .95;
+      gvCyl(g, .3, .26, .88, GVMAT.plastic(c), x, .08, 0, 18);
+      gvCyl(g, .32, .32, .06, GVMAT.plastic(gvShade(c, .7)), x, .96, 0, 18);
+      gvBox(g, .22, .14, .02, gvStd(0xf5f5f5), x, .6, .28); });
+  },
+  ramp(g) {
+    const run = 5, rise = .42, ang = Math.atan2(rise, run), C = GVMAT.concrete();
+    const s = gvBox(g, Math.hypot(run, rise), .15, 1.6, C, -.5, 0, 0, "concrete"); s.rotation.z = ang; s.position.y = rise / 2 + .02;
+    gvBox(g, 1, rise + .1, 1.6, C, 2.5, 0, 0, "concrete");
+    for (const z of [-.85, .85]) {
+      for (let i = 0; i <= 4; i++) { const x = -3 + i * 1.25, y = Math.min(rise, rise * (i * 1.25) / run);
+        gvCyl(g, .025, .025, .92, GVMAT.steel(), x, y, z, 6); }
+      gvRod(g, [-3, .92, z], [2, rise + .92, z], .025, .025, GVMAT.steel(), 6);
+      gvRod(g, [-3, .62, z], [2, rise + .62, z], .02, .02, GVMAT.steel(), 6);
+      gvRod(g, [2, rise + .92, z], [3, rise + .92, z], .025, .025, GVMAT.steel(), 6);
+    }
+  },
+  cctv(g) {
+    gvCyl(g, .25, .3, .2, GVMAT.concrete(), 0, 0, 0, 12);
+    gvCyl(g, .06, .1, 4.5, GVMAT.galv(), 0, .2, 0, 10);
+    gvRod(g, [0, 4.35, 0], [.6, 4.35, 0], .03, .03, GVMAT.galv(), 6);
+    gvBox(g, .35, .14, .16, gvStd(0xf3f3f3), .65, 4.2, 0);
+    gvCyl(g, .05, .05, .02, gvStd(0x111111, { metalness: .6, roughness: .1 }), .83, 4.27, 0, 12).rotation.z = Math.PI / 2;
+    const d = new window.THREE.Mesh(new window.THREE.SphereGeometry(.12, 14, 8, 0, 6.3, Math.PI / 2, Math.PI / 2), gvStd(0x1a1a1a, { roughness: .1, metalness: .4 }));
+    d.position.set(-.1, 4.3, .12); g.add(d);
+    const p = gvBox(g, .9, .04, .6, GVMAT.solar(), 0, 4.6, 0); p.rotation.x = -.4;
+    gvBox(g, .3, .42, .18, gvStd(0xeeeeee), 0, 2.8, .12);
+  },
+  birdbath(g) {
+    const THREE = window.THREE, S = GVMAT.stone();
+    gvCyl(g, .26, .32, .1, S, 0, 0, 0, 16); gvCyl(g, .09, .13, .66, S, 0, .1, 0, 14);
+    const prof = [[0, 0], [.12, .02], [.3, .08], [.4, .18], [.38, .19], [.27, .11], [0, .08]].map(p => new THREE.Vector2(p[0], p[1]));
+    const bowl = new THREE.Mesh(new THREE.LatheGeometry(prof, 24), S); bowl.position.y = .74; g.add(bowl);
+    gvCyl(g, .29, .29, .01, GVMAT.water(), 0, .87, 0, 24);
+    gvBird(g, .32, .94, 0, 1);
+  },
+  catchbasin(g) {
+    gvBox(g, 1.1, .05, .8, GVMAT.concrete(), 0, 0, 0);
+    gvBox(g, .9, .055, .6, gvTexMat("grate", 0xffffff, { metalness: .5 }), 0, 0, 0);
+  },
+  chabutro(g) {
+    const THREE = window.THREE, S = GVMAT.stone(), W = gvStd(0xf1ebdf), P = gvStd(0x2f7f8c);
+    gvCyl(g, 1.25, 1.35, .5, S, 0, 0, 0, 8); gvCyl(g, 1.0, 1.1, .2, S, 0, .5, 0, 8);
+    gvCyl(g, .2, .27, 3.4, W, 0, .7, 0, 8);
+    for (const y of [1.4, 2.6, 3.7]) gvCyl(g, .3, .3, .1, P, 0, y, 0, 8);
+    gvCyl(g, .95, .55, .35, W, 0, 4.1, 0, 8);
+    gvCyl(g, .62, .62, .85, W, 0, 4.45, 0, 8);
+    for (let k = 0; k < 8; k++) { const a = k * Math.PI / 4 + Math.PI / 8; const h = gvBox(g, .14, .18, .02, gvStd(0x2b2b2b), Math.sin(a) * .62, 4.75, Math.cos(a) * .62); h.rotation.y = a; }
+    const dome = new THREE.Mesh(new THREE.SphereGeometry(.72, 16, 10, 0, 6.3, 0, Math.PI / 2), gvStd(0xb84a3a, { roughness: .6 }));
+    dome.position.y = 5.3; dome.scale.y = .9; g.add(dome);
+    gvCyl(g, .03, .06, .4, gvStd(0xc9a04a, { metalness: .8 }), 0, 5.9, 0, 6);
+    for (let k = 0; k < 4; k++) { const a = k * 1.6 + .4; gvBird(g, Math.sin(a) * .82, 4.45, Math.cos(a) * .82, .9, a); }
+  },
+  sculpture(g) {
+    const THREE = window.THREE;
+    gvBox(g, 1.3, .6, 1.3, GVMAT.stone(), 0, 0, 0, "stone");
+    const k = new THREE.Mesh(new THREE.TorusKnotGeometry(.5, .14, 120, 14, 2, 3), gvStd(0xa8743a, { metalness: .85, roughness: .32 }));
+    k.position.y = 1.65; k.scale.y = 1.35; g.add(k);
+  },
+  solarcanopy(g) {
+    for (const [x, z, h] of [[-2.7, -1.7, 2.7], [2.7, -1.7, 2.7], [-2.7, 1.7, 3.2], [2.7, 1.7, 3.2]]) gvCyl(g, .08, .09, h, GVMAT.galv(), x, 0, z, 10);
+    const ang = Math.atan2(.5, 3.4);
+    const p = gvBox(g, 6.2, .07, 4.2, GVMAT.solar(), 0, 2.88, 0); p.rotation.x = ang;
+    gvScaleUV(p.geometry, 4, 3);
+    gvBox(g, .4, .6, .25, gvStd(0xdedede), -2.7, 1.2, -1.85);
+    for (const x of [-1.2, 1.2]) { const b = new window.THREE.Group(); GV_MODELS.bench(b); b.position.set(x, 0, 0); g.add(b); }
+  },
+
+  /* ----- ground, planting and water -------------------------------- */
+  surface(g, def) {
+    const side = Math.sqrt(def.foot || 4), tex = GV_SURF[def.ref] || "concrete";
+    const t = (GV_REAL[def.ref] && GV_REAL[def.ref].t) || .06;
+    gvSlab(g, side, side, Math.max(.03, Math.min(.12, t)), tex);
+    if (def.ref === "path_stone" || def.ref === "paver_perm" || def.ref === "track")
+      for (const s of [-1, 1]) gvBox(g, side, .1, .1, GVMAT.concrete(), 0, 0, s * side / 2);
+  },
+  turf(g, def) {
+    const side = Math.sqrt(def.foot || 9);
+    gvSlab(g, side, side, .05, "grass");
+  },
+  lawn(g, def) {          /* the meadow */
+    const side = Math.sqrt(def.foot || 9), r = gvRng(side * 99 + (Math.random() * 1e5 | 0));
+    gvSlab(g, side, side, .04, "meadow");
+    const tuft = [], fl = [], cols = [0xffffff, 0xf6d74a, 0xb98be0, 0xf08cb5, 0xff9f43];
+    for (let i = 0; i < 46; i++) tuft.push({ x: (r() - .5) * side * .95, y: .25, z: (r() - .5) * side * .95, s: [.7 + r() * .6, .9 + r() * .8, .7 + r() * .6], ry: r() * 6, c: gvShade(0x8aa548, .8 + r() * .5) });
+    for (let i = 0; i < 30; i++) fl.push({ x: (r() - .5) * side * .95, y: .45 + r() * .2, z: (r() - .5) * side * .95, s: .05 + r() * .03, c: cols[(r() * cols.length) | 0] });
+    gvInst(g, gvTuftGeo(), gvStd(0xffffff, { roughness: 1 }), tuft);
+    gvInst(g, new window.THREE.SphereGeometry(1, 6, 5), gvStd(0xffffff, { roughness: .7 }), fl);
+  },
+  bed(g, def) {
+    const side = Math.sqrt(def.foot || 4), r = gvRng(side * 71 + (Math.random() * 1e5 | 0));
+    const kind = def.ref;
+    const tex = kind === "herb" ? "soil" : "mulch";
+    if (kind === "herb") { for (const s of [-1, 1]) gvBox(g, side, .32, .06, GVMAT.wood(), 0, 0, s * side / 2);
+      for (const s of [-1, 1]) gvBox(g, .06, .32, side, GVMAT.wood(), s * side / 2, 0, 0); }
+    else for (let k = 0; k < 4; k++) { const b = gvBox(g, side + .1, .12, .1, GVMAT.stone(), 0, 0, 0);
+      const a = k * Math.PI / 2; b.position.set(Math.sin(a) * side / 2, .06, Math.cos(a) * side / 2); b.rotation.y = a; }
+    gvSlab(g, side, side, kind === "herb" ? .28 : .1, tex);
+    const top = kind === "herb" ? .28 : .1;
+    if (kind === "nursery") {
+      for (const [x, z] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) gvCyl(g, .04, .04, 2.2, GVMAT.galv(), x * side / 2, 0, z * side / 2, 6);
+      const net = new window.THREE.Mesh(new window.THREE.PlaneGeometry(side, side), gvM("shadenet", () => new window.THREE.MeshStandardMaterial(
+        { map: gvTex("shadenet"), transparent: true, side: window.THREE.DoubleSide, roughness: 1, depthWrite: false })));
+      net.rotation.x = -Math.PI / 2; net.position.y = 2.2; g.add(net);
+      const bags = [], tops = [];
+      const k = Math.max(3, Math.round(side / .35));
+      for (let i = 0; i < k; i++) for (let j = 0; j < k; j++) { const x = (i + .5) / k * side - side / 2, z = (j + .5) / k * side - side / 2;
+        bags.push({ x, y: top + .1, z, s: [.1, .2, .1] }); tops.push({ x, y: top + .32 + r() * .15, z, s: .13 + r() * .07, c: gvShade(0x4f9a3a, .8 + r() * .5) }); }
+      gvInst(g, new window.THREE.CylinderGeometry(1, 1, 1, 8), gvStd(0x151515, { roughness: .8 }), bags);
+      gvInst(g, gvLumpGeo(2), GVMAT.leaf(0xffffff), tops);
+      return;
+    }
+    const n = Math.round(side * side * (kind === "shrub" ? 1.8 : 3.2));
+    const plants = [], heads = [];
+    const palette = kind === "butterfly" ? [0xff8a1f, 0xffd23f, 0xb05cd6, 0xff4f81]
+                  : kind === "herb" ? [0x9b6bb5] : [0xe84a6f, 0xf7b32b, 0xa66bff, 0xffffff, 0xff7b39];
+    for (let i = 0; i < n; i++) {
+      const x = (r() - .5) * side * .86, z = (r() - .5) * side * .86;
+      const s = kind === "shrub" ? .45 + r() * .3 : kind === "herb" ? .14 + r() * .08 : .2 + r() * .12;
+      plants.push({ x, y: top + s * .7, z, s: [s, s * .85, s], ry: r() * 6, c: gvShade(kind === "shrub" ? 0x4b8a3c : 0x5c9a3f, .75 + r() * .5) });
+      if (kind !== "shrub" && (kind !== "herb" || r() < .4))
+        for (let k = 0; k < 4; k++) heads.push({ x: x + (r() - .5) * s * 1.4, y: top + s * 1.35 + r() * .05, z: z + (r() - .5) * s * 1.4, s: .035 + r() * .025, c: palette[(r() * palette.length) | 0] });
+    }
+    gvInst(g, gvLumpGeo(1), GVMAT.leaf(0xffffff), plants);
+    gvInst(g, new window.THREE.SphereGeometry(1, 6, 5), gvStd(0xffffff, { roughness: .6 }), heads);
+  },
+  water(g, def) {
+    const THREE = window.THREE, side = Math.sqrt(def.foot || 16), R = side * .62, r = gvRng(side * 13 + (Math.random() * 1e5 | 0));
+    gvCyl(g, R + .1, R + .1, .02, GVMAT.soil(), 0, -.01, 0, 32);
+    const w = gvCyl(g, R, R, .03, GVMAT.water(), 0, .0, 0, 40); gvScaleUV(w.geometry, R / 3, R / 3);
+    const rocks = [];
+    const nr = Math.round(R * 2 * Math.PI / .55);
+    for (let i = 0; i < nr; i++) { const a = i / nr * 6.283, s = .25 + r() * .2;
+      rocks.push({ x: Math.cos(a) * (R + .05), y: s * .3, z: Math.sin(a) * (R + .05), s: [s * 1.3, s * .7, s], ry: r() * 6, c: gvShade(0x9a9184, .8 + r() * .45) }); }
+    gvInst(g, new THREE.DodecahedronGeometry(1, 0), gvStd(0xffffff, { roughness: .95 }), rocks);
+    const pads = [];
+    for (let i = 0; i < 7; i++) { const a = r() * 6.283, d = r() * R * .7; pads.push({ x: Math.cos(a) * d, y: .04, z: Math.sin(a) * d, s: [.32 + r() * .15, 1, .32 + r() * .15], c: gvShade(0x3f8a3a, .85 + r() * .3) }); }
+    gvInst(g, new THREE.CylinderGeometry(1, 1, .01, 12, 1, false, .3, 5.8), gvStd(0xffffff, { roughness: .7 }), pads);
+    for (let i = 0; i < 2; i++) { const p = pads[i]; const f = new THREE.Mesh(new THREE.SphereGeometry(.09, 8, 6), gvStd(0xf3a6c8)); f.position.set(p.x, .1, p.z); g.add(f); }
+    const reeds = [];
+    for (let i = 0; i < 26; i++) { const a = 2.2 + r() * 1.1, d = R * (.82 + r() * .12);
+      reeds.push({ x: Math.cos(a) * d, y: .6, z: Math.sin(a) * d, s: [1, 1 + r() * .6, 1], rz: (r() - .5) * .25, c: gvShade(0x6f8f3a, .8 + r() * .4) }); }
+    gvInst(g, new THREE.ConeGeometry(.03, 1.2, 4), gvStd(0xffffff, { roughness: 1 }), reeds);
+  },
+  steps(g, def) {
+    const side = Math.sqrt(def.foot || 16);
+    for (let i = 0; i < 3; i++) { const w = side * (1 - i * .24);
+      gvBox(g, side, .42, w, GVMAT.stone(), 0, i * .42, -(side - w) / 2, "stone");
+      gvBox(g, side + .02, .04, .12, gvTexMat("concrete", 0xe6dfd2), 0, i * .42 + .4, -(side - w) / 2 + w / 2 - .06); }
+  },
+  dense(g, def) {
+    const THREE = window.THREE, side = Math.sqrt(def.foot || 25), r = gvRng(side * 7 + (Math.random() * 1e5 | 0));
+    gvSlab(g, side, side, .1, "mulch");
+    const trunks = [], crowns = [];
+    const n = Math.round(side * side * 1.6);
+    for (let i = 0; i < n; i++) {
+      const x = (r() - .5) * side * .9, z = (r() - .5) * side * .9, layer = r(), h = layer < .3 ? 1 + r() * .8 : layer < .7 ? 2 + r() * 1.2 : 3.2 + r() * 1.3;
+      const cr = .35 + h * .14 + r() * .2;
+      trunks.push({ x, y: (h - cr) / 2 + .1, z, s: [.04 + h * .01, Math.max(.2, h - cr), .04 + h * .01] });
+      crowns.push({ x, y: h, z, s: [cr, cr * .9, cr], ry: r() * 6, c: gvShade(0x356f34, .7 + r() * .6) });
+    }
+    gvInst(g, new THREE.CylinderGeometry(1, 1.2, 1, 6), GVMAT.bark(), trunks);
+    gvInst(g, gvLumpGeo(3), GVMAT.leaf(0xffffff), crowns);
+  },
+  hedgestrip(g, def) {
+    const len = def.len || 6, wid = def.wid || .8, r = gvRng(len * 17 + (Math.random() * 1e5 | 0));
+    gvSlab(g, len, wid + .2, .06, "mulch");
+    const b = gvBox(g, len - .15, 1.05, wid * .85, GVMAT.leaf(0x335f2a), 0, .05, 0); gvScaleUV(b.geometry, len, 1);
+    const l = [];
+    for (let i = 0; i < Math.round(len * 3.2); i++) l.push({ x: (r() - .5) * (len - .3), y: .55 + r() * .55, z: (r() - .5) * wid * .7, s: [.32 + r() * .1, .3, .32], ry: r() * 6, c: gvShade(0x3d6f30, .8 + r() * .4) });
+    gvInst(g, gvLumpGeo(4), GVMAT.leaf(0xffffff), l);
+  },
+  wall(g, def) {
+    const THREE = window.THREE, len = def.len || 6, r = gvRng(len * 23 + (Math.random() * 1e5 | 0));
+    gvBox(g, len, .4, .45, GVMAT.concrete(), 0, 0, 0, "concrete");
+    gvSlab(g, len - .1, .35, .02, "soil", null, 0, .4, 0);
+    for (let x = -len / 2; x <= len / 2 + .01; x += 2) gvCyl(g, .04, .04, 2.2, GVMAT.galv(), x, .4, -.1, 8);
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(len, 1.8), gvM("link", () => { const t = gvTex("chainlink").clone(); t.needsUpdate = true; t.repeat.set(1, 1);
+      return new THREE.MeshStandardMaterial({ map: t, transparent: true, alphaTest: .3, side: THREE.DoubleSide, metalness: .6 }); }));
+    mesh.material.map.repeat.set(len / 1.0, 1.8); mesh.position.set(0, 1.5, -.1); g.add(mesh);
+    const l = [];
+    for (let i = 0; i < Math.round(len * 9); i++) { const y = .5 + Math.pow(r(), .7) * 1.75; l.push({ x: (r() - .5) * len * .95, y, z: -.02 + r() * .06, s: [.22 + r() * .12, .2 + r() * .1, .12], ry: r() * 6, c: gvShade(0x3f8a43, .75 + r() * .5) }); }
+    gvInst(g, gvLumpGeo(5), GVMAT.leaf(0xffffff), l);
+  },
+  fencestrip(g, def) {
+    const THREE = window.THREE, len = def.len || 6;
+    if (def.ref === "bollard") {
+      for (let i = 0; i < 6; i++) { const x = -len / 2 + .5 + i * (len - 1) / 5;
+        gvCyl(g, .1, .11, .85, GVMAT.iron(), x, 0, 0, 14);
+        const c = new THREE.Mesh(new THREE.SphereGeometry(.1, 14, 8, 0, 6.3, 0, Math.PI / 2), GVMAT.iron()); c.position.set(x, .85, 0); g.add(c);
+        gvCyl(g, .112, .112, .07, gvStd(0xf2c230, { emissive: 0x332200 }), x, .66, 0, 14); }
+      return;
+    }
+    if (def.ref === "pergola") {
+      const W = GVMAT.darkwood(), w = (def.wid || 1.8) / 2, r = gvRng(len * 41 + (Math.random() * 1e5 | 0));
+      gvSlab(g, len, w * 2, .05, "flags");
+      for (let x = -len / 2 + .15; x <= len / 2; x += 2) for (const s of [-1, 1]) gvBox(g, .16, 2.6, .16, W, x, 0, s * w);
+      for (const s of [-1, 1]) gvBox(g, len, .22, .1, W, 0, 2.5, s * w);
+      for (let x = -len / 2 + .1; x <= len / 2; x += .5) gvBox(g, .07, .14, w * 2 + .5, W, x, 2.72, 0);
+      const l = [];
+      for (let i = 0; i < Math.round(len * 4); i++) l.push({ x: (r() - .5) * len, y: 2.85 + r() * .2, z: (r() - .5) * w * 2.2, s: [.35 + r() * .2, .2, .35], ry: r() * 6, c: r() < .25 ? 0xd6478f : gvShade(0x3f7f3a, .8 + r() * .4) });
+      for (let i = 0; i < 6; i++) l.push({ x: (r() - .5) * len, y: 1 + r(), z: (r() < .5 ? -1 : 1) * w, s: [.18, .5, .18], c: gvShade(0x3f7f3a, .9) });
+      gvInst(g, gvLumpGeo(2), GVMAT.leaf(0xffffff), l);
+      return;
+    }
+    for (let x = -len / 2; x <= len / 2 + .01; x += 2) gvCyl(g, .035, .04, 1.55, GVMAT.galv(), x, 0, 0, 8);
+    gvRod(g, [-len / 2, 1.5, 0], [len / 2, 1.5, 0], .025, .025, GVMAT.galv(), 6);
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(len, 1.4), gvM("fencelink", () => { const t = gvTex("chainlink").clone(); t.needsUpdate = true; t.repeat.set(len, 1.4);
+      return new THREE.MeshStandardMaterial({ map: t, transparent: true, alphaTest: .3, side: THREE.DoubleSide, metalness: .6, roughness: .4 }); }));
+    mesh.position.y = .8; g.add(mesh);
+  },
+  kerb(g, def) {
+    const len = def.len || 6, wid = def.wid || .3;
+    if (def.ref === "otla") {
+      gvBox(g, len, .42, wid, GVMAT.stone(), 0, 0, 0, "stone");
+      gvBox(g, len + .05, .05, wid + .08, gvTexMat("concrete", 0xd9c99a), 0, .42, 0);
+      return;
+    }
+    const k = gvBox(g, len, .3, wid, GVMAT.concrete(), 0, 0, 0, "concrete");
+    for (let x = -len / 2 + 1; x < len / 2; x += 1) gvBox(g, .01, .3, wid + .002, gvStd(0x777777), x, 0, 0);
+    return k;
+  },
+  strip(g, def) {
+    const len = def.len || 6, wid = def.wid || 1, r = gvRng(len * 29 + (Math.random() * 1e5 | 0));
+    if (def.ref === "percolation") {
+      gvSlab(g, len, wid, .03, "gravel", 0x9a9384, 0, -.01, 0);
+      for (const s of [-1, 1]) gvBox(g, len, .08, .08, GVMAT.concrete(), 0, 0, s * (wid / 2 + .04));
+      return;
+    }
+    gvSlab(g, len, wid * 1.4, .02, "grass", null, 0, -.03, 0);
+    const water = gvBox(g, len, .015, wid * .45, GVMAT.water(), 0, -.01, 0); gvScaleUV(water.geometry, len / 3, 1);
+    const st = [];
+    for (let i = 0; i < Math.round(len * 10); i++) { const s = .06 + r() * .1; st.push({ x: (r() - .5) * len, y: -.01, z: (r() - .5) * wid * .7, s: [s * 1.3, s * .6, s], ry: r() * 6, c: gvShade(0xa69c8c, .75 + r() * .45) }); }
+    gvInst(g, new window.THREE.DodecahedronGeometry(1, 0), gvStd(0xffffff, { roughness: .9 }), st);
+  },
+  flat(g, def) { GV_MODELS.surface(g, def); }
+};
+/* The palette shares shapes between elements; these have their own model. */
+const GV_MODEL_BY_ID = {
+  bench: "bench", picnic: "picnic", lamp: "lamp", rwh: "rwh", tap: "tap", gazebo: "gazebo", toilet: "toilet",
+  compost: "compost", gate: "gate", play: "play", gym: "gym", sump: "sump", borewell: "borewell", court: "court",
+  cycle: "cycle", signage: "sign", bin: "bin", ramp: "ramp", cctv: "cctv", birdbath: "birdbath",
+  catchbasin: "catchbasin", chabutro: "chabutro", sculpture: "sculpture", solarcanopy: "solarcanopy",
+  turf: "turf", lawn: "lawn", pond: "water", amphi: "steps", miyawaki: "dense"
+};
+const GV_MODEL_BY_SHAPE = { bed: "bed", water: "water", steps: "steps", dense: "dense", hedgestrip: "hedgestrip",
+  wall: "wall", fencestrip: "fencestrip", kerb: "kerb", strip: "strip", flat: "surface" };
+
+function gvBike(g, x, col) {
+  const THREE = window.THREE, F = GVMAT.paint(col), T = gvStd(0x1b1b1b, { roughness: .9 });
+  for (const z of [-.52, .52]) { const w = new THREE.Mesh(new THREE.TorusGeometry(.33, .028, 8, 24), T); w.position.set(x, .36, z); w.rotation.y = Math.PI / 2; g.add(w);
+    gvRod(g, [x, .36, z - .3], [x, .36, z + .3], .008, .008, GVMAT.steel(), 4); }
+  const rear = [x, .36, -.52], front = [x, .36, .52], seat = [x, .9, -.22], bb = [x, .38, -.05], head = [x, .95, .38];
+  gvRod(g, rear, seat, .02, .02, F); gvRod(g, rear, bb, .02, .02, F); gvRod(g, bb, seat, .025, .025, F);
+  gvRod(g, bb, head, .025, .025, F); gvRod(g, seat, head, .022, .022, F); gvRod(g, head, front, .02, .02, F);
+  gvBox(g, .12, .05, .26, gvStd(0x222222), x, .92, -.24);
+  gvRod(g, [x - .25, 1.05, .36], [x + .25, 1.05, .36], .015, .015, GVMAT.steel(), 5);
+}
+function gvBird(g, x, y, z, s, rot) {
+  const THREE = window.THREE, b = new THREE.Group(), M = gvStd(0x7d7469), Mh = gvStd(0x5f574e);
+  const body = new THREE.Mesh(new THREE.SphereGeometry(.06, 10, 8), M); body.scale.set(1.5, 1, 1); b.add(body);
+  const head = new THREE.Mesh(new THREE.SphereGeometry(.04, 10, 8), Mh); head.position.set(.08, .05, 0); b.add(head);
+  const beak = new THREE.Mesh(new THREE.ConeGeometry(.012, .04, 5), gvStd(0x3a2f20)); beak.position.set(.125, .05, 0); beak.rotation.z = -Math.PI / 2; b.add(beak);
+  const tail = new THREE.Mesh(new THREE.BoxGeometry(.08, .01, .05), Mh); tail.position.set(-.1, .01, 0); tail.rotation.z = .3; b.add(tail);
+  b.position.set(x, y, z); b.scale.setScalar(s || 1); b.rotation.y = rot || 0; g.add(b);
+}
+function gvTuftGeo() {
+  return gvM("tuftgeo", () => {
+    const THREE = window.THREE, g = new THREE.ConeGeometry(.12, .5, 5, 1, true); return g;
+  });
+}
+function gvBoardTex(text) {
+  const c = document.createElement("canvas"); c.width = 1024; c.height = 112;
+  const x = c.getContext("2d"); x.fillStyle = "#1f4d36"; x.fillRect(0, 0, 1024, 112);
+  x.strokeStyle = "#c9a04a"; x.lineWidth = 6; x.strokeRect(8, 8, 1008, 96);
+  x.fillStyle = "#f5efd8"; x.font = "bold 64px Georgia, serif"; x.textAlign = "center"; x.textBaseline = "middle";
+  x.fillText(text, 512, 60);
+  return new window.THREE.CanvasTexture(c);
+}
+function gvSignTex() {
+  const c = document.createElement("canvas"); c.width = 512; c.height = 320;
+  const x = c.getContext("2d");
+  x.fillStyle = "#f4f1e6"; x.fillRect(0, 0, 512, 320);
+  x.fillStyle = "#24553a"; x.fillRect(0, 0, 512, 70);
+  x.fillStyle = "#fff"; x.font = "bold 36px Arial, sans-serif"; x.fillText("NATIVE TREES", 24, 48);
+  x.fillStyle = "#cfe3c4"; x.fillRect(24, 92, 220, 200);
+  x.strokeStyle = "#7a8f6a"; x.lineWidth = 4; x.beginPath(); x.moveTo(40, 270); x.bezierCurveTo(90, 160, 170, 220, 230, 110); x.stroke();
+  for (const [a, b] of [[80, 140], [160, 250], [200, 160], [120, 210]]) { x.fillStyle = "#3f7f3a"; x.beginPath(); x.arc(a, b, 16, 0, 7); x.fill(); }
+  x.fillStyle = "#333"; for (let i = 0; i < 7; i++) x.fillRect(268, 100 + i * 28, 200 - (i % 3) * 40, 10);
+  return new window.THREE.CanvasTexture(c);
+}
+function gvCourtTex() {
+  const c = document.createElement("canvas"); c.width = 1024; c.height = 468;
+  const x = c.getContext("2d"), W = 1024, H = 468;
+  x.fillStyle = "#2f6f58"; x.fillRect(0, 0, W, H);
+  x.fillStyle = "#b5523a"; x.fillRect(W * .06, H * .08, W * .88, H * .84);
+  x.strokeStyle = "#ffffff"; x.lineWidth = 5;
+  x.strokeRect(W * .06, H * .08, W * .88, H * .84);
+  x.beginPath(); x.moveTo(W / 2, H * .08); x.lineTo(W / 2, H * .92); x.stroke();
+  x.beginPath(); x.arc(W / 2, H / 2, H * .14, 0, 7); x.stroke();
+  for (const s of [0, 1]) { const ex = s ? W * .94 : W * .06, d = s ? -1 : 1;
+    x.strokeRect(s ? ex - W * .14 : ex, H * .34, W * .14, H * .32);
+    x.beginPath(); x.arc(ex, H / 2, H * .36, d > 0 ? -Math.PI / 2 : Math.PI / 2, d > 0 ? Math.PI / 2 : Math.PI * 1.5); x.stroke(); }
+  x.strokeStyle = "rgba(255,240,140,.9)"; x.lineWidth = 3;
+  x.strokeRect(W * .2, H * .14, W * .6, H * .72);
+  return new window.THREE.CanvasTexture(c);
+}
+
+/* The one entry point every placement, undo, restore and thumbnail goes
+   through. Anything that throws falls back to the plain model rather than
+   leaving a hole in the design. */
+function makeModel(def) {
+  const THREE = window.THREE;
+  if (!THREE || !def) return makeModelBasic(def);
+  const g = new THREE.Group();
+  try {
+    if (def.kind === "tree") gvTreeModel(g, gvTreeDef(def));
+    else {
+      const key = GV_MODEL_BY_ID[def.id] || GV_MODEL_BY_SHAPE[def.shape] ||
+                  (def.kind === "area" ? "surface" : null);
+      if (!key || !GV_MODELS[key]) return makeModelBasic(def);
+      GV_MODELS[key](g, def);
+    }
+  } catch (e) {
+    console.warn("[models] plain model used for " + (def && def.id), e);
+    return makeModelBasic(def);
+  }
+  g.traverse(o => { if (o.isMesh) { o.castShadow = !o.material.transparent; o.receiveShadow = true; } });
+  return g;
+}
+
+/* Box3.setFromObject reads an InstancedMesh's geometry, not where its
+   instances are, so a crown built from instanced clumps measured as a
+   one-metre ball at the origin. Every instance is counted here. */
+function gvBounds(obj) {
+  const THREE = window.THREE, box = new THREE.Box3(), b = new THREE.Box3(), m = new THREE.Matrix4();
+  obj.updateMatrixWorld(true);
+  obj.traverse(o => {
+    if (!o.isMesh || !o.geometry) return;
+    const geo = o.geometry; if (!geo.boundingBox) geo.computeBoundingBox();
+    if (o.isInstancedMesh) {
+      for (let i = 0; i < o.count; i++) { o.getMatrixAt(i, m); m.premultiply(o.matrixWorld); b.copy(geo.boundingBox).applyMatrix4(m); box.union(b); }
+    } else { b.copy(geo.boundingBox).applyMatrix4(o.matrixWorld); box.union(b); }
+  });
+  return box;
+}
+
+/* ---------- photographs of the models, for the palette and the map --- */
+let _gvThumbR = null;
+const _gvThumbs = {};
+function gvThumb(def, view) {
+  if (!window.THREE || !def) return null;
+  const key = gvThumbKey(def, view);
+  if (key in _gvThumbs) return _gvThumbs[key];
+  _gvThumbs[key] = null;
+  try {
+    const THREE = window.THREE, S = view === "plan" ? 160 : 112;
+    if (!_gvThumbR) {
+      _gvThumbR = new THREE.WebGLRenderer({ canvas: document.createElement("canvas"), antialias: true, alpha: true, preserveDrawingBuffer: true });
+      _gvThumbR.setClearColor(0x000000, 0);
+    }
+    _gvThumbR.setSize(S, S, false);
+    const scene = new THREE.Scene();
+    scene.add(new THREE.HemisphereLight(0xffffff, 0x5d6b4c, view === "plan" ? .82 : .72));
+    const sun = new THREE.DirectionalLight(0xfff1d6, view === "plan" ? .7 : .9);
+    sun.position.set(-5, 10, 7); scene.add(sun);
+    const fill = new THREE.DirectionalLight(0xcfe3ff, .25); fill.position.set(6, 4, -5); scene.add(fill);
+    const model = makeModel(def); scene.add(model);
+    const box = gvBounds(model), size = box.getSize(new THREE.Vector3()), ctr = box.getCenter(new THREE.Vector3());
+    let cam;
+    if (view === "plan") {
+      const half = Math.max(size.x, size.z) / 2 * 1.02 + .02;
+      cam = new THREE.OrthographicCamera(-half, half, half, -half, .1, 1000);
+      cam.position.set(ctr.x, box.max.y + 40, ctr.z); cam.up.set(0, 0, -1); cam.lookAt(ctr.x, 0, ctr.z);
+    } else {
+      cam = new THREE.PerspectiveCamera(28, 1, .05, 2000);
+      const R = Math.max(.4, size.length() / 2), d = R / Math.sin(14 * Math.PI / 180);
+      cam.position.set(ctr.x + d * .6, ctr.y + d * .5, ctr.z + d * .62); cam.lookAt(ctr);
+    }
+    _gvThumbR.render(scene, cam);
+    const url = _gvThumbR.domElement.toDataURL("image/png");
+    return (_gvThumbs[key] = { url, w: size.x, d: size.z, h: size.y, span: Math.max(size.x, size.z) * 1.02 + .04 });
+  } catch (e) {
+    console.warn("[models] thumbnail failed for " + def.id, e);
+    return null;
+  }
+}
+/* The 3D palette entry for a costed element, or for a species. */
+function gvDefForRef(ref) {
+  return (typeof B3D_STATIC !== "undefined") ? B3D_STATIC.find(d => d.ref === ref) || null : null;
+}
+function gvDefForSpecies(s) {
+  try { return b3dTreeTool(s, 0); } catch (e) { return null; }
+}
+function gvThumbKey(def, view) {
+  return view + ":" + def.id + ":" + (def.foliage || def.color || "") + ":" + (def.r || "") + (def.h || "");
+}
+/* Palette icons are photographed in the background, a few per frame, so a
+   palette of sixty tools opens instantly and fills in over a second rather
+   than freezing while every model is built. Until its photo is ready a
+   tool shows its line glyph. */
+const _gvQ = [], _gvQd = {};
+let _gvQBusy = false;
+function gvPump() {
+  const t0 = performance.now();
+  while (_gvQ.length && performance.now() - t0 < 20) {
+    const { def, key } = _gvQ.shift();
+    const t = gvThumb(def, "iso");
+    document.querySelectorAll('[data-gvq="' + key + '"]').forEach(el => {
+      if (!t) { el.removeAttribute("data-gvq"); return; }
+      const img = document.createElement("img"); img.className = el.dataset.cls; img.src = t.url; img.alt = ""; img.draggable = false;
+      el.replaceWith(img);
+    });
+  }
+  if (_gvQ.length) setTimeout(gvPump, 16); else _gvQBusy = false;
+}
+function gvImgIcon(def, cls, fallback) {
+  if (!def || !window.THREE) return null;
+  const key = gvThumbKey(def, "iso");
+  const t = _gvThumbs[key];
+  if (t) return '<img class="' + (cls || "gv-real-ico") + '" src="' + t.url + '" alt="" draggable="false">';
+  if (t === null && key in _gvThumbs) return null;
+  if (!_gvQd[key]) { _gvQd[key] = 1; _gvQ.push({ def, key }); }
+  if (!_gvQBusy) { _gvQBusy = true; setTimeout(gvPump, 30); }
+  return '<span class="gv-q" data-gvq="' + key + '" data-cls="' + (cls || "gv-real-ico") + '">' + (fallback || "") + '</span>';
+}
+/* Palette icons. Fall back to the line glyphs if WebGL is unavailable. */
+function gvChipIcon(kind, x) {
+  try {
+    const def = kind === "tree" ? gvDefForSpecies(x) : gvDefForRef(x.id);
+    const img = gvImgIcon(def, "gv-chip-img", gvS().elIcon(kind === "tree" ? treeGlyph(x) : x.icon));
+    if (img) return img;
+  } catch (e) {}
+  return gvS().elIcon(kind === "tree" ? treeGlyph(x) : x.icon);
+}
+function gvToolIcon(e) {
+  try { const img = gvImgIcon(e, "gv-swimg", b3dIcon(e.icon)); if (img) return img; } catch (err) {}
+  return b3dIcon(e.icon);
+}
+
+/* ---------- what it is, what it is made of, how big it is ----------- */
+function gvM2(v) { return (v >= 100 ? Math.round(v).toLocaleString("en-IN") : (Math.round(v * 10) / 10)) + " m²"; }
+function gvLen(v) { return (v >= 20 ? Math.round(v) : Math.round(v * 100) / 100) + " m"; }
+function gvDims3(w, d, h) { return [w, d, h].map(v => Math.round(v * 100) / 100).join(" × ") + " m"; }
+const GV_HABIT_WORD = { tree: "Shade tree", bigtree: "Large canopy tree", umbrella: "Umbrella-crowned tree",
+  columnar: "Columnar tree", flowertree: "Flowering tree", fruittree: "Fruit tree", palm: "Palm",
+  shrub: "Shrub", flower: "Flowering shrub" };
+
+/* One card, for the map and the 3D view alike.
+   o = { def (3D palette entry) | species | el (catalogue entry), item (2D) } */
+function gvInfo(o) {
+  const inrF = (GV.util && GV.util.inr) || (n => "₹" + Math.round(n));
+  if (o.species || (o.def && o.def.kind === "tree")) {
+    const s = o.species || gvSpecies().find(x => x.key === o.def.ref) || {};
+    const def = o.def || gvDefForSpecies(s) || {};
+    const glyph = (typeof treeGlyph === "function" && s.key) ? treeGlyph(s) : "tree";
+    const rows = [
+      ["Height at maturity", gvLen(def.h || 0)],
+      ["Crown spread", gvLen(2 * (def.r || 0)) + " across"],
+      ["Crown area", gvM2(s.canopy || Math.PI * (def.r || 0) * (def.r || 0))],
+      ["Clearance needed", gvLen(2) + " from walls and paving"]
+    ];
+    if (s.drought != null) rows.push(["Water", s.drought ? "Drought-hardy once established" : "Needs regular watering"]);
+    if (s.pol != null) rows.push(["Pollution tolerance", s.pol + " / 5"]);
+    if (s.sapling) rows.push(["Sapling cost", inrF(s.sapling)]);
+    const note = (typeof B3D_TREE_TIP !== "undefined" && B3D_TREE_TIP[s.key]) || s.warn || s.note || "";
+    return { def, name: s.name || def.name || "Tree", sub: (s.bot ? s.bot + " · " : "") + (GV_HABIT_WORD[glyph] || "Tree"),
+             rows, note };
+  }
+  const ref = o.el ? o.el.id : (o.def && o.def.ref);
+  const el = o.el || gvEls().find(e => e.id === ref) || {};
+  const def = o.def || gvDefForRef(ref) || {};
+  const R = GV_REAL[ref] || {};
+  const it = o.item;
+  const rows = [];
+  let qty = 1, unitWord = "each";
+  if (el.unit === "each" || (!el.unit && def.kind === "point")) {
+    if (R.w) rows.push(["Size (L × W × H)", gvDims3(R.w, R.d || R.w, R.h || 0)]);
+    if (R.depth) rows.push(["Below ground", gvLen(R.depth) + " deep"]);
+  } else if (el.unit === "m" || def.len) {
+    qty = it ? it.qty : (def.q || def.len || 1); unitWord = "m";
+    rows.push(["Length", gvLen(qty)]);
+    if (R.w || def.wid) rows.push(["Width", gvLen(R.w || def.wid)]);
+    if (R.h) rows.push(["Height", gvLen(R.h)]);
+    if (R.depth) rows.push(["Depth", gvLen(R.depth)]);
+    rows.push(["Ground covered", gvM2(qty * (R.w || def.wid || .3))]);
+  } else {
+    qty = it ? it.qty : (def.q || def.foot || 1); unitWord = "m2";
+    rows.push(["Area", gvM2(qty)]);
+    if (it && it.ring && it.ring.length > 2) {
+      const la = it.ring.map(p => p[0]), lo = it.ring.map(p => p[1]);
+      const ns = (Math.max(...la) - Math.min(...la)) * 111320,
+            ew = (Math.max(...lo) - Math.min(...lo)) * 111320 * Math.cos(la[0] * Math.PI / 180);
+      rows.push(["Extent (E–W × N–S)", gvLen(ew) + " × " + gvLen(ns)]);
+      try { rows.push(["Perimeter", gvLen(gvS().lineLenM(it.ring.concat([it.ring[0]])))]); } catch (e) {}
+    } else if (def.foot) {
+      const side = Math.sqrt(def.foot); rows.push(["Each tile", gvLen(side) + " × " + gvLen(side)]);
+    }
+    if (R.h) rows.push(["Height", gvLen(R.h)]);
+    if (R.t) rows.push(["Thickness", Math.round(R.t * 1000) + " mm"]);
+    if (R.depth) rows.push(["Depth", gvLen(R.depth)]);
+  }
+  if (R.spec) rows.push(["Built as", R.spec]);
+  if (el.rate) rows.push(["Cost", inrF(el.rate * qty) + (qty !== 1 || unitWord !== "each"
+    ? ' <span class="gv-hc-dim">(' + inrF(el.rate) + "/" + (unitWord === "m2" ? "m²" : unitWord === "m" ? "m" : "each") + ")</span>" : "")]);
+  if (el.water) rows.push(["Water use", Math.round(el.water * (unitWord === "each" ? 1 : qty)).toLocaleString("en-IN") + " L / year"]);
+  return { def, name: el.name || def.name || ref, sub: (el.cat || def.cat || "") , rows, note: el.note || def.tip || "" };
+}
+function gvCardHtml(info) {
+  const img = info.def ? gvThumb(info.def, "iso") : null;
+  const esc2 = (typeof esc === "function") ? esc : (s => String(s));
+  return '<div class="gv-hcard">' +
+    '<div class="gv-hc-top">' + (img ? '<img src="' + img.url + '" alt="">' : "") +
+      '<div><b>' + esc2(info.name) + '</b><span>' + esc2(info.sub || "") + '</span></div></div>' +
+    '<dl>' + info.rows.map(([k, v]) => '<dt>' + esc2(k) + '</dt><dd>' + v + '</dd>').join("") + '</dl>' +
+    (info.note ? '<p>' + esc2(info.note.length > 190 ? info.note.slice(0, 187) + "…" : info.note) + '</p>' : "") +
+  '</div>';
+}
+/* A one-line size for palette tooltips. */
+function gvDimLine(def) {
+  try { const info = gvInfo({ def }); return info.rows.filter(r => /Size|Height at|Crown spread|Area|Length|Each tile|Width/.test(r[0]))
+    .slice(0, 3).map(r => r[0] + ": " + String(r[1]).replace(/<[^>]+>/g, "")).join(" · "); } catch (e) { return ""; }
+}
+
+/* ---------- the map: real symbols at true scale --------------------- */
+let _gvSvgR = null, _gvZoomHooked = false;
+function gvSvgRenderer() { if (!_gvSvgR && window.L) _gvSvgR = L.svg({ padding: .5 }); return _gvSvgR; }
+function gvMetresPerPx(lat) {
+  const z = window.map ? window.map.getZoom() : 17;
+  return 40075016.686 * Math.cos(lat * Math.PI / 180) / Math.pow(2, z + 8);
+}
+/* Surface patterns, sized so a 3 m flagstone tile is 3 m on the map. */
+function gvPatterns(lat) {
+  const r = _gvSvgR, svg = r && r._container; if (!svg) return;
+  const NS = "http://www.w3.org/2000/svg";
+  let defs = svg.querySelector("defs.gv-pat");
+  if (!defs) { defs = document.createElementNS(NS, "defs"); defs.setAttribute("class", "gv-pat"); svg.insertBefore(defs, svg.firstChild); }
+  const mpp = gvMetresPerPx(lat);
+  for (const name of new Set(Object.values(GV_SURF))) {
+    const px = Math.max(10, Math.min(900, (GV_TEXM[name] || 2) / mpp));
+    let p = defs.querySelector("#gvp-" + name);
+    if (!p) {
+      p = document.createElementNS(NS, "pattern"); p.id = "gvp-" + name; p.setAttribute("patternUnits", "userSpaceOnUse");
+      const im = document.createElementNS(NS, "image"); im.setAttribute("href", gvTexUrl(name)); im.setAttribute("preserveAspectRatio", "none");
+      p.appendChild(im); defs.appendChild(p);
+    }
+    p.setAttribute("width", px); p.setAttribute("height", px);
+    const im = p.firstChild; im.setAttribute("width", px); im.setAttribute("height", px);
+  }
+}
+function gvTip(layer, html, sticky) {
+  layer.bindTooltip(html, { sticky: !!sticky, direction: "top", className: "gv-htip", opacity: 1, offset: [0, sticky ? -14 : -10] });
+  return layer;
+}
+function gvRealMarker(ll, thumb, px, html, onClick) {
+  const s = Math.round(px);
+  const m = L.marker(ll, { icon: L.divIcon({ className: "gv-real-wrap", iconSize: [s, s], iconAnchor: [s / 2, s / 2],
+    html: '<img class="gv-real" src="' + thumb.url + '" style="width:' + s + 'px;height:' + s + 'px" alt="" draggable="false">' }) });
+  m.addTo(gvS().layer).on("click", onClick);
+  gvTip(m, html, false);
+  return m;
+}
+function gvDrawReal(it, idx) {
+  if (!window.THREE || !window.L || !window.map) return false;
+  if (!_gvZoomHooked) {
+    _gvZoomHooked = true;
+    window.map.on("zoomend", () => {
+      if (gvS().layer && GV.design && (GV.design.items || []).length <= 600) try { redrawDesign(); } catch (e) {}
+    });
+  }
+  const lat = (it.latlng && it.latlng[0]) || (it.ring && it.ring[0][0]) || (it.line && it.line[0][0]) || 23;
+  const mpp = gvMetresPerPx(lat);
+  const rm = () => gvS().removeItem(idx);
+  if (it.k === "tree") {
+    const s = gvSpecies().find(x => x.key === it.ref); if (!s) return false;
+    const def = gvDefForSpecies(s); const html = gvCardHtml(gvInfo({ species: s, def }));
+    const many = GV.design && (GV.design.items || []).length > (gvS().GV_SYMBOL_LIMIT || 140);
+    const th = !many && gvThumb(def, "plan");
+    if (!th) {
+      const g = (typeof treeGlyph === "function") ? treeGlyph(s) : "tree", col = (gvS().GLYPH_COL || {})[g] || (gvS().GLYPH_COL || {}).tree || { line: "#0e9f6e" };
+      gvTip(L.circleMarker(it.latlng, { radius: Math.max(4, Math.min(30, def.r / mpp)), color: "#fff", weight: 1.5,
+        fillColor: col.line, fillOpacity: .9, renderer: gvS().gvRenderer() }).addTo(gvS().layer).on("click", rm), html, false);
+      return true;
+    }
+    gvRealMarker(it.latlng, th, Math.max(18, Math.min(900, th.span / mpp)), html, rm);
+    return true;
+  }
+  if (it.k === "point") {
+    const def = gvDefForRef(it.ref), th = def && gvThumb(def, "plan"); if (!th) return false;
+    const html = gvCardHtml(gvInfo({ def, item: it }));
+    gvRealMarker(it.latlng, th, Math.max(24, Math.min(900, th.span / mpp)), html, rm);
+    return true;
+  }
+  const e = gvEls().find(x => x.id === it.ref), tex = GV_SURF[it.ref];
+  if (!tex) return false;
+  const rnd = gvSvgRenderer(), html = gvCardHtml(gvInfo({ el: e, item: it }));
+  const edge = gvS().elCol(e);
+  let layer;
+  if (it.k === "area") {
+    layer = L.polygon(it.ring, { renderer: rnd, color: edge, weight: 1.6, opacity: .95,
+      fillColor: "url(#gvp-" + tex + ")", fillOpacity: 1, className: "gv-surf" });
+  } else if (it.k === "line") {
+    const R = GV_REAL[it.ref] || {}, w = Math.max(4, Math.min(80, (R.w || .5) / mpp));
+    layer = L.polyline(it.line, { renderer: rnd, color: "url(#gvp-" + tex + ")", weight: w, opacity: 1,
+      lineCap: it.ref === "fence" || it.ref === "bollard" ? "butt" : "round", lineJoin: "round", className: "gv-surf",
+      dashArray: it.ref === "bollard" ? (w + " " + Math.max(4, 1.2 / mpp - w)) : null });
+  } else return false;
+  layer.addTo(gvS().layer).on("click", rm);
+  gvPatterns(lat);
+  gvTip(layer, html, true);
+  return true;
+}
+
+/* ---------- the 3D view: hover anything you placed ------------------ */
+function b3dWireHover(root, canvas) {
+  const THREE = B.THREE, ray = new THREE.Raycaster(), ptr = new THREE.Vector2();
+  const tip = document.createElement("div"); tip.className = "gv3d-hover"; tip.style.display = "none";
+  root.appendChild(tip);
+  let pend = null, curId = null, box = null, down = false;
+  const clear = () => {
+    tip.style.display = "none"; curId = null;
+    if (box && B) { B.scene.remove(box); } box = null;
+  };
+  const pick = e => {
+    pend = null;
+    if (!B || down) return;
+    const r = canvas.getBoundingClientRect();
+    ptr.x = ((e.clientX - r.left) / r.width) * 2 - 1; ptr.y = -((e.clientY - r.top) / r.height) * 2 + 1;
+    ray.setFromCamera(ptr, B.camera);
+    const hits = ray.intersectObjects(B.objects.map(o => o.mesh), true);
+    let id = null;
+    if (hits.length) { let m = hits[0].object; while (m && !m.userData.placedId) m = m.parent; id = m && m.userData.placedId; }
+    const o = id && B.objects.find(x => x.id === id);
+    if (!o) { clear(); return; }
+    if (id !== curId) {
+      curId = id;
+      tip.innerHTML = gvCardHtml(gvInfo({ def: o.def })) +
+        '<div class="gv3d-hover-act">' + (B.tool ? "Pick <b>Select</b> to remove it" : "Click to remove") + '</div>';
+      if (box) B.scene.remove(box);
+      box = new THREE.Box3Helper(gvBounds(o.mesh), 0x12b981); box.material.depthTest = false; box.renderOrder = 999;
+      B.scene.add(box);
+    }
+    tip.style.display = "block";
+    const rr = root.getBoundingClientRect(), tw = tip.offsetWidth, th = tip.offsetHeight;
+    let x = e.clientX - rr.left + 18, y = e.clientY - rr.top + 18;
+    if (x + tw > rr.width - 8) x = e.clientX - rr.left - tw - 18;
+    if (y + th > rr.height - 8) y = Math.max(8, e.clientY - rr.top - th - 18);
+    tip.style.left = x + "px"; tip.style.top = y + "px";
+  };
+  canvas.addEventListener("pointermove", e => {
+    if (e.buttons) { down = true; clear(); return; }
+    down = false;
+    if (!pend) { const ev = { clientX: e.clientX, clientY: e.clientY }; pend = setTimeout(() => pick(ev), 24); }
+  });
+  canvas.addEventListener("pointerdown", () => { down = true; clear(); });
+  canvas.addEventListener("pointerup", () => { down = false; });
+  canvas.addEventListener("pointerleave", clear);
+  B._hoverClear = clear;
+}
+/* The plot's own ground, in real grass rather than a flat green. */
+function gvGroundUV(geo) {
+  gvScaleUV(geo, 1 / (GV_TEXM.ground || 6), 1 / (GV_TEXM.ground || 6));
+  return geo;
+}
+/* Surveyed and inferred trees around the plot: the same build, lighter. */
+function gvContextTree(r, h) {
+  const g = new window.THREE.Group();
+  gvTreeModel(g, { id: "ctx", lite: true, r: r, h: h, shape: "round", foliage: gvShade(0x4f8f52, .85 + Math.random() * .3) });
+  g.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; o.userData.context = true; } });
+  return g;
+}
+
+
+</script>
+<script>
+/* =====================================================================
+   WEB MODE - the browser version is a taster for the desktop app
+   =====================================================================
+   The installed app announces itself through window.__GV_DESKTOP__ (set by
+   desktop/preload.js before any page script runs). Everywhere else - the
+   Netlify build, the GitHub Pages copy, the Python dev server opened in a
+   browser - this block switches on and:
+
+     * locks Sign in, Library and History. They stay VISIBLE but greyed
+       with a padlock, and are not given the `disabled` attribute: a
+       disabled button swallows the click, and the click is the moment to
+       explain what the app adds;
+     * replaces the first-run welcome with one deliberately loud "get the
+       app" sheet, so a first visit opens exactly one popup, not two;
+     * puts a download button in front of the reader everywhere: a slim
+       banner across the top, a floating button, and both sheets.
+
+   Self-contained on purpose. It reaches into the studio only through what
+   is already public (window.GV, the DOM), so it cannot break the desktop
+   build it never runs in, and the studio does not need to know it exists.
+   ===================================================================== */
+(function gvWebMode() {
+  if (window.__GV_DESKTOP__) return;                  // the real app: do nothing at all
+
+  const DOWNLOAD = "https://rkthegoat837.github.io/green-vision-releases/";
+  const ua = (navigator.userAgent || "") + " " + (navigator.platform || "");
+  /* Phones first: the app is desktop-only, and an Android phone reports
+     a "Win32"-ish platform in some browsers - it was told "Download for
+     Windows". An iPhone matched "Mac" the same way. */
+  const PHONE = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || "");
+  const OS = PHONE ? "" : /Mac/i.test(ua) ? "Mac" : /Win/i.test(ua) ? "Windows" : "";
+  const GET = PHONE ? "Get the desktop app" : OS ? "Download for " + OS : "Download the app";
+
+  document.documentElement.classList.add("gv-web");
+
+  /* One welcome on a first visit, not two: the studio's own welcome and
+     what's-new are about an installed build this page is not. Set before
+     the studio's first-run check reads them (it waits for DOMContentLoaded,
+     and this script runs earlier, at the end of <body>). */
+  try {
+    localStorage.setItem("gv.welcome.v1", "true");
+    /* The walkthrough opens the History and Library panels on its way
+       round, and both are locked here: it would stop on the lock at step
+       12. It still runs on demand (Ctrl + Alt + Shift + W); it just does
+       not start by itself on the web. */
+    localStorage.setItem("gv.tourDone", "1");
+  } catch (e) {}
+
+  /* ---- what is locked, and what each lock says ------------------------ */
+  const LOCKS = [
+    { sel: "#gvAuthBtn",                   kind: "account" },
+    { sel: "#splashAuth",                  kind: "account" },   // the start screen's sign-in
+    { sel: "#gvLibIn, #gvNudgeIn",         kind: "account" },
+    { sel: '#gvTabs [data-tab="gallery"]', kind: "library" },
+    { sel: "#gvPublishNow",                kind: "library" },
+    { sel: '#gvTabs [data-tab="history"]', kind: "history" },
+    { sel: "#gvaHistory",                  kind: "history" }
+  ];
+  const LOCK_SEL = LOCKS.map(l => l.sel).join(", ");
+  // Any other "Publish to Library" button the studio draws later (the
+  // Review panel has one) is caught by its label as well as its id.
+  const isPublish = el => /publish\s+to\s+(the\s+)?library/i.test(el.textContent || "");
+
+  const WHY = {
+    account: {
+      title: "Accounts live in the app",
+      lead: "Signing in keeps your designs, your Library and your history with you on every computer. That needs the desktop app, which keeps them safe on your machine and in your account.",
+      icon: '<circle cx="12" cy="8.5" r="3.6"/><path d="M5.5 20a6.5 6.5 0 0113 0"/>'
+    },
+    library: {
+      title: "The Library is in the app",
+      lead: "Saving designs, publishing them, and browsing what other planners have shared all happen in the desktop app, where your work is stored properly instead of in one browser tab.",
+      icon: '<rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M3 15l4.5-4.5 4 4L15 11l6 5.5"/><circle cx="9" cy="9" r="1.4"/>'
+    },
+    history: {
+      title: "History is in the app",
+      lead: "Every area you read, every design and every answer, kept and searchable. A browser forgets them when you clear it; the app keeps them.",
+      icon: '<path d="M12 8v5l3 2"/><path d="M3.05 11a9 9 0 111.5 5.5"/><path d="M3 21v-5h5"/>'
+    }
+  };
+
+  /* ---- styles ---------------------------------------------------------- */
+  const css = document.createElement("style");
+  css.textContent = `
+  .gv-web .gvw-locked{opacity:.42!important;filter:grayscale(.7);cursor:not-allowed!important;}
+  /* the padlock needs a positioned parent - but ONLY add one to a control
+     that has none. Forcing relative on the Sign in button, which is
+     pinned absolute in the toolbar, dropped it out of place and on top of
+     the logo. */
+  .gv-web .gvw-locked.gvw-pos{position:relative;}
+  .gv-web .gvw-locked:hover{opacity:.62!important;}
+  .gv-web .gvw-locked::after{content:"";position:absolute;right:3px;top:3px;width:13px;height:13px;border-radius:50%;
+    background:#0d2a26 no-repeat center/9px url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round'%3E%3Crect x='5' y='11' width='14' height='10' rx='2'/%3E%3Cpath d='M8 11V7a4 4 0 018 0v4'/%3E%3C/svg%3E");
+    box-shadow:0 0 0 1.5px #fff;pointer-events:none;}
+
+  #gvwBar{position:fixed;left:0;right:0;top:0;z-index:7000;display:flex;align-items:center;justify-content:center;gap:12px;
+    padding:7px 44px 7px 14px;font:700 13px/1.3 Manrope,'Segoe UI',system-ui,sans-serif;color:#fff;
+    background:linear-gradient(90deg,#0a7a54,#12b981 40%,#2f7ef0);background-size:200% 100%;animation:gvwSlide 8s linear infinite;
+    box-shadow:0 4px 16px -6px rgba(0,0,0,.35);}
+  #gvwBar a{color:#0a3d2b;background:#fff;padding:5px 12px;border-radius:999px;text-decoration:none;font-weight:800;white-space:nowrap;}
+  #gvwBar a:hover{background:#eafff5;}
+  #gvwBar button{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:transparent;border:0;color:#fff;
+    font-size:18px;line-height:1;cursor:pointer;padding:4px 8px;border-radius:6px;}
+  #gvwBar button:hover{background:rgba(255,255,255,.18);}
+  /* the banner sits above the studio, so everything pinned to the top edge
+     moves down by its height (Sign in lives inside #toolbar and moves with it) */
+  .gv-web.gvw-bar-on #toolbar{top:calc(var(--gvw-bar,0px) + 14px)!important;}
+  /* Sign in is pinned just under the toolbar (top 70px), so it moves down
+     with it - on wide screens only; below 720px it sits at the bottom. */
+  @media (min-width:721px){.gv-web.gvw-bar-on #gvAuthBtn{top:calc(var(--gvw-bar,0px) + 70px)!important;}}
+  .gv-web.gvw-bar-on #gvDock{top:var(--gvw-bar,0px)!important;}
+  .gv-web.gvw-bar-on #panel{top:var(--gvw-bar,0px)!important;}
+
+  #gvwFab{position:fixed;right:18px;bottom:18px;z-index:6900;display:flex;align-items:center;gap:9px;padding:12px 18px 12px 14px;
+    border-radius:999px;color:#fff;text-decoration:none;font:800 14px/1 Manrope,'Segoe UI',system-ui,sans-serif;
+    background:linear-gradient(135deg,#12b981,#2f7ef0);box-shadow:0 10px 30px -8px rgba(18,185,129,.7),0 0 0 3px rgba(255,255,255,.7);
+    animation:gvwPulse 2.4s ease-in-out infinite;}
+  #gvwFab:hover{transform:translateY(-2px);}
+  #gvwFab svg{width:18px;height:18px;}
+
+  .gvw-scrim{position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;padding:16px;
+    background:rgba(4,16,13,.62);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);animation:gvwFade .25s ease;}
+  .gvw-card{position:relative;width:min(560px,100%);max-height:calc(100vh - 32px);overflow:auto;border-radius:24px;
+    background:#fff;color:#0d2a26;font-family:Manrope,'Segoe UI',system-ui,sans-serif;
+    box-shadow:0 40px 90px -20px rgba(0,0,0,.6);animation:gvwPop .35s cubic-bezier(.2,.9,.3,1.25);}
+  .gvw-x{position:absolute;right:12px;top:12px;width:34px;height:34px;border-radius:50%;border:0;cursor:pointer;
+    background:rgba(255,255,255,.22);color:#fff;font-size:20px;line-height:1;z-index:2;}
+  .gvw-x:hover{background:rgba(255,255,255,.36);}
+  .gvw-hero{position:relative;padding:30px 28px 26px;color:#fff;text-align:center;overflow:hidden;
+    background:linear-gradient(135deg,#0a7a54,#12b981 45%,#2f7ef0);background-size:220% 220%;animation:gvwSlide 7s ease infinite;}
+  .gvw-hero::before{content:"";position:absolute;inset:-40%;background:conic-gradient(from 0deg,transparent,rgba(255,255,255,.18),transparent 30%);
+    animation:gvwSpin 6s linear infinite;}
+  .gvw-hero > *{position:relative;}
+  .gvw-badge{display:inline-block;padding:5px 12px;border-radius:999px;background:rgba(255,255,255,.2);font-size:11px;
+    font-weight:800;letter-spacing:2px;text-transform:uppercase;}
+  .gvw-hero h2{margin:12px 0 6px;font:800 30px/1.08 Sora,'Segoe UI',sans-serif;letter-spacing:-.6px;text-wrap:balance;}
+  .gvw-hero p{margin:0 auto;max-width:430px;font-size:15px;line-height:1.5;opacity:.95;}
+  .gvw-cta{display:inline-flex;align-items:center;justify-content:center;gap:10px;margin-top:18px;padding:15px 26px;border-radius:14px;
+    background:#fff;color:#0a5a3e;text-decoration:none;font:800 16px/1 Manrope,'Segoe UI',sans-serif;
+    box-shadow:0 12px 30px -8px rgba(0,0,0,.45);animation:gvwPulse 2.4s ease-in-out infinite;}
+  .gvw-cta:hover{background:#eafff5;}
+  .gvw-cta svg{width:20px;height:20px;}
+  .gvw-cta.alt{background:linear-gradient(135deg,#12b981,#2f7ef0);color:#fff;box-shadow:0 12px 30px -10px rgba(18,185,129,.8);}
+  .gvw-cta.alt:hover{filter:brightness(1.07);}
+  .gvw-body{padding:22px 26px 24px;}
+  .gvw-list{display:grid;gap:10px;margin:0;padding:0;list-style:none;}
+  .gvw-list li{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border-radius:14px;background:#f2f8f5;border:1px solid #dcebe4;}
+  .gvw-ico{flex:0 0 auto;width:36px;height:36px;border-radius:11px;display:flex;align-items:center;justify-content:center;
+    background:linear-gradient(135deg,#12b981,#2f7ef0);color:#fff;}
+  .gvw-ico svg{width:19px;height:19px;}
+  .gvw-list b{display:block;font:800 15px/1.25 Sora,'Segoe UI',sans-serif;letter-spacing:-.2px;}
+  .gvw-list span{display:block;margin-top:2px;font-size:13px;line-height:1.45;color:#3d5c55;}
+  .gvw-vs{margin:16px 0 0;display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:12.5px;}
+  .gvw-vs div{padding:12px;border-radius:12px;}
+  .gvw-vs .web{background:#f4f4f4;color:#666;}
+  .gvw-vs .app{background:#e6f8ef;color:#0a5a3e;font-weight:700;}
+  .gvw-vs h4{margin:0 0 6px;font:800 11px/1 Manrope,sans-serif;letter-spacing:1.6px;text-transform:uppercase;}
+  .gvw-foot{display:flex;flex-direction:column;align-items:center;gap:10px;margin-top:18px;}
+  .gvw-later{background:transparent;border:0;color:#5c7168;font:700 13px Manrope,sans-serif;cursor:pointer;text-decoration:underline;}
+  .gvw-small{font-size:12px;color:#5c7168;text-align:center;}
+
+  @keyframes gvwSlide{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+  @keyframes gvwSpin{to{transform:rotate(360deg)}}
+  @keyframes gvwPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.045)}}
+  @keyframes gvwPop{from{opacity:0;transform:translateY(18px) scale(.94)}to{opacity:1;transform:none}}
+  @keyframes gvwFade{from{opacity:0}to{opacity:1}}
+  @media (prefers-reduced-motion:reduce){.gvw-hero,.gvw-hero::before,#gvwBar,#gvwFab,.gvw-cta,.gvw-card,.gvw-scrim{animation:none!important}}
+  @media (prefers-color-scheme:dark){
+    .gvw-card{background:#0f1f1b;color:#e6f2ee;}
+    .gvw-list li{background:#13271f;border-color:#1e3a30;}
+    .gvw-list span,.gvw-small,.gvw-later{color:#9fc2b8;}
+    .gvw-vs .web{background:#1a2420;color:#8aa39b;} .gvw-vs .app{background:#103326;color:#7ff0bf;}
+  }
+  @media (max-width:520px){.gvw-hero h2{font-size:24px}.gvw-vs{grid-template-columns:1fr}#gvwBar{font-size:12px}#gvwBar .gvw-bar-text{display:none}}
+  `;
+  document.head.appendChild(css);
+
+  const DL_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>';
+  const ico = p => '<div class="gvw-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + p + '</svg></div>';
+  const dlLink = (cls, label) => '<a class="gvw-cta ' + (cls || "") + '" href="' + DOWNLOAD + '" target="_blank" rel="noopener">' + DL_SVG + (label || GET) + '</a>';
+
+  /* ---- a sheet ---------------------------------------------------------- */
+  let openSheet = null, onClosed = null;
+  function sheet(html, label, whenClosed) {
+    closeSheet();
+    const w = document.createElement("div");
+    w.className = "gvw-scrim";
+    w.setAttribute("role", "dialog");
+    w.setAttribute("aria-modal", "true");
+    w.setAttribute("aria-label", label);
+    w.innerHTML = '<div class="gvw-card">' + html + '</div>';
+    w.addEventListener("click", e => {
+      if (e.target === w || e.target.closest(".gvw-x, .gvw-later")) closeSheet();
+      // heading off to download: do not chase them with another sheet
+      else if (e.target.closest("a.gvw-cta")) { onClosed = null; closeSheet(); }
+    });
+    document.body.appendChild(w);
+    openSheet = w;
+    onClosed = whenClosed || null;
+    const first = w.querySelector(".gvw-cta");
+    if (first) setTimeout(() => first.focus(), 60);
+  }
+  function closeSheet() {
+    if (!openSheet) return;
+    openSheet.remove(); openSheet = null;
+    const f = onClosed; onClosed = null;
+    if (f) setTimeout(f, 250);
+  }
+  document.addEventListener("keydown", e => { if (e.key === "Escape" && openSheet) closeSheet(); });
+
+  /* ---- 1. the welcome: one loud sheet on start ------------------------- */
+  function welcome() {
+    sheet(
+      '<button class="gvw-x" aria-label="Close">&times;</button>' +
+      '<div class="gvw-hero">' +
+        '<span class="gvw-badge">You are using the lite web version</span>' +
+        '<h2>Unlock the FULL Green Vision.<br>It is free.</h2>' +
+        '<p>The browser gets you a peek. The desktop app is the whole thing: an AI that runs on your own computer, works with no internet, and remembers everything you design.</p>' +
+        dlLink("", GET + " &mdash; free") +
+      '</div>' +
+      '<div class="gvw-body">' +
+        '<ul class="gvw-list">' +
+          '<li>' + ico('<rect x="4" y="4" width="16" height="16" rx="3"/><path d="M9 9h6v6H9z"/><path d="M9 2v2M15 2v2M9 20v2M15 20v2M2 9h2M2 15h2M20 9h2M20 15h2"/>') +
+            '<div><b>An AI planner living on YOUR machine</b><span>Ask it anything about a site and it answers on your own processor - private, instant, no cloud AI needed.</span></div></li>' +
+          '<li>' + ico('<path d="M2 8.8a15 15 0 0120 0"/><path d="M5 12.5a10 10 0 0114 0"/><path d="M8.5 16.1a5 5 0 017 0"/><path d="M12 20h.01"/><path d="M3 3l18 18"/>') +
+            '<div><b>Keeps working with ZERO internet</b><span>The AI assistant, the rankings and all fifteen languages keep going on a train, in a field, at a site visit with no signal.</span></div></li>' +
+          '<li>' + ico('<path d="M12 2l9 5v10l-9 5-9-5V7z"/><path d="M12 22V12"/><path d="M21 7l-9 5-9-5"/>') +
+            '<div><b>The full 3D park builder</b><span>Walk through your park in 3D, built on the real buildings around it, then cost it and project it 25 years ahead.</span></div></li>' +
+          '<li>' + ico('<rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M3 15l4.5-4.5 4 4L15 11l6 5.5"/>') +
+            '<div><b>Your Library, your history, your account</b><span>Every design saved for good, every area remembered, published to a shared Library and signed in on any computer.</span></div></li>' +
+          '<li>' + ico('<path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>') +
+            '<div><b>Blazing fast</b><span>A built-in map index answers the first map read instantly instead of waiting on public servers.</span></div></li>' +
+        '</ul>' +
+        '<div class="gvw-vs">' +
+          '<div class="web"><h4>This web version</h4>No sign in<br>No Library<br>No History<br>Needs the internet</div>' +
+          '<div class="app"><h4>The desktop app</h4>All of it, free<br>Works offline<br>On-device AI<br>Windows &amp; Mac</div>' +
+        '</div>' +
+        '<div class="gvw-foot">' +
+          dlLink("alt", GET + " now") +
+          '<button class="gvw-later">Keep using the lite web version</button>' +
+          '<div class="gvw-small">Windows 10/11 and Apple Silicon Macs. Free. Your designs stay on your computer.</div>' +
+        '</div>' +
+      '</div>',
+      "Get the Green Vision desktop app",
+      offerTour
+    );
+  }
+
+  /* ---- 3. the tour invitation ----------------------------------------- */
+  const TOUR_ASKED = "gvw.tourAsked";
+  function offerTour() {
+    let asked = false;
+    try { asked = localStorage.getItem(TOUR_ASKED) === "1"; } catch (e) {}
+    if (asked || !window.gvTour) return;
+    sheet(
+      '<button class="gvw-x" aria-label="Close">&times;</button>' +
+      '<div class="gvw-hero" style="padding:26px 26px 22px">' +
+        '<div style="display:inline-flex;width:56px;height:56px;border-radius:16px;align-items:center;justify-content:center;background:rgba(255,255,255,.2)">' +
+          '<svg viewBox="0 0 24 24" width="28" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+          '<circle cx="12" cy="12" r="9"/><path d="M10 8.5l5.5 3.5-5.5 3.5z" fill="#fff"/></svg></div>' +
+        '<h2 style="font-size:24px">New here? Take the 1-minute tour</h2>' +
+        '<p>See how to read any place on the map, design a park in 2D and 3D, cost it and score it - step by step, on the real app.</p>' +
+      '</div>' +
+      '<div class="gvw-body">' +
+        '<div class="gvw-foot" style="margin-top:4px">' +
+          '<button class="gvw-cta alt gvw-tour-go" style="border:0;cursor:pointer">' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 5l11 7-11 7z"/></svg>' +
+            'Start the tour</button>' +
+          '<button class="gvw-later">No thanks, I will explore</button>' +
+          '<div class="gvw-small">You can replay it any time with Ctrl + Alt + Shift + W.</div>' +
+        '</div>' +
+      '</div>',
+      "Take the tour"
+    );
+    try { localStorage.setItem(TOUR_ASKED, "1"); } catch (e) {}
+    const go = openSheet && openSheet.querySelector(".gvw-tour-go");
+    if (go) go.addEventListener("click", startTour);
+  }
+
+  function startTour() {
+    closeSheet();
+    // the tour runs on the map, not on the start screen
+    const enter = [...document.querySelectorAll("#intro button")].find(b => /open the map/i.test(b.textContent || ""));
+    const intro = document.getElementById("intro");
+    if (enter && intro && intro.style.display !== "none") enter.click();
+    setTimeout(() => { try { window.gvTour && gvTour.start(); } catch (e) {} }, 900);
+  }
+
+  /* ---- 2. the lock: what the app adds, at the moment it matters -------- */
+  function gate(kind) {
+    const w = WHY[kind] || WHY.account;
+    sheet(
+      '<button class="gvw-x" aria-label="Close">&times;</button>' +
+      '<div class="gvw-hero" style="padding:26px 26px 22px">' +
+        '<div style="display:inline-flex;width:56px;height:56px;border-radius:16px;align-items:center;justify-content:center;background:rgba(255,255,255,.2)">' +
+          '<svg viewBox="0 0 24 24" width="28" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + w.icon + '</svg></div>' +
+        '<h2 style="font-size:24px">' + w.title + '</h2>' +
+        '<p>' + w.lead + '</p>' +
+      '</div>' +
+      '<div class="gvw-body">' +
+        '<p style="margin:0 0 4px;font-size:14px;line-height:1.55">We recommend the <b>Green Vision desktop app</b> instead of the web version. It is free, it runs its AI on your own computer, it works offline, and it unlocks Sign in, the Library and History.</p>' +
+        '<div class="gvw-foot">' +
+          dlLink("alt", GET) +
+          '<button class="gvw-later">Not now</button>' +
+        '</div>' +
+      '</div>',
+      w.title
+    );
+  }
+
+  /* ---- marking the locked controls ------------------------------------- */
+  function kindOf(el) {
+    for (const l of LOCKS) if (el.matches(l.sel)) return l.kind;
+    return isPublish(el) ? "library" : null;
+  }
+  function mark(root) {
+    (root || document).querySelectorAll(LOCK_SEL + ", button").forEach(el => {
+      const k = el.matches(LOCK_SEL) ? kindOf(el) : (isPublish(el) ? "library" : null);
+      if (!k || el.dataset.gvwLock) return;
+      el.dataset.gvwLock = k;
+      el.classList.add("gvw-locked");
+      if (getComputedStyle(el).position === "static") el.classList.add("gvw-pos");
+      el.setAttribute("aria-disabled", "true");
+      el.title = (WHY[k] || WHY.account).title + " - get the desktop app";
+      // the assistant's history button starts `hidden`; show it, locked
+      if (el.id === "gvaHistory") el.hidden = false;
+    });
+  }
+
+  /* Capture phase, so the lock answers before the studio's own handler -
+     which would otherwise open the panel, or the sign-in sheet, first. */
+  document.addEventListener("click", e => {
+    const el = e.target.closest && e.target.closest("[data-gvw-lock]");
+    if (!el) return;
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+    gate(el.dataset.gvwLock);
+  }, true);
+
+  /* The same three doors are reachable from code - the assistant can ask
+     the studio to open the Library, the walkthrough points at History -
+     so the public entry points are gated too. */
+  function wrapUi() {
+    const ui = window.GV && GV.ui;
+    if (!ui || ui.__gvw) return !!ui;
+    ui.__gvw = true;
+    ["auth"].forEach(k => { if (typeof ui[k] === "function") ui[k] = () => gate("account"); });
+    ["gallery", "library"].forEach(k => { if (typeof ui[k] === "function") ui[k] = () => gate("library"); });
+    if (typeof ui.history === "function") ui.history = () => gate("history");
+    /* openDock is the door every other door leads to - the walkthrough and
+       the assistant both call it by tab name - so the two locked tabs are
+       gated here as well, and everything else passes straight through. */
+    if (typeof ui.openDock === "function") {
+      const real = ui.openDock;
+      ui.openDock = function (tab) {
+        if (tab === "history") return gate("history");
+        if (tab === "gallery" || tab === "library") return gate("library");
+        return real.apply(this, arguments);
+      };
+    }
+    return true;
+  }
+
+  /* ---- the always-there download buttons -------------------------------- */
+  function chrome() {
+    if (!document.getElementById("gvwBar")) {
+      const bar = document.createElement("div");
+      bar.id = "gvwBar";
+      bar.innerHTML = '<span class="gvw-bar-text">You are on the lite web version. The free desktop app adds an on-device AI that works offline, your Library and history.</span>' +
+        '<a href="' + DOWNLOAD + '" target="_blank" rel="noopener">' + GET + '</a>' +
+        '<button aria-label="Hide this banner">&times;</button>';
+      bar.querySelector("button").addEventListener("click", () => {
+        bar.remove();
+        document.documentElement.classList.remove("gvw-bar-on");
+        document.documentElement.style.removeProperty("--gvw-bar");
+      });
+      document.body.appendChild(bar);
+      document.documentElement.classList.add("gvw-bar-on");
+      document.documentElement.style.setProperty("--gvw-bar", bar.offsetHeight + "px");
+    }
+    if (!document.getElementById("gvwFab")) {
+      const fab = document.createElement("a");
+      fab.id = "gvwFab";
+      fab.href = DOWNLOAD;
+      fab.target = "_blank";
+      fab.rel = "noopener";
+      fab.innerHTML = DL_SVG + "<span>Get the app</span>";
+      fab.setAttribute("aria-label", GET);
+      document.body.appendChild(fab);
+    }
+  }
+
+  function boot() {
+    chrome();
+    mark();
+    wrapUi();
+    // the studio builds the dock and the assistant after load, and redraws
+    // panels as the reader moves around - keep marking what appears
+    new MutationObserver(muts => {
+      for (const m of muts) for (const n of m.addedNodes) if (n.nodeType === 1) mark(n.parentNode || n);
+      if (!(window.GV && GV.ui && GV.ui.__gvw)) wrapUi();
+    }).observe(document.body, { childList: true, subtree: true });
+    /* After the opening animation, not on top of it: the boot overlay and
+       the start screen fade in together, and a sheet opened at the same
+       moment reads as three things fighting for one screen. */
+    (function whenSettled(n) {
+      const boot = document.getElementById("gvBoot");
+      const busy = boot && getComputedStyle(boot).display !== "none" && +getComputedStyle(boot).opacity > 0.05;
+      if (busy && n < 40) return setTimeout(() => whenSettled(n + 1), 200);
+      setTimeout(welcome, 900);          // let the start screen finish fading in
+    })(0);
+  }
+
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
+  else boot();
+
+  // For testing from the console.
+  window.gvWeb = { welcome, gate, download: DOWNLOAD };
+})();
 </script>
 </body>
 </html>
