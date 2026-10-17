@@ -1072,11 +1072,15 @@ function gvMicButton(input, onText) {
 window.gvMicButton = gvMicButton;
 
 /* Mark which on-device models are present, so buttons for a model that is
-   not installed never show. */
-GVAI.ready().then(st => {
-  const root = document.documentElement;
+   not installed never show. Re-run after a download finishes. */
+GVAI.applyFlags = function () {
+  const root = document.documentElement, st = GVAI.status || {};
   root.classList.toggle("gv-ai-see", GVAI.can("see"));
   root.classList.toggle("gv-ai-voice", GVAI.can("transcribe"));
+  root.classList.toggle("gv-ai-offer", !!st.can_download && !(GVAI.can("see") && GVAI.can("transcribe")));
+  const ta = document.getElementById("gvaInput"), send = document.getElementById("gvaSend");
+  if (GVAI.can("transcribe") && ta && send && !send.parentNode.querySelector(".gv-mic") && window.gvAsk)
+    send.parentNode.insertBefore(gvMicButton(ta, t => gvAsk(t)), send);
   const q = document.getElementById("q");
   if (GVAI.can("transcribe") && q && !q.parentNode.querySelector(".gv-mic")) {
     // The spoken place goes in the box and the suggestions open, so the
@@ -1085,6 +1089,62 @@ GVAI.ready().then(st => {
     mic.classList.add("gv-mic-search");
     q.insertAdjacentElement("afterend", mic);
   }
+};
+GVAI.ready().then(() => GVAI.applyFlags());
+
+/* VOICE AND PHOTO AI, ONE DOWNLOAD.
+   The two models are not in the installer (NSIS stops at 2 GB). The engine
+   fetches them once from Intel's OpenVINO repositories, checks every file's
+   SHA-256, and keeps them in the user's data folder; after that they run
+   offline. This is the offer and the progress bar, wherever it is shown. */
+const GV_AI_OFFER_HTML = '<div class="gv-aioffer gv-needs-offer"><button class="gv-mini gv-mini-ai gv-aiget">' +
+  GV_AI_ICON + 'Add voice and photo AI</button><span class="gv-aisub">One-time download of about 1 GB from ' +
+  'Intel\u2019s OpenVINO models, then it works offline.</span><div class="gv-aibar"><i></i></div></div>';
+window.GV_AI_OFFER_HTML = GV_AI_OFFER_HTML;
+
+GVAI.poll = async function () {
+  if (GVAI._polling) return;
+  GVAI._polling = true;
+  try {
+    for (;;) {
+      await new Promise(r => setTimeout(r, 1500));
+      let st = null;
+      try { st = await (await fetch(gvEngineUrl("/api/ai/status"), { cache: "no-cache" })).json(); } catch (e) {}
+      if (!st) continue;
+      GVAI.status = st;
+      const jobs = ["transcribe", "see"].map(k => (st[k] && st[k].download) || {});
+      const total = jobs.reduce((a, j) => a + (j.total || 0), 0), done = jobs.reduce((a, j) => a + (j.done || 0), 0);
+      const running = jobs.some(j => j.state === "running");
+      const failed = jobs.find(j => j.state === "failed");
+      document.querySelectorAll(".gv-aioffer").forEach(el => {
+        el.classList.toggle("busy", running);
+        const bar = el.querySelector(".gv-aibar i");
+        if (bar) bar.style.width = (total ? Math.round(done / total * 100) : 3) + "%";
+        const sub = el.querySelector(".gv-aisub");
+        if (sub) sub.textContent = failed ? "The download stopped: " + failed.error + ". Try again."
+          : running ? "Downloading " + Math.round(done / 1048576) + " of " + Math.round(total / 1048576 || 0) + " MB\u2026 you can keep working."
+          : sub.textContent;
+        const b = el.querySelector(".gv-aiget"); if (b) b.disabled = running;
+      });
+      if (!running) break;
+    }
+    GVAI.applyFlags();
+    if (GVAI.can("see") && GVAI.can("transcribe") && window.toast)
+      toast("Voice and photo AI are ready \u2014 they run on this computer, offline.");
+  } finally { GVAI._polling = false; }
+};
+
+document.addEventListener("click", async ev => {
+  const b = ev.target.closest && ev.target.closest(".gv-aiget");
+  if (!b) return;
+  b.disabled = true;
+  const res = await gvAIPost("/api/ai/fetch", { job: "all" }, 20000);
+  if (!res || res.ok === false) {
+    b.disabled = false;
+    if (window.toast) toast("Could not start the download: " + ((res && res.reason) || "engine not running"));
+    return;
+  }
+  GVAI.poll();
 });
 
 function gvPickImage() {
@@ -2743,8 +2803,8 @@ async function analyse(lat,lon){
     osmOK?"Parks nearby: "+parks:null,
     osmOK?"Buildings in the area: "+fmt(bld):null,
     osmOK?"Water bodies nearby: "+water:null,
-    "Green score: "+green+" out of 100 ("+(osmOK?gTxt:"canopy only")+")",
-    "Project the reader is planning: "+((window.GV&&GV.GOAL_BRIEF&&window.state&&{park:"public park",greenbelt:"green belt",riverfront:"riverfront",community:"community garden",campus:"school or campus",avenue:"roadside avenue",residential:"residential green",industrial:"industrial buffer",wetland:"wetland edge"}[state.goal])||"park")
+    "Overall greenness of this neighbourhood: "+green+" out of 100, rated "+(osmOK?gTxt:"from canopy only"),
+    "Nothing has been built yet. The reader is thinking of adding a new "+((window.GV&&GV.GOAL_BRIEF&&window.state&&{park:"public park",greenbelt:"green belt",riverfront:"riverfront",community:"community garden",campus:"school or campus",avenue:"roadside avenue",residential:"residential green",industrial:"industrial buffer",wetland:"wetland edge"}[state.goal])||"park")
   ].filter(Boolean);
 
   const [gTxt]=grade(green);
@@ -2764,7 +2824,7 @@ async function analyse(lat,lon){
     `<div class="section" style="margin-top:16px"><div class="narr" id="pNarr"><div class="ai"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l2 5 5 2-5 2-2 5-2-5-5-2 5-2z"/></svg>Read from this page</div>${narr}</div></div>`+
     `<div class="section gv-areaai"><div class="gv-briefbtns"><button class="gv-mini gv-mini-ai" id="pExplainAI">${GV_AI_ICON}Explain this area in plain words</button>`+
       `<button class="gv-mini gv-mini-ai gv-needs-see" id="pPhotoAI" title="Upload a photo taken on site; the on-device vision model checks it">${GV_AI_ICON}Check a site photo</button></div>`+
-      `<div id="pExplainOut" class="gv-briefout"></div></div>`+
+      GV_AI_OFFER_HTML + `<div id="pExplainOut" class="gv-briefout"></div></div>`+
     `<div class="section"><h3>Live Environment</h3><div class="mgrid">`+
       metric("Air quality",aqi!=null?aqi:"—",aqi!=null?aqiWord(aqi)+(wa.aq&&wa.aq.pm2_5!=null?" · PM2.5 "+round(wa.aq.pm2_5):""):"unavailable",aqi!=null?clamp(100-aqi/2,0,100):null,aqi!=null?riskCol(clamp(aqi/2,0,100)):null)+
       metric("Temperature",temp!=null?round(temp)+"°C":"—",wa.w&&wa.w.apparent_temperature!=null?"feels "+round(wa.w.apparent_temperature)+"°C":"")+
@@ -4235,7 +4295,14 @@ path.gv-surf:hover{ filter:drop-shadow(0 0 4px #12b981); }
 .gv-briefout:not(:empty){ margin-top:10px; padding-top:10px; border-top:1px solid var(--line); }
 .gv-briefsteps{ margin:0; padding-left:18px; font-size:12px; line-height:1.6; font-weight:600; color:var(--ink); }
 .gv-chip-fit{ box-shadow:inset 0 0 0 1.5px rgba(18,185,129,.55); }
-.gv-needs-see{ display:none !important; }
+.gv-needs-see, .gv-needs-offer{ display:none !important; }
+.gv-ai-offer .gv-needs-offer{ display:block !important; }
+.gv-aioffer{ margin-top:8px; }
+.gv-aioffer .gv-aisub{ margin-top:4px; }
+.gv-aibar{ height:4px; border-radius:3px; background:var(--line); margin-top:6px; overflow:hidden; display:none; }
+.gv-aioffer.busy .gv-aibar{ display:block; }
+.gv-aibar i{ display:block; height:100%; width:3%; background:var(--brand); transition:width .6s; }
+#gvaPanel .gv-aioffer{ padding:0 14px 12px; }
 .gv-ai-see .gv-needs-see{ display:inline-flex !important; }
 .gv-mic-search{ width:30px; height:30px; margin-left:4px; }
 .gv-chip-flash{ animation:gvChipFlash 2.4s ease; }
@@ -22027,6 +22094,7 @@ function aBuild() {
           '<path d="M4 12h15M13 6l6 6-6 6"/></svg></button>' +
       "</div>" +
       '<div id="gvaStatus" class="gva-status"></div>' +
+      (window.GV_AI_OFFER_HTML || "") +
     "</section>";
   while (wrap.firstChild) document.body.appendChild(wrap.firstChild);
   /* Speak a question instead of typing it: Whisper on this machine, in the

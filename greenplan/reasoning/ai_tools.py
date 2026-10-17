@@ -18,6 +18,12 @@ sessions never touch them, and together they are another gigabyte of
 memory. Each reports honestly in status() whether it is present, loaded,
 or failed and why.
 
+They are not in the installer. NSIS cannot build an installer past 2 GB
+and the app was already 1.4 GB, so the two models are fetched once, on
+request, from Intel's own OpenVINO repositories on Hugging Face, each file
+checked against the SHA-256 the repository publishes, into the user's data
+folder. After that they run with no network at all.
+
 Nothing here raises to the HTTP layer. A job that cannot run returns a
 dict with `ok: False` and a reason the studio can show, and the studio
 then falls back to the deterministic text it already has.
@@ -34,13 +40,51 @@ from pathlib import Path
 from typing import Any
 
 from . import llm_assistant
+from ..config import user_data_dir
 
 log = logging.getLogger(__name__)
 
 _ROOT = Path(__file__).resolve().parent.parent.parent
-_MEDIA = Path(os.environ.get("GV_MEDIA_DIR") or (_ROOT / "models" / "media"))
-WHISPER_DIR = _MEDIA / "whisper-small-int8-ov"
-VLM_DIR = _MEDIA / "internvl2-1b-int4-ov"
+# Where the speech and vision models may live, in order: an explicit
+# override, beside the engine (a developer tree, or a build that bundles
+# them), then the user's own data folder, which is where a download lands.
+_MEDIA_DIRS = [Path(p) for p in [os.environ.get("GV_MEDIA_DIR")] if p] + \
+    [_ROOT / "models" / "media", user_data_dir() / "models" / "media"]
+_DOWNLOAD_DIR = user_data_dir() / "models" / "media"
+
+MEDIA = {
+    "whisper": {"name": "whisper-small-int8-ov", "repo": "OpenVINO/whisper-small-int8-ov",
+                "need": "openvino_encoder_model.xml", "job": "transcribe"},
+    "vlm": {"name": "internvl2-1b-int4-ov", "repo": "OpenVINO/InternVL2-1B-int4-ov",
+            "need": "openvino_language_model.xml", "job": "see"},
+}
+
+
+def _media_dir(key: str) -> Path:
+    m = MEDIA[key]
+    for base in _MEDIA_DIRS:
+        d = base / m["name"]
+        # A download folder counts only once it finished (".complete"); a
+        # bundled or developer copy has no marker and is trusted as is.
+        if (d / m["need"]).is_file() and (base != _DOWNLOAD_DIR or (d / ".complete").is_file()):
+            return d
+    return _DOWNLOAD_DIR / m["name"]
+
+
+def _ready(key: str) -> bool:
+    """Weights on disk AND, for a download, the download finished."""
+    d = _media_dir(key)
+    if not (d / MEDIA[key]["need"]).is_file():
+        return False
+    return d.parent != _DOWNLOAD_DIR or (d / ".complete").is_file()
+
+
+def __getattr__(name: str):                     # WHISPER_DIR / VLM_DIR, resolved late
+    if name == "WHISPER_DIR":
+        return _media_dir("whisper")
+    if name == "VLM_DIR":
+        return _media_dir("vlm")
+    raise AttributeError(name)
 
 # Clips longer than this are cut. Whisper's window is 30 s, and a request
 # body has to stay inside the server's limit.
@@ -70,13 +114,18 @@ def status() -> dict[str, Any]:
     llm = llm_assistant.info()
     out = {"write": {"present": llm["present"], "loaded": llm["loaded"],
                      "device": llm["device"], "model": llm["model"]}}
-    for key, d, need, name in (("transcribe", WHISPER_DIR, "openvino_encoder_model.xml", "whisper"),
-                               ("see", VLM_DIR, "openvino_language_model.xml", "vlm")):
+    for name, spec in MEDIA.items():
+        d = _media_dir(name)
         m = _MODELS[name]
-        out[key] = {"present": _present(d, need), "loaded": bool(m["pipe"]),
-                    "device": m["device"], "load_s": m["load_s"],
-                    "model": d.name if _present(d, need) else None, "error": m["error"]}
+        # Not present while its download is still running: the graph file
+        # can land before the weights it describes.
+        busy = (_FETCH.get(name) or {}).get("state") == "running"
+        out[spec["job"]] = {"present": _ready(name) and not busy, "loaded": bool(m["pipe"]),
+                            "device": m["device"], "load_s": m["load_s"],
+                            "model": spec["name"] if _ready(name) else None,
+                            "error": m["error"], "download": dict(_FETCH.get(name) or {})}
     out["runtime"] = "openvino"
+    out["can_download"] = True
     return out
 
 
@@ -90,9 +139,11 @@ def _load(name: str) -> Any:
     with _LOAD_LOCK:
         if m["pipe"]:
             return m["pipe"]
-        d, need = ((WHISPER_DIR, "openvino_encoder_model.xml") if name == "whisper"
-                   else (VLM_DIR, "openvino_language_model.xml"))
-        if not _present(d, need):
+        d, need = _media_dir(name), MEDIA[name]["need"]
+        if (_FETCH.get(name) or {}).get("state") == "running":
+            m["error"] = "still downloading"
+            return None
+        if not _ready(name):
             m["error"] = "model not installed"
             return None
         try:
@@ -116,6 +167,75 @@ def _load(name: str) -> Any:
                 log.warning("%s would not load on %s: %s", name, dev, exc)
         m["error"] = str(last or "no device would load the model")
         return None
+
+
+# --------------------------------------------------------------------------
+# one-time download of the speech and vision models
+
+_FETCH: dict[str, dict[str, Any]] = {}
+_FETCH_LOCK = threading.Lock()
+
+
+def _fetch_one(key: str) -> None:
+    import hashlib  # noqa: PLC0415
+    import json  # noqa: PLC0415
+    import urllib.request  # noqa: PLC0415
+    spec = MEDIA[key]
+    st = _FETCH[key]
+    dst = _DOWNLOAD_DIR / spec["name"]
+    try:
+        dst.mkdir(parents=True, exist_ok=True)
+        api = "https://huggingface.co/api/models/%s?blobs=true" % spec["repo"]
+        with urllib.request.urlopen(api, timeout=60) as r:
+            meta = json.load(r)
+        files = [(f["rfilename"], int(f.get("size") or 0), ((f.get("lfs") or {}).get("sha256")))
+                 for f in meta.get("siblings", []) if not f["rfilename"].startswith(".")]
+        st["total"] = sum(sz for _, sz, _ in files)
+        st["done"] = 0
+        for fn, size, sha in files:
+            out = dst / fn
+            out.parent.mkdir(parents=True, exist_ok=True)
+            if out.is_file() and out.stat().st_size == size and size:
+                st["done"] += size
+                continue
+            url = "https://huggingface.co/%s/resolve/main/%s" % (spec["repo"], fn)
+            h = hashlib.sha256()
+            part = out.with_name(out.name + ".part")
+            with urllib.request.urlopen(url, timeout=120) as r, open(part, "wb") as w:
+                while True:
+                    b = r.read(1 << 20)
+                    if not b:
+                        break
+                    w.write(b)
+                    h.update(b)
+                    st["done"] += len(b)
+            if sha and h.hexdigest() != sha:
+                part.unlink(missing_ok=True)
+                raise ValueError("%s failed its SHA-256 check" % fn)
+            os.replace(part, out)
+        (dst / ".complete").write_text("ok", encoding="utf-8")
+        st.update(state="done", error=None)
+        log.info("downloaded %s (%.0f MB)", spec["name"], st["total"] / 1e6)
+    except Exception as exc:
+        log.warning("download of %s failed: %s", spec["name"], exc)
+        st.update(state="failed", error=str(exc))
+
+
+def fetch(body: dict[str, Any]) -> dict[str, Any]:
+    """Start downloading the speech and/or vision model in the background."""
+    want = str(body.get("job") or "all")
+    keys = [k for k, v in MEDIA.items() if want in ("all", v["job"], k)]
+    started = []
+    with _FETCH_LOCK:
+        for k in keys:
+            if _ready(k):
+                continue
+            if (_FETCH.get(k) or {}).get("state") == "running":
+                continue
+            _FETCH[k] = {"state": "running", "done": 0, "total": 0, "error": None}
+            threading.Thread(target=_fetch_one, args=(k,), name="gv-fetch-" + k, daemon=True).start()
+            started.append(MEDIA[k]["job"])
+    return {"ok": True, "started": started, "status": status()}
 
 
 # --------------------------------------------------------------------------
@@ -217,7 +337,7 @@ EXAMPLES: dict[str, tuple[list[str], str]] = {
     "explain_area": (
         ["Place: Naranpura, Ahmedabad", "Tree canopy visible in satellite imagery: 9% of the view",
          "Air quality index (US AQI): 152, band: Unhealthy", "Parks nearby: 1",
-         "Project the reader is planning: public park"],
+         "Nothing has been built yet. The reader is thinking of adding a new public park"],
         "Naranpura has very little tree cover, about 9% of the view, and its air is in the Unhealthy band "
         "at an index of 152, with only one park nearby. A public park with plenty of shade trees would "
         "help both the heat and the air here."),
@@ -398,7 +518,7 @@ def transcribe(body: dict[str, Any]) -> dict[str, Any]:
     if not text or _HALLUCINATED.match(text):
         return {"ok": False, "reason": "no clear words were heard", "ms": ms}
     return {"ok": True, "text": text, "seconds": round(secs, 1), "ms": ms,
-            "model": WHISPER_DIR.name, "device": _MODELS["whisper"]["device"]}
+            "model": MEDIA["whisper"]["name"], "device": _MODELS["whisper"]["device"]}
 
 
 # --------------------------------------------------------------------------
@@ -463,7 +583,7 @@ def see(body: dict[str, Any]) -> dict[str, Any]:
                 if not hit:
                     return {"ok": False, "reason": "the photo did not match any species in the list",
                             "said": said[:80], "ms": ms}
-                return {"ok": True, "species": hit, "ms": ms, "model": VLM_DIR.name,
+                return {"ok": True, "species": hit, "ms": ms, "model": MEDIA["vlm"]["name"],
                         "device": _MODELS["vlm"]["device"]}
             answers: dict[str, bool | None] = {}
             for key, q in SITE_QUESTIONS:
@@ -476,5 +596,5 @@ def see(body: dict[str, Any]) -> dict[str, Any]:
         return {"ok": False, "reason": "the vision model failed: %s" % exc}
     desc = llm_assistant._clean(desc).split("\n")[0][:240]
     return {"ok": True, "task": "site", "answers": answers, "description": desc,
-            "ms": int((time.time() - t0) * 1000), "model": VLM_DIR.name,
+            "ms": int((time.time() - t0) * 1000), "model": MEDIA["vlm"]["name"],
             "device": _MODELS["vlm"]["device"]}

@@ -1605,6 +1605,7 @@ def make_handler(registry: CityRegistry):
                 "/api/ai/write": ai_tools.write,
                 "/api/ai/transcribe": ai_tools.transcribe,
                 "/api/ai/see": ai_tools.see,
+                "/api/ai/fetch": ai_tools.fetch,
                 "/api/assistant": lambda b: _eng_for(
                     (b.get("context") or {}) if isinstance(b.get("context"), dict) else {}
                 ).assistant.handle(
