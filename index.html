@@ -11373,7 +11373,8 @@ const HIST_META = {
   draft:     { ico: "\u270E", label: "Autosaved", col: "var(--ink-soft)" },
   saved:     { ico: "\u2193", label: "Saved",     col: "var(--brand-dk)" },
   published: { ico: "\u2191", label: "Published", col: "var(--sky)" },
-  reviewed:  { ico: "\u2713", label: "Reviewed",  col: "var(--violet)" }
+  reviewed:  { ico: "\u2713", label: "Reviewed",  col: "var(--violet)" },
+  cloud:     { ico: "\u2601", label: "Saved in your account", col: "var(--brand-dk)" }
 };
 
 function dayLabel(ts) {
@@ -11390,6 +11391,7 @@ async function drawHistory() {
   if (gvAccountsPossible() && !GV.auth.isIn()) { dockBody(gvSignInPanel("history")); return; }
   const designs = store.get("designs", []);
   const byId = Object.fromEntries(designs.map(d => [d.id, d]));
+  let cloudProjects = [];
 
   /* This device, plus the account.
 
@@ -11422,6 +11424,29 @@ async function drawHistory() {
     for (const r of fromAccount) {
       if (!seen.has(r.id + "|" + r.type)) { log.push(r); seen.add(r.id + "|" + r.type); }
     }
+
+    /* THE PROJECTS THEMSELVES, from the account.
+
+       The timeline above is a log of events, and the account keeps only the
+       last sixty of those - so a design saved weeks ago, or on another
+       computer, had its work safely in the account's project list and no
+       line here to open it from. "0 designs saved on this device" read as
+       "nothing is saved", which was not true. Every project in the account
+       now has a row, so the work opens from whichever machine you sign in on. */
+    const proj = await gvuProjects();
+    if (dockTab !== "history") return;
+    cloudProjects = (proj && proj.list) || [];
+    const haveId = new Set(log.map(e => e.id));
+    for (const p of cloudProjects) {
+      if (!p || !p.id || haveId.has(p.id)) continue;
+      log.push({ ts: p.updated || 0, type: "cloud", id: p.id, name: p.name,
+                 place: p.place || p.city || "", score: null, trees: p.n_trees || 0, _remote: true });
+      haveId.add(p.id);
+    }
+    /* And the other way: a design made on this machine while signed out
+       never reached the account. Send it now, so it is there next time. */
+    const inCloud = new Set(cloudProjects.map(p => p && p.id));
+    for (const d of designs) if (d && d.id && !inCloud.has(d.id)) gvuSyncProject(d);
   }
   log.sort((a, b) => (a.ts || 0) - (b.ts || 0));
   log = log.reverse();                                      // newest first
@@ -11445,7 +11470,9 @@ async function drawHistory() {
 
   dockBody(`
     <div class="gv-histhead">
-      <div><b>${log.length}</b> event${log.length > 1 ? "s" : ""} \u00B7 <b>${designs.length}</b> design${designs.length > 1 ? "s" : ""} saved on this device</div>
+      <div>${GV.auth.isIn()
+        ? `<b>${cloudProjects.length}</b> project${cloudProjects.length === 1 ? "" : "s"} in your account \u00B7 <b>${designs.length}</b> on this device`
+        : `<b>${log.length}</b> event${log.length > 1 ? "s" : ""} \u00B7 <b>${designs.length}</b> design${designs.length === 1 ? "" : "s"} saved on this device`}</div>
       <button class="gv-mini" id="gvHistClear">Clear history</button>
     </div>
     ${groups.map(g => `
@@ -11478,7 +11505,7 @@ async function drawHistory() {
       }).join("")}
     `).join("")}
     <div class="gv-prov-note">${GV.auth.isIn()
-      ? "Your history is private to your account and follows you to any machine you sign in on. Nobody else can see it. Publishing a design is the separate act that puts it in the shared Library, with your name on it."
+      ? "Your projects and history are saved to your account in the cloud and open on any machine you sign in on. Nobody else can see them. Publishing a design is the separate act that puts it in the shared Library, with your name on it."
       : "History lives on this device only. Sign in and it follows you to any machine you use — still private to you."}</div>`);
 
   $$("[data-open]").forEach(b => b.onclick = e => { e.stopPropagation(); openSavedDesign(b.dataset.open); });

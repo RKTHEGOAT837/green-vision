@@ -363,8 +363,24 @@ const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g,
    rather than empty fields that imply nothing is set. */
 async function loadNotice() {
   try {
-    const r = await fetch(API + "/api/app/notice");
-    const n = await readJson(r);
+    /* Read it the way each app does, and put the record back together.
+
+       The bare /app/notice answers for a copy that did not say what it runs
+       on, and once a Mac build is published that copy is told nothing - no
+       version, no floor, no Mac fields. Filling the form from it showed the
+       Windows minimum and every Mac box as blank while all of them were set,
+       and pressing Send then saved those blanks for everyone. The Windows
+       view carries the Windows fields and the Mac view the Mac ones; between
+       them they are the whole stored record. */
+    const view = p => fetch(API + "/api/app/notice?v=0.0.0&platform=" + p + "&cb=" + Date.now()).then(readJson);
+    const [w, m] = await Promise.all([view("win32"), view("darwin")]);
+    const n = Object.assign({}, w, {
+      min_mac: m.min || "", latest_mac: m.latest || "",
+      title_other: m.title || "",
+      /* The Mac view falls back to the download page when no Mac file is
+         recorded; that fallback is not a stored value. */
+      file_mac: (m.file && m.file !== m.download) ? m.file : ""
+    });
     $("bTitle").value = n.title || "";
     $("bMsg").value = n.message || "";
     $("bLatest").value = n.latest || "";
