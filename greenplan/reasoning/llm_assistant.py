@@ -67,6 +67,11 @@ _STATE: dict[str, Any] = {
     "loading": False,
 }
 _LOCK = threading.Lock()
+# One generation at a time. The species picker, the AI writing helpers and
+# the assistant all share this one compiled pipeline, and an OpenVINO
+# pipeline is not re-entrant: two concurrent generate() calls on it fail with
+# "infer request is busy" rather than queueing.
+_GEN_LOCK = threading.Lock()
 
 
 def _model_dir() -> Path:
@@ -240,7 +245,8 @@ def _generate(system: str, user: str, max_tokens: int) -> str | None:
         except Exception:
             pass
         t0 = time.time()
-        out = str(pipe.generate(_CHATML.format(system=system, user=user), cfg))
+        with _GEN_LOCK:
+            out = str(pipe.generate(_CHATML.format(system=system, user=user), cfg))
         dt = time.time() - t0
         if dt > REPLY_BUDGET_S:
             # Answered, but too late to be useful next time: say so in the
@@ -249,6 +255,42 @@ def _generate(system: str, user: str, max_tokens: int) -> str | None:
         return out.strip()
     except Exception as exc:
         log.warning("assistant LLM generate failed: %s", exc)
+        return None
+
+
+def model_dir() -> Path:
+    """The folder the shared pipeline was (or will be) loaded from."""
+    return _model_dir()
+
+
+def generate_prompt(prompt: str, max_tokens: int, temperature: float = 0.0) -> str | None:
+    """Run an already-rendered prompt through the SHARED pipeline.
+
+    The species picker used to compile a second copy of this same model on
+    the CPU at startup - another gigabyte of memory, and about sixty seconds a
+    pick against a few on the GPU copy this module already holds. Callers that
+    render their own template come through here instead. None when the model
+    is not available, so the caller can fall back exactly as before.
+    """
+    pipe = _STATE["pipe"]
+    if pipe is None:
+        with _LOCK:
+            pipe = _load()
+    if not pipe:
+        return None
+    try:
+        import openvino_genai as genai  # noqa: PLC0415
+        cfg = genai.GenerationConfig()
+        cfg.max_new_tokens = max_tokens
+        if temperature > 0:
+            cfg.do_sample = True
+            cfg.temperature = temperature
+        else:
+            cfg.do_sample = False
+        with _GEN_LOCK:
+            return str(pipe.generate(prompt, cfg))
+    except Exception as exc:
+        log.warning("shared LLM generate failed: %s", exc)
         return None
 
 
@@ -439,7 +481,7 @@ def _clean(text: str) -> str:
     # answer, then "**Answer:**" restating it, then "**Suggestion:**". Cut
     # at the first of those markers - everything after it is a second go at
     # the same question.
-    t = re.split(r"\*\*(?:Answer|Suggestion|Note|Conclusion)", t)[0]
+    t = re.split(r"\*\*(?:Answer|Suggestion|Note|Conclusion)\b", t)[0]
     t = t.replace("**", "").strip()
     # It sometimes restates the question as a heading first.
     t = re.sub(r"^\s*(assistant|answer)\s*:\s*", "", t, flags=re.I)

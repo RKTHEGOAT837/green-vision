@@ -224,6 +224,7 @@ class OpenRouterClient:
         user: str,
         validate: Callable[[dict[str, Any]], None] | None = None,
         list_key: str | None = None,
+        max_tokens: int | None = None,
     ) -> dict[str, Any]:
         # list_key is accepted for interface parity with OpenVINOClient; hosted
         # models honour response_format and return the wrapper object already.
@@ -314,10 +315,31 @@ class OpenVINOClient:
                 "    python scripts/fetch_openvino_model.py"
             )
 
-        log.info("loading OpenVINO model %s on %s", model_dir.name, cfg.device)
-        t0 = time.time()
-        self.pipe = openvino_genai.LLMPipeline(str(model_dir), cfg.device)
-        log.info("OpenVINO pipeline ready in %.1fs", time.time() - t0)
+        # Compiled lazily, and only if the assistant's shared pipeline cannot
+        # serve the same weights. It used to load a second full copy of this
+        # model on the CPU at every start: a gigabyte of memory, and a species
+        # pick that took a minute on the CPU while the same weights sat warm
+        # on the GPU in llm_assistant.
+        self._model_dir = model_dir
+        self._pipe = None
+
+    @property
+    def pipe(self) -> Any:
+        if self._pipe is None:
+            log.info("loading OpenVINO model %s on %s", self._model_dir.name, self.cfg.device)
+            t0 = time.time()
+            self._pipe = self._genai.LLMPipeline(str(self._model_dir), self.cfg.device)
+            log.info("OpenVINO pipeline ready in %.1fs", time.time() - t0)
+        return self._pipe
+
+    def _shared(self) -> bool:
+        """Is the assistant's warm pipeline holding these same weights?"""
+        try:
+            from . import llm_assistant  # noqa: PLC0415
+            return (llm_assistant.available() and
+                    llm_assistant.model_dir().resolve() == self._model_dir.resolve())
+        except Exception:
+            return False
 
     def _render(self, system: str, user: str) -> str:
         name = self.cfg.chat_template
@@ -334,9 +356,19 @@ class OpenVINOClient:
             system=system, user=user
         )
 
-    def _generate(self, system: str, user: str) -> str:
+    def _generate(self, system: str, user: str, max_tokens: int | None = None) -> str:
+        budget = int(max_tokens or self.cfg.max_new_tokens)
+        if self._shared() and self.cfg.chat_template != "tokenizer":
+            from . import llm_assistant  # noqa: PLC0415
+            t0 = time.time()
+            out = llm_assistant.generate_prompt(self._render(system, user), budget,
+                                                self.cfg.temperature)
+            if out is not None:
+                log.info("picker answered on the shared %s pipeline in %.1fs (%d chars)",
+                         llm_assistant.info().get("device"), time.time() - t0, len(out))
+                return out
         gen = self._genai.GenerationConfig()
-        gen.max_new_tokens = self.cfg.max_new_tokens
+        gen.max_new_tokens = budget
         # Greedy decoding at temperature 0 — strict-JSON output is a parsing
         # task, not a creative one, and sampling only adds failure modes.
         if self.cfg.temperature > 0:
@@ -352,6 +384,7 @@ class OpenVINOClient:
         user: str,
         validate: Callable[[dict[str, Any]], None] | None = None,
         list_key: str | None = None,
+        max_tokens: int | None = None,
     ) -> dict[str, Any]:
         """Mirrors OpenRouterClient.chat_json, including the re-ask loop. A
         small local model needs that loop more often than a hosted one, which
@@ -363,7 +396,7 @@ class OpenVINOClient:
         last_err = "no attempt made"
         sys_prompt, usr_prompt = system, user
         for _ in range(self.cfg.json_repair_attempts):
-            text = self._generate(sys_prompt, usr_prompt)
+            text = self._generate(sys_prompt, usr_prompt, max_tokens)
             try:
                 obj = extract_json(text, allow_list=list_key is not None)
                 if isinstance(obj, list):
@@ -422,6 +455,14 @@ class ReasoningModel:
             zones = obj.get("zones")
             if not isinstance(zones, list) or not zones:
                 raise ValueError("key 'zones' must be a non-empty list")
+            # A one-cell question has only one possible answer for `zone`. The
+            # small local model regularly copies a DIFFERENT zone id out of
+            # the lessons block, and rejecting a correct species pick over a
+            # mislabelled id is why every click in the Area panel read
+            # "offline-engine (LLM unavailable)": three re-asks, three copies
+            # of the same wrong id, then the fallback.
+            if len(given_order) == 1 and len(zones) == 1 and isinstance(zones[0], dict):
+                zones[0]["zone"] = given_order[0]
             for z in zones:
                 if z.get("zone") not in given_order:
                     raise ValueError(f"unknown zone id {z.get('zone')!r}")
@@ -437,6 +478,11 @@ class ReasoningModel:
             prompts.recommend_user(ranked_rows, lessons, kb_markdown_table()),
             _validate,
             list_key="zones",
+            # A justification and five names is under 300 tokens a zone; 2048
+            # for a single click let one runaway reply go on for a minute.
+            max_tokens=min(int(getattr(self.client, "cfg", None).max_new_tokens
+                               if getattr(self.client, "cfg", None) else 2048),
+                           300 + 300 * len(ranked_rows)),
         )
         by_zone = {z["zone"]: z for z in obj["zones"]}
         out = []

@@ -57,6 +57,7 @@ from .cities import CityRegistry
 from .reasoning import i18n, intent_model
 from .reasoning.assistant import Assistant
 from .reasoning import llm_assistant
+from .reasoning import ai_tools
 from .reasoning.client import MockModel, build_model
 from .reasoning.species import SPECIES_KB, kb_by_name, validate_selection
 from .training.memory import MemoryStore
@@ -703,15 +704,58 @@ class Engine:
             "soil": prof.as_dict() if prof is not None else None,
         }
         used = self._reasoning_label()
-        try:
-            recs = self._picker.recommend([row], self.lessons)
-        except Exception as exc:  # 429 / timeout / invalid JSON from the provider
-            log.warning("LLM failed (%s); using offline engine", exc)
+        if self.cfg.model.provider == "openvino":
+            # ON THIS MACHINE: the matcher picks, the model explains.
+            #
+            # Asking the 1.5B local model for the whole JSON - zone id,
+            # species from a 30-row table, justification - failed almost
+            # every time: it copied zone ids out of the lessons, picked names
+            # not in the table, or ran out of tokens mid-object. Three
+            # re-asks at up to a minute each, then the fallback, and every
+            # click in the Area panel read "offline-engine (LLM
+            # unavailable)" after a long wait. So the species come from the
+            # deterministic matcher, which is already tested against the
+            # soil and rainfall filters below, and the model writes only the
+            # sentence a planner reads - from the cell's own figures, with
+            # every number checked against them before it is shown.
             recs = self._fallback.recommend([row], self.lessons)
-            used = "offline-engine (LLM unavailable)"
-        names = validate_selection(recs[0]["species"]) if recs else []
-        names = self._drop_thirsty(names, _num(body.get("rain_mm_yr"), None))
-        species = [self._species_card(n) for n in names]
+            names = validate_selection(recs[0]["species"]) if recs else []
+            names = self._drop_thirsty(names, _num(body.get("rain_mm_yr"), None))
+            facts = [f"Priority score: {row['score']:.3f} (0 to 1, higher means plant sooner)",
+                     f"Air quality index now: {row['aqi_latest']:.0f}"]
+            if row.get("aqi_pred_delta") is not None:
+                facts.append(f"Forecast change in air quality index: {row['aqi_pred_delta']:+.1f} "
+                             f"({'getting worse' if row['aqi_pred_delta'] > 0 else 'improving'})")
+            if row.get("ndvi_slope") is not None:
+                facts.append(f"Green cover is {'falling' if row['ndvi_slope'] < 0 else 'rising'} "
+                             f"by {abs(row['ndvi_slope']):.4f} NDVI a year")
+            if row.get("plantable_space") is not None:
+                facts.append(f"Share of the cell not vegetated: {round(row['plantable_space'] * 100)}%")
+            if row.get("soil"):
+                sd = row["soil"]
+                if sd.get("ph") is not None:
+                    facts.append(f"Soil pH: {sd['ph']}")
+                if sd.get("texture"):
+                    facts.append(f"Soil texture: {sd['texture']}")
+            if names:
+                facts.append("Species chosen: " + ", ".join(names))
+            said = ai_tools.write({"task": "justify_cell", "facts": facts})
+            if said.get("ok"):
+                recs = [{**recs[0], "justification": said["text"]}]
+                used = "openvino-local (written on this machine, %s)" % (said.get("device") or "OpenVINO")
+            else:
+                used = "offline-engine"
+            species = [self._species_card(n) for n in names]
+        else:
+            try:
+                recs = self._picker.recommend([row], self.lessons)
+            except Exception as exc:  # 429 / timeout / invalid JSON from the provider
+                log.warning("LLM failed (%s); using offline engine", exc)
+                recs = self._fallback.recommend([row], self.lessons)
+                used = "offline-engine (LLM unavailable)"
+            names = validate_selection(recs[0]["species"]) if recs else []
+            names = self._drop_thirsty(names, _num(body.get("rain_mm_yr"), None))
+            species = [self._species_card(n) for n in names]
         return {
             "source": used,
             "zone": zone,
@@ -1373,6 +1417,10 @@ def make_handler(registry: CityRegistry):
                 self._json({"cities": registry.summary(),
                             "default": registry.default_slug,
                             "loaded": registry.loaded})
+            elif path.startswith("/api/ai/status"):
+                # Which on-device AI jobs can run here. The studio shows the
+                # voice, photo and writing buttons only for what is present.
+                self._json(ai_tools.status())
             elif path.startswith("/api/health"):
                 eng, slug, err = self._pick()
                 if err:
@@ -1447,7 +1495,10 @@ def make_handler(registry: CityRegistry):
                 n = 0
             if n <= 0:
                 return {}
-            if n > self.MAX_BODY:
+            # Voice clips and photos are posted to /api/ai as raw samples and
+            # pixels, which is larger than any JSON question.
+            limit = self.MAX_BODY * 4 if self.path.startswith("/api/ai/") else self.MAX_BODY
+            if n > limit:
                 raise ValueError("request body too large")
             obj = json.loads(self.rfile.read(n) or b"{}")
             return obj if isinstance(obj, dict) else {}
@@ -1551,6 +1602,9 @@ def make_handler(registry: CityRegistry):
                     goal=str(b.get("goal") or "park"), limit=int(b.get("limit") or 5),
                     lang=i18n.normalise(b.get("lang")),
                 ),
+                "/api/ai/write": ai_tools.write,
+                "/api/ai/transcribe": ai_tools.transcribe,
+                "/api/ai/see": ai_tools.see,
                 "/api/assistant": lambda b: _eng_for(
                     (b.get("context") or {}) if isinstance(b.get("context"), dict) else {}
                 ).assistant.handle(

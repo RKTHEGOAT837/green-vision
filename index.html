@@ -901,6 +901,263 @@ async function gvStaticPath(flat){
 window.gvStaticPath = gvStaticPath;
 const gvEngineGet = window.gvEngineGet;
 
+/* =====================================================================
+   ON-DEVICE AI (Intel OpenVINO) — one client for every feature
+   =====================================================================
+   The engine's /api/ai/* runs three offline models: the Qwen 2.5 1.5B the
+   assistant already uses (writing), Whisper small (voice) and InternVL2 1B
+   (photos). Every feature in the studio goes through these four functions
+   so they all behave the same way:
+
+   - The studio computes the FACTS itself and the model only rewrites
+     them. The engine throws away any reply carrying a number that is not
+     in the facts, so a fluent sentence can never smuggle in a figure.
+   - Every feature has deterministic text to fall back on. An install
+     older than the AI endpoints, a busy GPU, or a rejected reply all land
+     on that text, and the reader is told which one they are reading.
+   - status() is asked once and cached, so a button for a model that is
+     not installed is never shown. */
+const GVAI = window.GVAI = { status: null, asked: null };
+/* "a park", "an industrial buffer". */
+function gvAn(w, cap) { const t = String(w || ""); return (/^[aeiou]/i.test(t) ? (cap ? "An " : "an ") : (cap ? "A " : "a ")) + t; }
+window.gvAn = gvAn;
+
+GVAI.ready = async function () {
+  if (GVAI.status) return GVAI.status;
+  if (!GVAI.asked) GVAI.asked = (async () => {
+    try {
+      const r = await fetch(gvEngineUrl("/api/ai/status"), { cache: "no-cache" });
+      GVAI.status = r.ok ? await r.json() : { old: true };
+    } catch (e) { GVAI.status = { offline: true }; }
+    return GVAI.status;
+  })();
+  return GVAI.asked;
+};
+GVAI.can = function (job) {
+  const s = GVAI.status;
+  return !!(s && s[job] && s[job].present);
+};
+
+async function gvAIPost(path, body, ms) {
+  const ac = new AbortController();
+  const killer = setTimeout(() => ac.abort(), ms || 45000);
+  try {
+    const r = await fetch(gvEngineUrl(path), {
+      method: "POST", signal: ac.signal,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    });
+    if (r.status === 404) return { ok: false, old: true, reason: "this install predates on-device AI writing" };
+    const j = await r.json().catch(() => null);
+    return j || { ok: false, reason: "the engine sent nothing back" };
+  } catch (e) {
+    return { ok: false, reason: e && e.name === "AbortError" ? "the model took too long" : "the engine is not running" };
+  } finally { clearTimeout(killer); }
+}
+
+/* Grounded writing. `facts` is a list of short sentences the studio has
+   already computed. Returns the engine's answer object; `ok` false means
+   use the fallback. */
+async function gvAI(task, facts, extra) {
+  await GVAI.ready();
+  if (GVAI.status && (GVAI.status.old || GVAI.status.offline))
+    return { ok: false, old: !!GVAI.status.old,
+             reason: GVAI.status.old ? "this install predates on-device AI writing" : "the engine is not running" };
+  return gvAIPost("/api/ai/write", Object.assign({
+    task, facts, lang: (window.GVL && GVL.code) || "en" }, extra || {}), 60000);
+}
+window.gvAI = gvAI;
+
+const GV_AI_ICON = '<svg class="gv-aiico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l2 5 5 2-5 2-2 5-2-5-5-2 5-2z"/><path d="M19 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/></svg>';
+window.GV_AI_ICON = GV_AI_ICON;
+
+/* The answer, labelled with where it came from. */
+function gvAIBlock(res, fallback, from) {
+  const e = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  if (res && res.ok && res.text) {
+    return '<p class="gv-aitext">' + e(res.text) + "</p>" +
+      '<span class="gv-aisub">' + GV_AI_ICON + "Written on this computer by " + e(res.model || "the local model") +
+      " on " + e(res.device || "OpenVINO") + " in " + (Math.round((res.ms || 0) / 100) / 10) +
+      " s, from the design’s own numbers. Nothing left this machine.</span>";
+  }
+  return '<p class="gv-aitext">' + e(fallback) + "</p>" +
+    '<span class="gv-aisub">Written from ' + (from || "the checks") + (res && res.reason ? " — the on-device model was not used: " + e(res.reason) : "") +
+    (res && res.old ? ". Install the latest Green Vision for on-device AI." : ".") + "</span>";
+}
+window.gvAIBlock = gvAIBlock;
+
+/* Speech: record with the microphone, send 16 kHz PCM, get text back.
+   MediaRecorder's webm would need ffmpeg in the engine, so the samples are
+   taken straight off the audio graph instead. */
+GVAI.record = async function (opts) {
+  const o = opts || {};
+  const stream = await navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true } });
+  const ac = new (window.AudioContext || window.webkitAudioContext)();
+  const src = ac.createMediaStreamSource(stream);
+  const proc = ac.createScriptProcessor(4096, 1, 1);
+  const chunks = [];
+  proc.onaudioprocess = ev => chunks.push(new Float32Array(ev.inputBuffer.getChannelData(0)));
+  src.connect(proc); proc.connect(ac.destination);
+  const rate = ac.sampleRate;
+  let stopped = false;
+  const stop = async () => {
+    if (stopped) return null;
+    stopped = true;
+    proc.disconnect(); src.disconnect();
+    stream.getTracks().forEach(t => t.stop());
+    try { await ac.close(); } catch (e) {}
+    const n = chunks.reduce((a, c) => a + c.length, 0);
+    const all = new Float32Array(n);
+    let off = 0; for (const c of chunks) { all.set(c, off); off += c.length; }
+    // Resample to 16 kHz here: it shrinks the upload threefold.
+    const outN = Math.floor(n * 16000 / rate);
+    const pcm = new Int16Array(outN);
+    for (let i = 0; i < outN; i++) {
+      const x = all[Math.min(n - 1, Math.floor(i * rate / 16000))];
+      pcm[i] = Math.max(-32768, Math.min(32767, Math.round(x * 32767)));
+    }
+    let bin = ""; const u8 = new Uint8Array(pcm.buffer);
+    for (let i = 0; i < u8.length; i += 0x8000) bin += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000));
+    return gvAIPost("/api/ai/transcribe", { pcm16: btoa(bin), rate: 16000, lang: o.lang || (window.GVL && GVL.code) || "" }, 90000);
+  };
+  const cap = setTimeout(() => { if (o.onAutoStop) o.onAutoStop(stop()); }, 24000);
+  return { stop: () => { clearTimeout(cap); return stop(); } };
+};
+
+/* Photos: decode in the page (the engine ships no image library), shrink
+   to at most 448 px, send raw RGB. */
+GVAI.see = async function (file, body) {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = url; });
+    const k = Math.min(1, 448 / Math.max(img.naturalWidth, img.naturalHeight));   // InternVL's own tile size: larger is slower, not sharper
+    const w = Math.max(32, Math.round(img.naturalWidth * k)), h = Math.max(32, Math.round(img.naturalHeight * k));
+    const cv = document.createElement("canvas"); cv.width = w; cv.height = h;
+    const cx = cv.getContext("2d"); cx.drawImage(img, 0, 0, w, h);
+    const px = cx.getImageData(0, 0, w, h).data;
+    const rgb = new Uint8Array(w * h * 3);
+    for (let i = 0, j = 0; i < px.length; i += 4) { rgb[j++] = px[i]; rgb[j++] = px[i + 1]; rgb[j++] = px[i + 2]; }
+    let bin = "";
+    for (let i = 0; i < rgb.length; i += 0x8000) bin += String.fromCharCode.apply(null, rgb.subarray(i, i + 0x8000));
+    return gvAIPost("/api/ai/see", Object.assign({ rgb: btoa(bin), w, h }, body || {}), 120000);
+  } finally { URL.revokeObjectURL(url); }
+};
+
+/* A mic button that fills `input` with what was said. */
+function gvMicButton(input, onText) {
+  const b = document.createElement("button");
+  b.type = "button"; b.className = "gv-mic"; b.title = "Speak instead of typing (on-device Whisper)";
+  b.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>';
+  let rec = null;
+  const finish = async p => {
+    b.classList.remove("rec"); b.classList.add("busy");
+    const res = await p;
+    b.classList.remove("busy"); rec = null;
+    if (res && res.ok && res.text) {
+      input.value = res.text; input.dispatchEvent(new Event("input", { bubbles: true }));
+      if (onText) onText(res.text);
+    } else if (window.toast) toast("Voice: " + ((res && res.reason) || "nothing heard"));
+  };
+  b.onclick = async () => {
+    if (b.classList.contains("busy")) return;
+    if (rec) { finish(rec.stop()); return; }
+    try {
+      rec = await GVAI.record({ onAutoStop: finish });
+      b.classList.add("rec");
+      if (window.toast) toast("Listening… click the mic again when you are done");
+    } catch (e) { rec = null; if (window.toast) toast("Microphone not available: " + (e.message || e)); }
+  };
+  return b;
+}
+window.gvMicButton = gvMicButton;
+
+/* Mark which on-device models are present, so buttons for a model that is
+   not installed never show. */
+GVAI.ready().then(st => {
+  const root = document.documentElement;
+  root.classList.toggle("gv-ai-see", GVAI.can("see"));
+  root.classList.toggle("gv-ai-voice", GVAI.can("transcribe"));
+  const q = document.getElementById("q");
+  if (GVAI.can("transcribe") && q && !q.parentNode.querySelector(".gv-mic")) {
+    // The spoken place goes in the box and the suggestions open, so the
+    // reader picks the right match rather than the first one.
+    const mic = gvMicButton(q, () => { try { q.focus(); } catch (e) {} });
+    mic.classList.add("gv-mic-search");
+    q.insertAdjacentElement("afterend", mic);
+  }
+});
+
+function gvPickImage() {
+  return new Promise(res => {
+    const inp = document.createElement("input");
+    inp.type = "file"; inp.accept = "image/*";
+    inp.onchange = () => res(inp.files && inp.files[0] || null);
+    inp.click();
+  });
+}
+
+const GV_SITE_WORDS = {
+  open_ground: ["Open ground to plant on", "No obvious open ground"],
+  trees: ["Existing trees \u2014 keep and work around them", "No existing trees"],
+  water: ["Standing water \u2014 check drainage before planting", "No standing water"],
+  waste: ["Rubble or waste \u2014 budget for clearing", "No rubble or waste seen"],
+  paved: ["Mostly paved \u2014 planting needs pits or depaving", "Not mostly paved"],
+  wires: ["Overhead wires \u2014 use small-crowned species under them", "No overhead wires seen"]
+};
+
+document.addEventListener("click", async ev => {
+  const photo = ev.target.closest && ev.target.closest("#pPhotoAI");
+  const tree = ev.target.closest && ev.target.closest("#gvTreePhoto");
+  if (!photo && !tree) return;
+  ev.preventDefault(); ev.stopPropagation();
+  const file = await gvPickImage();
+  if (!file) return;
+  const e = x => String(x == null ? "" : x).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  if (photo) {
+    const out = document.getElementById("pExplainOut");
+    if (!out) return;
+    out.innerHTML = '<p class="gv-aiwait">Looking at the photo on this computer\u2026 about 20 seconds, longer the first time</p>';
+    const res = await GVAI.see(file, { task: "site" });
+    if (!res || !res.ok) { out.innerHTML = '<p class="gv-aitext">Could not read the photo: ' + e((res && res.reason) || "no answer") + ".</p>"; return; }
+    const a = res.answers || {};
+    out.innerHTML = (res.description ? '<p class="gv-aitext">' + e(res.description) + "</p>" : "") +
+      '<ul class="gv-brieflist">' + Object.keys(GV_SITE_WORDS).filter(k => a[k] != null).map(k =>
+        '<li class="' + (a[k] ? "part" : "ok") + '"><i>' + (a[k] ? "\u25CF" : "\u25CB") + "</i><span>" +
+        e(GV_SITE_WORDS[k][a[k] ? 0 : 1]) + "</span></li>").join("") + "</ul>" +
+      '<span class="gv-aisub">' + GV_AI_ICON + "Seen by " + e(res.model) + " on " + e(res.device) + " in " +
+      Math.round(res.ms / 100) / 10 + " s. A small vision model\u2019s reading of one photo \u2014 confirm on site.</span>";
+    return;
+  }
+  // Species from a photo, chosen from the palette the studio is offering.
+  const chips = [...document.querySelectorAll("[data-tree]")];
+  const names = chips.map(c => c.dataset.tree);
+  if (names.length < 2) return;
+  tree.disabled = true;
+  if (window.toast) toast("Looking at the photo on this computer\u2026");
+  const res = await GVAI.see(file, { task: "species", candidates: names });
+  tree.disabled = false;
+  if (!res || !res.ok) { if (window.toast) toast("Could not tell: " + ((res && res.reason) || "no answer")); return; }
+  const chip = chips.find(c => c.dataset.tree === res.species);
+  if (chip) { chip.scrollIntoView({ block: "center", behavior: "smooth" }); chip.classList.add("gv-chip-flash"); setTimeout(() => chip.classList.remove("gv-chip-flash"), 2400); }
+  if (window.toast) toast("Looks most like " + res.species + " \u2014 a guess from one photo; check the leaves and bark. Click it to plant.");
+});
+
+/* Area explainer: one delegated handler, because the point report is
+   rebuilt on every map click. */
+document.addEventListener("click", async ev => {
+  const b = ev.target.closest && ev.target.closest("#pExplainAI");
+  if (!b) return;
+  const out = document.getElementById("pExplainOut");
+  const facts = window.__gvAreaFacts || [];
+  if (!out || !facts.length) return;
+  b.disabled = true;
+  out.innerHTML = '<p class="gv-aiwait">Thinking on this computer…</p>';
+  const res = await gvAI("explain_area", facts);
+  const plain = facts.slice(0, 4).join(". ") + ".";
+  if (document.getElementById("pExplainOut") === out) out.innerHTML = gvAIBlock(res, plain, "the readings");
+  b.disabled = false;
+});
+
 const CFG = {
   START:[23.0225,72.5714], START_Z:14, HOME:"Ahmedabad, Gujarat, India",
   ESRI:"https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
@@ -1529,13 +1786,68 @@ const GVG = window.GVG = {
 
 const GREEN_TILE_BUDGET = 30;      // tiles fetched per render; ~2 MB and ~1 s
 
+/* WHAT IS ON THE GROUND, NOT JUST HOW GREEN IT IS.
+
+   This used to colour every cell by its greenness alone, on a ramp that
+   ended in red for "bare". In a dense city almost nothing is green, so the
+   whole of central Ahmedabad - rooftops, roads and the Sabarmati itself -
+   came out red, labelled bare, as if it were all open ground waiting for
+   trees. A roof is not plantable and a river is not bare.
+
+   Each pixel is now sorted into one of four kinds by its colour: vegetation
+   (the same greenness index as before), water (dark, blue-leaning, low
+   saturation), open ground (tan, ochre and brown soil), and built-up (the
+   greys and whites of roofs and paving). A cell takes the colour of what
+   dominates it, and only open ground - the land you could actually plant -
+   is drawn in a warm colour. Built-up is drawn faint so the city recedes
+   and the green and the opportunities stand out.
+
+   It is still read off an RGB photograph, not a land-cover survey: wet
+   soil can read as built-up and a green roof as canopy. The legend says so. */
+const GV_LAND = {
+  dense:  { col: [21, 128, 61],   a: .62, label: "Dense canopy" },
+  good:   { col: [63, 174, 90],   a: .58, label: "Good canopy" },
+  some:   { col: [134, 201, 90],  a: .55, label: "Some canopy" },
+  sparse: { col: [197, 225, 122], a: .55, label: "Sparse green" },
+  soil:   { col: [234, 140, 30],  a: .62, label: "Open ground — could be planted" },
+  built:  { col: [148, 163, 184], a: .16, label: "Built-up or paved" },
+  water:  { col: [56, 132, 246],  a: .45, label: "Water" }
+};
+const GV_LAND_ORDER = ["dense", "good", "some", "sparse", "soil", "built", "water"];
+const GV_TEX = { water: 6, darkBr: 62, darkWater: 22, soil: 26 };
+
+function gvPixelKind(r, g, b) {
+  const v = vegScore(r, g, b);
+  if (v > 0) return { k: 0, v };
+  const br = (r + g + b) / 3, mx = Math.max(r, g, b), mn = Math.min(r, g, b);
+  if ((b > r + 8 && b >= g - 6 && br < 160) || (br < 72 && b >= r - 3 && mx - mn < 26)) return { k: 1, v: 0 };
+  if (r >= g - 3 && r > b + 16 && mx - mn > 20 && br > 70 && br < 220) return { k: 2, v: 0 };
+  return { k: 3, v: 0 };
+}
+
+function gvCellKind(veg, water, soil) {
+  if (veg >= .50) return "dense";
+  if (veg >= .34) return "good";
+  if (veg >= .20) return "some";
+  if (water >= .45) return "water";
+  if (soil >= .30 && soil >= veg) return "soil";
+  if (veg >= .08) return "sparse";
+  return "built";
+}
+
+/* Kept for anything else that colours by greenness alone. */
 function heatColor(f) {
-  if (f < .08) return [239, 68, 68];
-  if (f < .20) return [245, 120, 50];
-  if (f < .34) return [245, 190, 60];
-  if (f < .50) return [130, 200, 90];
-  if (f < .65) return [45, 170, 90];
-  return [15, 110, 60];
+  return GV_LAND[f >= .50 ? "dense" : f >= .34 ? "good" : f >= .20 ? "some" : f >= .08 ? "sparse" : "built"].col;
+}
+
+/* "18% canopy" says how green the view is; this says what the rest is. */
+function gvLandShareLine() {
+  const kc = GVG.kinds;
+  if (!kc || !kc.cells) return "";
+  const pc = k => Math.round(kc.counts[k] / kc.cells * 100);
+  return '<div class="gl-sub"><b style="color:rgb(' + GV_LAND.soil.col.join(",") + ')">' + pc("soil") +
+    '% open ground</b> you could plant · ' + pc("built") + '% built-up' +
+    (pc("water") ? ' · ' + pc("water") + '% water' : '') + '</div>';
 }
 
 /* Largest tile zoom whose tile count over the current viewport stays inside
@@ -1676,22 +1988,41 @@ async function drawGreen() {
 
     let cells = 0, sumFrac = 0;
     const hist = [0, 0, 0, 0, 0, 0];
+    const kinds = {}; GV_LAND_ORDER.forEach(k => kinds[k] = 0);
+    const dim = GVG.showForecast && GVG.loss ? 0.75 : 1;
     for (let cy = 0; cy < gr; cy++) for (let cx = 0; cx < gc; cx++) {
-      let s = 0, t = 0;
-      for (let py = cy * CELL; py < (cy + 1) * CELL; py += 2)
+      let s = 0, t = 0, nw = 0, ns = 0, sumBr = 0, tex = 0, prev = -1;
+      for (let py = cy * CELL; py < (cy + 1) * CELL; py += 2) {
+        prev = -1;
         for (let px = cx * CELL; px < (cx + 1) * CELL; px += 2) {
           const i = (py * W + px) * 4, r = d[i], g = d[i + 1], bl = d[i + 2];
           const br = (r + g + bl) / 3;
-          if (br < 16 || br > 244) continue;       // shadow / specular blowout
-          t++; s += vegScore(r, g, bl);
+          if (prev >= 0) tex += Math.abs(br - prev);
+          prev = br;
+          if (br < 10 || br > 244) continue;       // deep shadow / specular blowout
+          t++; sumBr += br;
+          const pk = gvPixelKind(r, g, bl);
+          if (pk.k === 0) s += pk.v; else if (pk.k === 1) nw++; else if (pk.k === 2) ns++;
         }
+      }
       if (t < 40) continue;                        // too little valid pixel to call
       const f = s / t;
+      /* Texture: how much brightness changes between neighbouring pixels.
+         Tree crowns and rooftops are busy; open water and bare soil are
+         smooth. Without it the Sabarmati - greenish, dark and still - read
+         as canopy, and blocks of tan rooftops read as open ground. */
+      const tx = tex / Math.max(1, t), mb = sumBr / t;
       cells++; sumFrac += f;
       hist[f < .08 ? 0 : f < .20 ? 1 : f < .34 ? 2 : f < .50 ? 3 : f < .65 ? 4 : 5]++;
-      const c = heatColor(f);
-      oc.fillStyle = "rgba(" + c[0] + "," + c[1] + "," + c[2] + "," +
-                     (GVG.showForecast && GVG.loss ? ".40" : ".58") + ")";
+      let kind = gvCellKind(f, nw / t, ns / t);
+      if (kind !== "water" && ((mb < 95 && tx < GV_TEX.water) || (mb < GV_TEX.darkBr && tx < GV_TEX.darkWater))) kind = "water";
+      else if (kind === "soil" && tx > GV_TEX.soil) kind = "built";
+      if (GVG.debug) (GVG.dbg = GVG.dbg || []).push({ lat: y2lat(ymin + (cy * CELL + CELL / 2) / 256, z),
+        lon: x2lon(xmin + (cx * CELL + CELL / 2) / 256, z), f: +f.toFixed(2), tx: +tx.toFixed(1), mb: Math.round(mb),
+        w: +(nw / t).toFixed(2), so: +(ns / t).toFixed(2), kind });
+      kinds[kind]++;
+      const L = GV_LAND[kind];
+      oc.fillStyle = "rgba(" + L.col.join(",") + "," + (L.a * dim).toFixed(2) + ")";
       oc.fillRect(cx * CELL, cy * CELL, CELL, CELL);
     }
 
@@ -1705,6 +2036,7 @@ async function drawGreen() {
        separately at a fixed scale, so it does not move when the reader
        zooms. Drawn first and measured second, because the raster is what
        the reader is waiting to see. */
+    GVG.kinds = { counts: kinds, cells };
     GVG.stats = {
       pct: cells ? Math.round((sumFrac / cells) * 100) : 0,
       cells, z, hist,
@@ -1743,7 +2075,7 @@ const LOSS_COL = { green: "#15803d", yellow: "#f59e0b", red: "#b91c1c" };
 const LOSS_WORD = {
   green: "Vegetated and holding",
   yellow: "Green now, forecast to lose it",
-  red: "Low vegetation — plantable"
+  red: "Low greenness — mostly built-up or bare"
 };
 
 async function greenLoadLoss() {
@@ -1782,7 +2114,9 @@ function greenDrawHexes() {
     }),
     onEachFeature: (f, lyr) => {
       const p = f.properties;
-      lyr.bindTooltip(LOSS_WORD[p.status] + " · NDVI " + p.ndvi_latest.toFixed(3),
+      lyr.bindTooltip(LOSS_WORD[p.status] + " · NDVI " + p.ndvi_latest.toFixed(3) +
+                      (p.status === "yellow" && p.ndvi_latest > 0.01
+                        ? " · forecast " + Math.round(p.ndvi_pred_delta / p.ndvi_latest * 100) + "% of its greenness" : ""),
                       { sticky: true, direction: "top" });
       lyr.on("click", e => { L.DomEvent.stopPropagation(e); greenCellReport(p); });
       lyr.on("mouseover", () => lyr.setStyle({ weight: 3, fillOpacity: .6 }));
@@ -1875,9 +2209,10 @@ function greenSummaryHTML(){
   if(!su) return "";
   return '<div class="gl-sum">' +
     '<div class="gl-sum-h">Cover at risk</div>' +
-    '<div class="gl-sum-row"><b>' + su.atRiskKm2.toFixed(0) + "</b> km\u00b2 vegetated today, " +
-      "forecast to decline</div>" +
-    '<div class="gl-sum-row">across <b>' + su.atRisk + "</b> cells</div>" +
+    '<div class="gl-sum-row"><b>' + su.atRisk + "</b> of " + su.total + " cells are green today and " +
+      "forecast to lose greenness</div>" +
+    '<div class="gl-sum-row">They cover about <b>' + su.atRiskKm2.toFixed(0) + "</b> km\u00b2 of the city " +
+      "(the whole cell, not only its green part)</div>" +
     (su.meanTrend != null
       ? '<div class="gl-sum-why">Losing NDVI at ' + su.meanTrend.toFixed(4) +
         "/yr on average \u2014 the steepest is " + su.worstDelta.toFixed(3) +
@@ -1905,11 +2240,15 @@ function greenDrawLabels(){
     let x = 0, y = 0;
     for(const q of ring){ x += q[0]; y += q[1]; }
     const d = pr.ndvi_pred_delta;
+    /* "-0.08" is an NDVI delta, a unit nobody reading a map has. As a share
+       of the cell's own greenness it reads as what it is: this much of the
+       green here is forecast to go. */
+    const rel = d != null && pr.ndvi_latest > 0.01 ? Math.round(d / pr.ndvi_latest * 100) : null;
     marks.push(L.marker([y / ring.length, x / ring.length], {
       interactive: false, keyboard: false,
       icon: L.divIcon({
         className: "pri-badge-wrap",
-        html: '<span class="grn-badge">' + (d == null ? "?" : d.toFixed(2)) + "</span>",
+        html: '<span class="grn-badge">' + (rel == null ? "?" : rel + "%") + "</span>",
         iconSize: [44, 20], iconAnchor: [22, 10]
       })
     }));
@@ -1994,8 +2333,7 @@ function greenLegend() {
                ? st.cells.toLocaleString() + ' tiles sampled at z' + st.z +
                  ' (about 2 m a pixel)'
                : 'measuring at crown scale…') +
-           '</div>' +
-           '<div class="gl-sub">' + st.bare + '% reads as bare or near-bare</div>';
+           '</div>' + gvLandShareLine();
   } else {
     head = '<div class="gl-big gl-wait">·&nbsp;·&nbsp;·</div>' +
            '<div class="gl-sub">reading tiles…</div>';
@@ -2004,10 +2342,16 @@ function greenLegend() {
   const lossCount = GVG.loss && GVG.loss.count;
   el.innerHTML =
     '<div class="gl-h">Canopy now</div>' + head +
-    '<div class="gl-ramp">' + ramp.map(r => {
-      const c = heatColor(r[0]);
-      return '<div class="gl-row"><i style="background:rgb(' + c.join(",") + ')"></i>' + r[1] + "</div>";
+    '<div class="gl-ramp">' + GV_LAND_ORDER.map(k => {
+      const L = GV_LAND[k], kc = GVG.kinds;
+      const share = kc && kc.cells ? Math.round(kc.counts[k] / kc.cells * 100) : null;
+      return '<div class="gl-row"><i style="background:rgb(' + L.col.join(",") + ')' +
+        (k === "built" ? ';opacity:.55' : '') + '"></i>' + L.label +
+        (share != null ? '<b>' + share + '%</b>' : '') + "</div>";
     }).join("") + "</div>" +
+    '<div class="gl-fine">Read from today\u2019s satellite photo, cell by cell. Orange is open ' +
+      'soil with no building on it \u2014 the first places to check for planting. Wet soil can ' +
+      'read as built-up; confirm on site.</div>' +
     '<label class="gl-tog"><input type="checkbox" id="glCanopy"' +
       (GVG.showCanopy ? " checked" : "") + "> Show canopy</label>" +
     (GVG.loss
@@ -2015,7 +2359,7 @@ function greenLegend() {
         '<div class="gl-ramp">' +
           ["green", "yellow", "red"].map(k =>
             '<div class="gl-row"><i style="background:' + LOSS_COL[k] + '"></i>' +
-            (k === "yellow" ? "Losing cover" : k === "green" ? "Holding" : "Already bare") +
+            (k === "yellow" ? "Green now, forecast to decline" : k === "green" ? "Green and holding" : "Low greenness (mostly built-up)") +
             '<b>' + (lossCount ? lossCount[k] : "") + "</b></div>").join("") +
         "</div>" +
         /* The three buckets are the zones the forecast could SCORE, and
@@ -2029,7 +2373,8 @@ function greenLegend() {
         '<label class="gl-tog"><input type="checkbox" id="glLabels"' +
           (GVG.showLabels ? " checked" : "") + "> Show the rate of loss</label>" +
         greenSummaryHTML() +
-        '<div class="gl-fine">Amber = green today, predicted to decline. ' +
+        '<div class="gl-fine">Amber hexagons are green today and forecast to lose ' +
+        'greenness; the badge is the forecast change as a share of today\u2019s greenness. ' +
         'Click a hexagon for its history.</div>'
       : '<div class="gl-fine">Canopy here is a visible-band greenness index from ' +
         'current imagery — <b>not</b> NDVI, and not a time series. The ' +
@@ -2387,6 +2732,20 @@ async function analyse(lat,lon){
   const place=geo?geo.name:round(lat,4)+", "+round(lon,4);
   const sub=(geo&&geo.city?geo.city+(geo.state?", "+geo.state:""):"")||round(lat,4)+", "+round(lon,4);
   lastGeo=geo; lastPlace=place; window.lastGeo=geo; window.lastPlace=place;
+  /* What this page measured, as sentences, for the on-device explainer. */
+  window.__gvAreaFacts=[
+    "Place: "+place+(sub?", "+sub:""),
+    "Tree canopy visible in satellite imagery: "+vegPct+"% of the view",
+    aqi!=null?"Air quality index (US AQI): "+aqi+", band: "+aqiWord(aqi):null,
+    wa.aq&&wa.aq.pm2_5!=null?"PM2.5: "+round(wa.aq.pm2_5)+" micrograms per cubic metre":null,
+    temp!=null?"Temperature now: "+round(temp)+" degrees C":null,
+    osmOK?"Mapped trees nearby: "+fmt(trees):null,
+    osmOK?"Parks nearby: "+parks:null,
+    osmOK?"Buildings in the area: "+fmt(bld):null,
+    osmOK?"Water bodies nearby: "+water:null,
+    "Green score: "+green+" out of 100 ("+(osmOK?gTxt:"canopy only")+")",
+    "Project the reader is planning: "+((window.GV&&GV.GOAL_BRIEF&&window.state&&{park:"public park",greenbelt:"green belt",riverfront:"riverfront",community:"community garden",campus:"school or campus",avenue:"roadside avenue",residential:"residential green",industrial:"industrial buffer",wetland:"wetland edge"}[state.goal])||"park")
+  ].filter(Boolean);
 
   const [gTxt]=grade(green);
   const gLabel=osmOK?gTxt+" green score":"Canopy-only score";
@@ -2403,6 +2762,9 @@ async function analyse(lat,lon){
     `<div class="hero">${ring(green)}<div class="rt"><div class="grade" style="color:${osmOK?grade(green)[1]:"var(--ink-soft)"}">${gLabel}</div><p><b>${vegPct}% canopy</b> in this view${osmOK?` · ${parks} parks · ${fmt(bld)} buildings`:""}</p>`+
     (osmOK?"":`<p style="font-size:11.5px;color:var(--ink-soft);margin:6px 0 0;line-height:1.5">OpenStreetMap did not answer, so parks and water bodies are not counted here. Treat this as a floor, not a grade.</p>`)+`</div></div>`+
     `<div class="section" style="margin-top:16px"><div class="narr" id="pNarr"><div class="ai"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l2 5 5 2-5 2-2 5-2-5-5-2 5-2z"/></svg>Read from this page</div>${narr}</div></div>`+
+    `<div class="section gv-areaai"><div class="gv-briefbtns"><button class="gv-mini gv-mini-ai" id="pExplainAI">${GV_AI_ICON}Explain this area in plain words</button>`+
+      `<button class="gv-mini gv-mini-ai gv-needs-see" id="pPhotoAI" title="Upload a photo taken on site; the on-device vision model checks it">${GV_AI_ICON}Check a site photo</button></div>`+
+      `<div id="pExplainOut" class="gv-briefout"></div></div>`+
     `<div class="section"><h3>Live Environment</h3><div class="mgrid">`+
       metric("Air quality",aqi!=null?aqi:"—",aqi!=null?aqiWord(aqi)+(wa.aq&&wa.aq.pm2_5!=null?" · PM2.5 "+round(wa.aq.pm2_5):""):"unavailable",aqi!=null?clamp(100-aqi/2,0,100):null,aqi!=null?riskCol(clamp(aqi/2,0,100)):null)+
       metric("Temperature",temp!=null?round(temp)+"°C":"—",wa.w&&wa.w.apparent_temperature!=null?"feels "+round(wa.w.apparent_temperature)+"°C":"")+
@@ -3849,6 +4211,44 @@ path.gv-surf:hover{ filter:drop-shadow(0 0 4px #12b981); }
 .gv-aix .gv-mini{ align-self:flex-start; }
 .gv-aixsub{ font:600 11px/1.5 'Manrope',sans-serif; color:var(--ink-soft); }
 .gv-aixtext{ margin:0; font-size:12.5px; line-height:1.62; font-weight:600; color:var(--ink); }
+/* On-device AI answers, the brief card, and the voice button */
+.gv-aitext{ margin:0 0 6px; font-size:12.5px; line-height:1.62; font-weight:600; color:var(--ink); }
+.gv-aisub{ display:flex; gap:6px; align-items:flex-start; font:600 10.5px/1.5 'Manrope',sans-serif; color:var(--ink-soft); }
+.gv-aiico{ width:13px; height:13px; flex:none; margin-top:1px; color:var(--brand); }
+.gv-aiwait{ margin:0; font-size:12px; font-weight:700; color:var(--ink-soft); animation:gvAiPulse 1.2s ease-in-out infinite; }
+@keyframes gvAiPulse{ 50%{ opacity:.45; } }
+.gv-mini-ai{ display:inline-flex; align-items:center; gap:5px; }
+.gv-brief{ margin:12px 0; padding:12px 14px; border:1px solid var(--line); border-radius:14px;
+  background:linear-gradient(135deg,rgba(18,185,129,.10),rgba(47,126,240,.05)); }
+.gv-briefhead{ display:flex; justify-content:space-between; align-items:baseline; gap:8px; }
+.gv-briefhead b{ font:800 13px/1.3 'Sora',sans-serif; color:var(--ink); }
+.gv-briefhead span{ font:700 11px/1 'Manrope',sans-serif; color:var(--brand); white-space:nowrap; }
+.gv-briefintro{ margin:6px 0 8px; font-size:11.5px; line-height:1.55; color:var(--ink-soft); font-weight:600; }
+.gv-brieflist{ list-style:none; margin:0; padding:0; display:grid; gap:5px; }
+.gv-brieflist li{ display:flex; gap:8px; font-size:12px; font-weight:700; color:var(--ink); }
+.gv-brieflist li i{ font-style:normal; width:16px; flex:none; text-align:center; color:var(--ink-soft); }
+.gv-brieflist li.ok i{ color:var(--brand); } .gv-brieflist li.part i{ color:#f5a623; }
+.gv-brieflist li.ok span{ color:var(--ink-soft); }
+.gv-brieflist em{ display:block; font-style:normal; font-weight:600; font-size:11px; color:var(--ink-soft); }
+.gv-briefmeta{ margin:8px 0 0; font-size:11px; color:var(--ink-soft); font-weight:600; }
+.gv-briefbtns{ display:flex; flex-wrap:wrap; gap:6px; margin-top:9px; }
+.gv-briefout:not(:empty){ margin-top:10px; padding-top:10px; border-top:1px solid var(--line); }
+.gv-briefsteps{ margin:0; padding-left:18px; font-size:12px; line-height:1.6; font-weight:600; color:var(--ink); }
+.gv-chip-fit{ box-shadow:inset 0 0 0 1.5px rgba(18,185,129,.55); }
+.gv-needs-see{ display:none !important; }
+.gv-ai-see .gv-needs-see{ display:inline-flex !important; }
+.gv-mic-search{ width:30px; height:30px; margin-left:4px; }
+.gv-chip-flash{ animation:gvChipFlash 2.4s ease; }
+@keyframes gvChipFlash{ 0%,60%{ box-shadow:0 0 0 3px var(--brand); } 100%{ box-shadow:none; } }
+.gv3d-tai{ border:0; background:transparent; color:var(--brand); cursor:pointer; padding:2px; margin-left:6px; display:inline-grid; place-items:center; }
+.gv3d-tai .gv-aiico{ width:15px; height:15px; }
+.gv3d-tsay:not(:empty){ margin-top:8px; max-width:520px; }
+.gv-areaai{ margin-top:-4px; }
+.gv-mic{ flex:none; width:34px; height:34px; border-radius:50%; border:1px solid var(--line); background:var(--glass, transparent);
+  color:var(--ink); display:grid; place-items:center; cursor:pointer; }
+.gv-mic svg{ width:16px; height:16px; }
+.gv-mic.rec{ background:#ef4444; color:#fff; border-color:#ef4444; animation:gvAiPulse 1s infinite; }
+.gv-mic.busy{ opacity:.55; cursor:progress; }
 .gv-aix .gva-llm{ margin-top:2px; }
 
 /* ---------- the opening ---------------------------------------------- */
@@ -6350,7 +6750,11 @@ function gvAskName(opts) {
           '<textarea class="gva-in" id="gvaDesc" maxlength="600" ' +
             'placeholder="What is this plan for? Who asked for it? Anything a ' +
             'colleague opening it later would want to know.">' +
-            esc(opts.desc || "") + '</textarea>') +
+            esc(opts.desc || "") + '</textarea>' +
+          (window.GV && GV.design && GV.designFacts && (GV.design.items || []).length
+            ? '<button type="button" class="gv-mini gv-mini-ai" id="gvaDescAI" style="margin-top:6px">' +
+              GV_AI_ICON + 'Write the description for me</button><span class="gv-aisub" id="gvaDescSub"></span>'
+            : "")) +
         '<p class="gva-err" id="gvaErr"></p>' +
         '<div class="gva-acts">' +
           '<button class="gva-no" id="gvaNo">Cancel</button>' +
@@ -6396,6 +6800,24 @@ function gvAskName(opts) {
     document.addEventListener("keydown", onKey, true);
     el.querySelector("#gvaYes").onclick = ok;
     el.querySelector("#gvaNo").onclick = () => close(null);
+    /* Drafted on this machine from the design's own numbers; the reader
+       edits or replaces it before anything is saved. */
+    const dai = el.querySelector("#gvaDescAI");
+    if (dai) dai.onclick = async () => {
+      const sub = el.querySelector("#gvaDescSub");
+      dai.disabled = true; sub.textContent = "Writing on this computer…";
+      let rev = null;
+      try { rev = GV.engines.reviewDesign(GV.design, GV.ctx || {}); } catch (e) {}
+      const d = Object.assign({}, GV.design, { name: String(name.value || "").trim() || GV.design.name });
+      const facts = GV.designFacts(d, rev);
+      const res = await gvAI("describe_design", facts);
+      const fallback = facts.filter(f => /^(Project type|Plot area|Trees|Place)/.test(f))
+        .map(f => f.replace(/^[^:]+:\s*/, "")).join(" · ");
+      if (desc) desc.value = (res && res.ok ? res.text : fallback).slice(0, 600);
+      sub.textContent = res && res.ok ? " Drafted on this computer by the local model — edit it before saving."
+                                      : " Filled from the design (" + ((res && res.reason) || "model unavailable") + ").";
+      dai.disabled = false;
+    };
     // Clicking the backdrop cancels; clicking the card must not.
     el.addEventListener("mousedown", e => { if (e.target === el) close(null); });
 
@@ -8601,10 +9023,15 @@ function speciesFit(s, ctx, goal) {
   /* 4 — the job you said you were doing. */
   const tags = s.tags || [];
   if (goal) {
-    const w = 1.8;
-    const hit = tags.indexOf(goal) >= 0;
-    score += (hit ? 1 : 0.35) * w; max += w;
-    if (hit) why.push(`suited to a ${GOAL_WORD[goal] || goal}`);
+    /* Twice the weight it had, and matched on the brief's tags rather
+       than the goal's own name. No species is tagged "riverfront" - they
+       are tagged "riverbank" - so choosing Riverfront used to change
+       nothing about what the palette offered. */
+    const w = 3.2;
+    const want = (GV.GOAL_BRIEF && GV.GOAL_BRIEF[goal]) ? GV.GOAL_BRIEF[goal].tags : [goal];
+    const hit = tags.indexOf(goal) >= 0 || tags.some(t => want.indexOf(t) >= 0);
+    score += (hit ? 1 : 0.25) * w; max += w;
+    if (hit) why.push(`suited to ${gvAn(GOAL_WORD[goal] || goal)}`);
   }
 
   /* 5 — bare ground wants big crowns; already-green wants infill. */
@@ -8845,7 +9272,7 @@ function drawStudioPanel() {
           <div class="gv-livecell gv-livecell-flat">
             <span>Canopy at maturity</span><b>${liveRev ? round(liveRev.canopyPct) + "<em>%</em>" : "—"}</b></div>
           <div class="gv-livecell gv-livecell-flat">
-            <span>Ground left permeable</span><b>${liveRev ? round(liveRev.permPct) + "<em>%</em>" : "—"}</b></div>
+            <span>Ground left permeable</span><b>${liveRev ? round(liveRev.permPct * 100) + "<em>%</em>" : "—"}</b></div>
           ${(() => {
             /* The worst finding, not the first one raised. A critical that
                happens to be checked eighth is still the thing to fix. */
@@ -8871,8 +9298,10 @@ function drawStudioPanel() {
 
     ${liveStrip}
 
+    ${gvBriefCard(d)}
+
     <div class="gv-toolgroup">
-      <h5 class="gv-h5">Trees and shrubs <span class="gv-hint">${
+      <h5 class="gv-h5">Trees and shrubs <button class="gv-mini gv-mini-ai gv-needs-see" id="gvTreePhoto" title="Photograph a tree or leaf on site; the on-device vision model picks the closest species in this palette">${GV_AI_ICON}Which tree is this?</button> <span class="gv-hint">${
         known
           ? `ranked for this area · ${best} good fit${best === 1 ? "" : "s"}`
           : "click the map to plant"}</span></h5>
@@ -8898,7 +9327,7 @@ function drawStudioPanel() {
         <h5 class="gv-h5">${c}</h5>
         <div class="gv-palette">
           ${ELEMENTS.filter(e => e.cat === c).map(e => `
-            <button class="gv-chip" data-el="${e.id}" title="${[e.note, gvDefForRef(e.id) ? gvDimLine(gvDefForRef(e.id)) : ""].filter(Boolean).join("\n").replace(/"/g, "&quot;")}" style="--ec:${elCol(e)}">
+            <button class="gv-chip${GOAL_BRIEF[gvGoalOf(d)].prefer.includes(e.id) ? " gv-chip-fit" : GOAL_BRIEF[gvGoalOf(d)].avoid.includes(e.id) ? " gv-chip-poor" : ""}" data-el="${e.id}" title="${[GOAL_BRIEF[gvGoalOf(d)].prefer.includes(e.id) ? "Suits " + gvAn(GOAL_WORD[gvGoalOf(d)]) + "." : GOAL_BRIEF[gvGoalOf(d)].avoid.includes(e.id) ? "Works against " + gvAn(GOAL_WORD[gvGoalOf(d)]) + " - the review will mark it down." : "", e.note, gvDefForRef(e.id) ? gvDimLine(gvDefForRef(e.id)) : ""].filter(Boolean).join("\n").replace(/"/g, "&quot;")}" style="--ec:${elCol(e)}">
               ${gvChipIcon("el", e)}
               <span>${e.name}</span>
               ${counts[e.id] ? `<b>${counts[e.id]}</b>` : ""}
@@ -8924,6 +9353,7 @@ function drawStudioPanel() {
       <button class="gv-btn gv-btn-ghost" id="gvClearAll">Clear everything</button>
     </div>`);
 
+  gvBriefBind(d);
   $$("[data-tree]").forEach(b => b.onclick = () => setTool({ kind: "tree", ref: b.dataset.tree }));
   $$("[data-el]").forEach(b => b.onclick = () => {
     const e = ELEMENTS.find(x => x.id === b.dataset.el);
@@ -9937,6 +10367,326 @@ function computeCost(d, ctx) {
    "this is buildable". The review says so.
    ===================================================================== */
 
+/* =====================================================================
+   WHAT YOU CHOSE TO BUILD, AND WHAT THAT ASKS OF THE DESIGN
+   =====================================================================
+   The start screen asks "what do you want to build?" and, until now, the
+   answer changed one thing: the order of the species palette. The review
+   then judged a green belt, an industrial buffer and a ward park by the
+   same twelve checks - so an industrial buffer was marked down for having
+   no benches or toilet, and a wetland edge was told to reach 40-65%
+   canopy like a lawn park. The choice was a label.
+
+   Each type now carries a BRIEF: the canopy band that type should reach
+   at maturity, whether seating and lights are part of the job, the
+   species tags that suit it, the elements it should and should not lean
+   on, the handful of things a design of that type must have, and the
+   steps to lay one out. The review scores against the brief, the palette
+   marks what fits, and the studio shows the brief as a checklist that
+   ticks itself as you draw.
+
+   The targets are planning rules of thumb drawn from CPCB green-belt
+   guidance (dense, multi-tier, pollution-tolerant planting around
+   industry), MoHUA/URDPFI open-space norms for parks and neighbourhood
+   greens, and IRC SP:21 for roadside avenues. They are stated on screen
+   as targets, not law, and every one can be read off the checklist. */
+
+const GOAL_BRIEF = {
+  park: {
+    canopy: [40, 65], amenity: 1, tags: ["park", "shade"],
+    prefer: ["path_gravel", "track", "meadow", "bench", "light", "tap", "play", "gym", "rwh", "otla"],
+    avoid: [],
+    intro: "A public park is for people first: shade over the walking routes, places to sit and play, open ground to gather on, and enough light to use it after dark.",
+    steps: ["Draw a looped walking path or jogging track around the edge first.",
+            "Line the path with shade trees about one crown-width apart.",
+            "Keep an open meadow or lawn in the middle for gatherings.",
+            "Add play or a gym corner, then benches and solar lights along the loop.",
+            "Finish with a drinking water point and a recharge pit at the low corner."]
+  },
+  greenbelt: {
+    canopy: [55, 85], amenity: 0, tags: ["greenbelt", "buffer"],
+    prefer: ["miyawaki", "meadow", "mulch", "swale", "rwh", "path_gravel", "fence"],
+    avoid: ["lawn", "play", "court", "gazebo", "toilet"],
+    intro: "A green belt is a dense, mostly native wooded strip whose job is cover, cooling and habitat, not recreation. It should close canopy and look after itself.",
+    steps: ["Fill the plot with rows of native trees, larger species in the middle and smaller ones on the edges.",
+            "Add one or two Miyawaki dense blocks to close canopy fast.",
+            "Use native meadow or mulch under the trees, not lawn.",
+            "Put a bioswale or recharge pit along the low edge so it waters itself.",
+            "Keep hard surfaces to a single gravel maintenance track."]
+  },
+  riverfront: {
+    canopy: [35, 60], amenity: 0.7, tags: ["riverbank", "wetland"],
+    prefer: ["path_stone", "path_gravel", "swale", "percolation", "meadow", "bench", "light", "bollard"],
+    avoid: ["lawn", "toilet"],
+    intro: "A riverfront has to hold the bank, slow runoff before it reaches the water, and give people a shaded promenade along the edge.",
+    steps: ["Draw the promenade path parallel to the water.",
+            "Plant water-tolerant species such as Arjuna, Jamun and Kadamb on the river side.",
+            "Add a bioswale or percolation trench between the paving and the water.",
+            "Use native meadow on the slopes to hold the soil, not lawn.",
+            "Add benches and lights along the promenade."]
+  },
+  community: {
+    canopy: [25, 45], amenity: 0.6, tags: ["community", "fruit"],
+    prefer: ["herb", "nursery", "mulch", "compost", "tap", "bench", "picnic", "path_gravel", "fence"],
+    avoid: ["lawn", "court"],
+    intro: "A community garden is worked by its neighbours: growing beds in sun, fruit trees, water and compost on hand, and a shaded place to sit together.",
+    steps: ["Mark out sunny herb and growing beds on the south side, with gravel paths between them.",
+            "Plant fruit trees such as Amla, Moringa, Bael and Jamun along the north edge so they do not shade the beds.",
+            "Add a drinking water point and a composting bay next to the beds.",
+            "Put a picnic table or benches under the largest tree.",
+            "Fence the plot and add a gate."]
+  },
+  campus: {
+    canopy: [40, 60], amenity: 0.8, tags: ["campus", "shade"],
+    prefer: ["path_stone", "bench", "otla", "signage", "tap", "bin", "butterfly", "herb", "play"],
+    avoid: [],
+    intro: "A school or campus green must be safe for children, shade the routes students walk, and double as a place to learn.",
+    steps: ["Draw the main walking routes between buildings first.",
+            "Shade every route with non-toxic trees.",
+            "Add a pollinator or herb garden with signage as an outdoor classroom.",
+            "Put otla seating or benches in shade, and a drinking water point.",
+            "Keep thorny and toxic species like Oleander and Bael away entirely."]
+  },
+  avenue: {
+    canopy: [30, 70], amenity: 0, tags: ["avenue", "median"],
+    prefer: ["hedge", "mulch", "kerb", "swale", "path_stone"],
+    avoid: ["lawn", "play", "gazebo", "court", "toilet", "pond"],
+    intro: "A roadside avenue is a line of trees at a steady spacing, chosen to tolerate traffic, keep roots off the paving and screen dust.",
+    steps: ["Plant one avenue species in a straight line along the road edge, about 8-12 m apart.",
+            "Use a second species on the opposite side or in the median for variety.",
+            "Add a hedge screen between the carriageway and the footpath to catch dust.",
+            "Keep species with aggressive roots like Peepal and Banyan out of the paving zone.",
+            "Mulch the tree pits rather than paving to the trunk."]
+  },
+  residential: {
+    canopy: [35, 60], amenity: 0.8, tags: ["residential", "shade"],
+    prefer: ["path_stone", "bench", "light", "play", "otla", "hedge", "tap", "bin"],
+    avoid: [],
+    intro: "A residential green is the shared space outside people's homes: shade, a safe play corner, somewhere to sit in the evening and light to walk home by.",
+    steps: ["Draw a short path linking the entrances.",
+            "Plant shade trees on the west and south sides to cool the homes.",
+            "Add a fenced play corner with no toxic plants nearby.",
+            "Put otla seating or benches in shade and solar lights along the path.",
+            "Screen the road edge with a hedge."]
+  },
+  industrial: {
+    canopy: [60, 90], amenity: 0, tags: ["industrial", "buffer"],
+    prefer: ["miyawaki", "hedge", "greenwall", "meadow", "mulch", "swale", "rwh"],
+    avoid: ["lawn", "play", "court", "picnic", "sandpit", "gazebo"],
+    intro: "An industrial buffer is a dense, multi-layer screen of pollution-tolerant trees and shrubs between the source of dust and noise and the people downwind.",
+    steps: ["Plant three or more rows of pollution-tolerant trees (Neem, Pongamia, Siris, Ashoka) along the boundary that faces the source.",
+            "Back them with a hedge or green screen so the layer closes to the ground.",
+            "Fill gaps with Miyawaki dense blocks.",
+            "Use meadow or mulch underneath, never lawn.",
+            "Add a bioswale to catch dusty runoff."]
+  },
+  wetland: {
+    canopy: [20, 45], amenity: 0.3, tags: ["wetland", "riverbank"],
+    prefer: ["pond", "swale", "meadow", "percolation", "path_gravel", "birdbath", "signage"],
+    avoid: ["lawn", "path_stone", "court", "play", "toilet"],
+    intro: "A wetland edge keeps open water and wet meadow at its heart, with moisture-loving trees around it and very little hard surface.",
+    steps: ["Draw the pond or wet basin first, at the lowest point.",
+            "Surround it with native wet meadow and a bioswale feeding in.",
+            "Plant moisture-loving trees such as Arjuna and Kadamb in a loose ring, leaving the water open to the sky.",
+            "Use a gravel trail rather than stone paving.",
+            "Add interpretive signage and a bird bath."]
+  }
+};
+GV.GOAL_BRIEF = GOAL_BRIEF;
+GV.GOAL_WORD = GOAL_WORD;
+
+function gvGoalOf(d) {
+  const g = (d && d.goal) || (window.state && window.state.goal) || "park";
+  return GOAL_BRIEF[g] ? g : "park";
+}
+
+/* The must-haves for one type, measured on the drawing. Each returns a
+   pass from 0 to 1 and a sentence saying what is missing, so the review,
+   the checklist and the AI coach all read the same numbers. */
+function gvBriefChecks(d) {
+  const goal = gvGoalOf(d);
+  const B = GOAL_BRIEF[goal];
+  const sp = speciesList();
+  const trees = (d.items || []).filter(i => i.k === "tree")
+    .map(t => ({ ...t, s: sp.find(x => x.key === t.ref) })).filter(t => t.s);
+  const area = d.plot ? d.plot.area_m2 : 0;
+  const qty = {};
+  (d.items || []).filter(i => i.k !== "tree").forEach(i => { qty[i.ref] = (qty[i.ref] || 0) + (i.qty || 1); });
+  const has = id => (qty[id] || 0) > 0;
+  const any = ids => ids.some(has);
+  const share = m2ids => area ? m2ids.reduce((a, id) => a + (qty[id] || 0), 0) / area : 0;
+  const nT = trees.length;
+  const tagShare = tags => nT ? trees.filter(t => (t.s.tags || []).some(x => tags.includes(x))).length / nT : 0;
+  const per1000 = n => area ? n / area * 1000 : 0;
+  const paved = share(["path_stone", "amphi", "yoga", "court"]) + (area ? ((qty.gazebo || 0) * 40 + (qty.toilet || 0) * 30) / area : 0);
+  const out = [];
+  const add = (id, label, pass, need) => out.push({ id, label, pass: clamp(pass, 0, 1), need });
+  const pct = x => Math.round(x * 100) + "%";
+
+  const fit = tagShare(B.tags);
+  add("species_fit", "Species suited to " + gvAn(GOAL_WORD[goal]), nT ? fit / 0.6 : 0,
+      nT ? pct(fit) + " of trees are species suited to " + gvAn(GOAL_WORD[goal]) + "; aim for 60% or more."
+         : "Plant trees from the top of the palette — they are ranked for " + gvAn(GOAL_WORD[goal]) + ".");
+
+  const avoided = B.avoid.filter(has);
+  if (B.avoid.length) add("avoid", "Nothing that works against it", 1 - avoided.length * 0.3,
+      avoided.length ? "Remove " + avoided.map(id => (ELEMENTS.find(e => e.id === id) || {}).name || id).join(", ") +
+                       " — it works against " + gvAn(GOAL_WORD[goal]) + "."
+                     : "No elements that work against " + gvAn(GOAL_WORD[goal]) + ".");
+
+  if (goal === "park") {
+    add("paths", "A walking loop", any(["path_stone", "path_gravel", "track"]) ? 1 : 0, "Draw a path or jogging track people can walk around.");
+    add("open", "Open ground to gather on", clamp(share(["lawn", "meadow", "yoga", "amphi"]) / 0.08, 0, 1), "Keep about 8% of the plot as open meadow, lawn or an activity deck.");
+    add("play", "Somewhere to play or exercise", area < 2500 || any(["play", "gym", "court", "sandpit"]) ? 1 : 0, "Add play equipment, a gym station or a court.");
+    add("water", "Drinking water", has("tap") ? 1 : 0, "Add a drinking water point.");
+  } else if (goal === "greenbelt") {
+    add("density", "Planted densely", clamp(per1000(nT) / 8 + (has("miyawaki") ? 0.4 : 0), 0, 1),
+        Math.round(per1000(nT) * 10) / 10 + " trees per 1,000 m²; a green belt wants about 8 or a Miyawaki block.");
+    add("native", "Mostly native", nT ? clamp(trees.filter(t => t.s.native).length / nT / 0.8, 0, 1) : 0, "Make 80% of the trees native.");
+    add("hard", "Little hard surface", paved <= 0.08 ? 1 : clamp(1 - (paved - 0.08) * 6, 0, 1), pct(paved) + " of the plot is paved; keep it under 8%.");
+    add("selfwater", "Waters itself", any(["swale", "rwh", "percolation"]) ? 1 : 0, "Add a bioswale or recharge pit so rain stays on site.");
+  } else if (goal === "riverfront") {
+    add("promenade", "A promenade path", any(["path_stone", "path_gravel", "paver_perm"]) ? 1 : 0, "Draw a promenade path along the water.");
+    add("runoff", "Runoff filtered before the river", any(["swale", "percolation", "catchbasin"]) ? 1 : 0, "Add a bioswale or percolation trench between paving and water.");
+    add("bank", "Bank held by planting", clamp(share(["meadow", "shrub", "mulch"]) / 0.12, 0, 1), "Cover about 12% of the plot in meadow or shrubs to hold the bank.");
+  } else if (goal === "community") {
+    add("beds", "Growing beds", clamp(share(["herb", "nursery", "mulch", "butterfly"]) / 0.12, 0, 1), "Give about 12% of the plot to herb, nursery or planting beds.");
+    add("fruit", "Fruit trees", nT ? clamp(tagShare(["fruit"]) / 0.3, 0, 1) : 0, "Make about 30% of the trees fruit trees.");
+    add("tapcompost", "Water and compost on hand", (has("tap") ? 0.5 : 0) + (has("compost") ? 0.5 : 0), "Add a drinking water point and a composting bay.");
+    add("sit", "A place to sit together", any(["bench", "picnic", "otla"]) ? 1 : 0, "Add a picnic table, benches or otla seating.");
+  } else if (goal === "campus") {
+    const toxic = trees.filter(t => t.s.toxic).length;
+    add("nontoxic", "No toxic or thorny planting", toxic ? 0 : 1, toxic ? toxic + " toxic plant(s) — remove them from a campus entirely." : "No toxic species.");
+    add("learn", "An outdoor classroom", any(["butterfly", "herb", "signage", "nursery"]) ? 1 : 0, "Add a pollinator or herb garden with signage.");
+    add("routes", "Walking routes", any(["path_stone", "path_gravel", "paver_perm"]) ? 1 : 0, "Draw the routes students walk between buildings.");
+    add("water", "Drinking water", has("tap") ? 1 : 0, "Add a drinking water point.");
+  } else if (goal === "avenue") {
+    const aggressive = trees.filter(t => t.s.root === "aggressive").length;
+    add("roots", "Roots that leave paving alone", nT ? clamp(1 - aggressive / nT * 3, 0, 1) : 0, aggressive ? aggressive + " tree(s) with aggressive roots — swap them for avenue species." : "No aggressive-rooted trees.");
+    add("dust", "A dust screen", any(["hedge", "shrub", "greenwall"]) ? 1 : 0, "Add a hedge screen along the carriageway.");
+    add("count", "Enough trees for the length", clamp(nT / Math.max(4, Math.sqrt(area) / 10), 0, 1), "Plant about one tree every 10 m of road.");
+  } else if (goal === "residential") {
+    const toxic = trees.filter(t => t.s.toxic).length;
+    add("play", "A safe play corner", any(["play", "sandpit"]) ? (toxic ? 0.4 : 1) : 0, "Add play equipment or a sand pit, with no toxic plants near it.");
+    add("sit", "Evening seating", any(["bench", "otla"]) ? 1 : 0, "Add benches or otla seating.");
+    add("light", "Light to walk home by", has("light") ? 1 : 0, "Add solar path lights.");
+  } else if (goal === "industrial") {
+    const tough = nT ? trees.filter(t => t.s.pol >= 4).length / nT : 0;
+    add("tough", "Pollution-tolerant trees", nT ? clamp(tough / 0.7, 0, 1) : 0, pct(tough) + " of trees are highly pollution-tolerant; aim for 70%.");
+    add("screen", "A screen down to the ground", any(["hedge", "greenwall", "miyawaki", "shrub"]) ? 1 : 0, "Add a hedge, green screen or Miyawaki block so the buffer closes to the ground.");
+    add("density", "Planted densely", clamp(per1000(nT) / 10, 0, 1), Math.round(per1000(nT) * 10) / 10 + " trees per 1,000 m²; a buffer wants about 10.");
+  } else if (goal === "wetland") {
+    add("water", "Open water at its heart", any(["pond", "swale"]) ? 1 : 0, "Draw a pond or bioswale at the lowest point.");
+    add("meadow", "Wet meadow", clamp(share(["meadow"]) / 0.15, 0, 1), "Cover about 15% of the plot in native meadow.");
+    add("hard", "Almost no paving", paved <= 0.05 ? 1 : clamp(1 - (paved - 0.05) * 8, 0, 1), pct(paved) + " of the plot is paved; keep it under 5%.");
+  }
+  /* Weighted towards the worst item. A plain average let a park drawn
+     under "green belt" score 88 on its brief while carrying a lawn, a
+     court, play equipment and a toilet block - five things a green belt
+     should not have - because the other five items passed. One hard miss
+     should be visible in the number. */
+  const mean = out.length ? out.reduce((a, c) => a + c.pass, 0) / out.length : 0;
+  const worst = out.length ? Math.min(...out.map(c => c.pass)) : 0;
+  return { goal, brief: B, checks: out, score: 0.6 * mean + 0.4 * worst };
+}
+GV.briefChecks = gvBriefChecks;
+
+/* The design as plain sentences, for the on-device model to rewrite. Only
+   what the studio has computed, each with its unit, nothing derived twice. */
+function gvDesignFacts(d, rev) {
+  const goal = gvGoalOf(d);
+  const f = ["Project type: " + GOAL_WORD[goal]];
+  if (d.name) f.push("Name: " + d.name);
+  const place = (GV.aoi && GV.aoi.label) || (window.lastPlace || "");
+  if (place) f.push("Place: " + String(place).split(",").slice(0, 2).join(","));
+  if (d.plot) f.push("Plot area: " + fmt(round(d.plot.area_m2)) + " m2 (" + round(d.plot.area_m2 / 10000, 2) + " ha)");
+  const sp = speciesList();
+  const trees = (d.items || []).filter(i => i.k === "tree");
+  if (trees.length) {
+    const by = {};
+    trees.forEach(t => { by[t.ref] = (by[t.ref] || 0) + 1; });
+    f.push("Trees: " + trees.length + " (" + Object.entries(by).sort((a, b) => b[1] - a[1]).slice(0, 6)
+      .map(([k, n]) => n + " " + k).join(", ") + ")");
+  }
+  const el = {};
+  (d.items || []).filter(i => i.k !== "tree").forEach(i => {
+    const e = ELEMENTS.find(x => x.id === i.ref); if (!e) return;
+    el[e.name] = el[e.name] || { q: 0, u: e.unit }; el[e.name].q += (i.qty || 1);
+  });
+  const els = Object.entries(el).slice(0, 10).map(([n, v]) => n + " " + round(v.q) + (v.u === "m2" ? " m2" : v.u === "m" ? " m" : ""));
+  if (els.length) f.push("Other elements: " + els.join(", "));
+  if (rev) {
+    if (rev.score != null) f.push("Review score: " + rev.score + " out of 100, rated " + rev.verdict.word);
+    /* The comparison is stated in words here because the small model gets
+       it wrong when left to work it out: handed "49% (target 55-85%)" it
+       wrote that 49% was within the target. */
+    const [lo, hi] = GOAL_BRIEF[goal].canopy, cp = round(rev.canopyPct);
+    f.push("Canopy at maturity: " + cp + "% of the plot, which is " +
+      (cp < lo ? "BELOW" : cp > hi ? "ABOVE" : "INSIDE") + " the " + lo + "-" + hi + "% target for " + gvAn(GOAL_WORD[goal]));
+    if (rev.brief) {
+      const miss = rev.brief.checks.filter(c => c.pass < 0.9);
+      f.push(miss.length ? "Brief items not yet met: " + miss.map(c => c.label).join("; ")
+                         : "Every item on the " + GOAL_WORD[goal] + " brief is met");
+    }
+    if (rev.nativePct != null) f.push("Native trees: " + round(rev.nativePct * 100) + "%");
+    f.push("Ground left permeable: " + round(rev.permPct * 100) + "%");
+  }
+  return f;
+}
+GV.designFacts = gvDesignFacts;
+
+/* The brief as a card: what this type is for, a checklist that ticks
+   itself from the drawing, and a way to ask the on-device model to talk
+   the person through it. */
+function gvBriefCard(d) {
+  const r = gvBriefChecks(d);
+  const done = r.checks.filter(c => c.pass >= 0.9).length;
+  const B = r.brief;
+  return `<div class="gv-brief" id="gvBrief">
+    <div class="gv-briefhead"><b>Your brief: ${esc(GOAL_WORD[r.goal])}</b>
+      <span>${done} of ${r.checks.length} done</span></div>
+    <p class="gv-briefintro">${esc(B.intro)}</p>
+    <ul class="gv-brieflist">${r.checks.map(c => `
+      <li class="${c.pass >= 0.9 ? "ok" : c.pass >= 0.5 ? "part" : ""}" title="${esc(c.need)}">
+        <i>${c.pass >= 0.9 ? "✓" : c.pass >= 0.5 ? "◐" : "○"}</i>
+        <span>${esc(c.label)}<em>${c.pass >= 0.9 ? "" : esc(c.need)}</em></span></li>`).join("")}
+    </ul>
+    <p class="gv-briefmeta">Canopy target at maturity: <b>${B.canopy[0]}–${B.canopy[1]}%</b>${
+      B.amenity ? "" : " · seating and lights are not scored for this type"}</p>
+    <div class="gv-briefbtns">
+      <button class="gv-mini" id="gvBriefSteps">How to lay it out</button>
+      <button class="gv-mini gv-mini-ai" id="gvBriefAI">${GV_AI_ICON}Ask AI what to do next</button>
+    </div>
+    <div class="gv-briefout" id="gvBriefOut"></div>
+  </div>`;
+}
+
+function gvBriefBind(d) {
+  const r = gvBriefChecks(d);
+  const out = $("#gvBriefOut");
+  const st = $("#gvBriefSteps");
+  if (st) st.onclick = () => {
+    out.innerHTML = '<ol class="gv-briefsteps">' + r.brief.steps.map(s => "<li>" + esc(s) + "</li>").join("") + "</ol>";
+  };
+  const ai = $("#gvBriefAI");
+  if (ai) ai.onclick = async () => {
+    const rev = (() => { try { return reviewDesign(d, GV.ctx || {}); } catch (e) { return null; } })();
+    const todo = r.checks.filter(c => c.pass < 0.9);
+    const f0 = rev && rev.flaws && rev.flaws[0];
+    const facts = ["Project type: " + GOAL_WORD[r.goal]]
+      .concat(d.items.length
+        ? (todo.length ? todo.slice(0, 3).map(c => "Still to do: " + c.need) : ["Every item on the brief is done"])
+        : r.brief.steps.map((x, i) => "Step " + (i + 1) + ": " + x))
+      .concat(f0 && f0.fix ? ["Also fix: " + f0.fix] : []);
+    out.innerHTML = '<p class="gv-aiwait">Thinking on this computer…</p>';
+    const res = await gvAI(d.items.length ? "coach" : "brief_help", facts);
+    const fallback = todo.length
+      ? "Next: " + todo.slice(0, 3).map(c => c.need).join(" ")
+      : "Everything on the " + GOAL_WORD[r.goal] + " brief is in place. Open Review for the full score.";
+    out.innerHTML = gvAIBlock(res, fallback, "the brief");
+  };
+}
+
 function reviewDesign(d, ctx) {
   const sp = speciesList();
   const trees = d.items.filter(i => i.k === "tree").map(t => ({ ...t, s: sp.find(x => x.key === t.ref) })).filter(t => t.s);
@@ -9975,18 +10725,24 @@ function reviewDesign(d, ctx) {
   /* 1 — canopy at maturity */
   const canopyM2 = sum(trees.map(t => t.s.canopy));
   const canopyPct = area ? (canopyM2 / area) * 100 : 0;
-  const canopyPass = canopyPct < 15 ? canopyPct / 15 * 0.5
-                  : canopyPct < 35 ? 0.5 + (canopyPct - 15) / 20 * 0.5
-                  : canopyPct <= 65 ? 1
-                  : canopyPct <= 85 ? 1 - (canopyPct - 65) / 20 * 0.4
+  /* The band comes from the brief for what is being built: a green belt
+     or an industrial buffer is meant to close canopy, a wetland edge is
+     meant to keep its water open to the sky. One band for all of them
+     marked a correct wetland down and let a thin buffer pass. */
+  const goal = gvGoalOf(d), brief = GOAL_BRIEF[goal];
+  const [cLo, cHi] = brief.canopy;
+  const canopyPass = canopyPct < cLo * 0.4 ? canopyPct / (cLo * 0.4) * 0.5
+                  : canopyPct < cLo ? 0.5 + (canopyPct - cLo * 0.4) / (cLo * 0.6) * 0.5
+                  : canopyPct <= cHi ? 1
+                  : canopyPct <= cHi + 20 ? 1 - (canopyPct - cHi) / 20 * 0.4
                   : 0.5;
   check("canopy", "Canopy at maturity", 1.5, canopyPass,
-    canopyPct < 35
+    canopyPct < cLo
       ? { title: "Not enough shade for the climate", detail: `Full-grown crowns cover about ${round(canopyPct)}% of the plot if every tree survives — realistically nearer ${round(canopyPct * 0.75)}% once normal losses are taken off. Below 35% the open ground bakes, paths go unused between 11am and 4pm, and the cooling effect largely disappears.`,
-          fix: `Add roughly ${Math.ceil(((0.4 * area) - canopyM2) / 60)} more medium canopy trees, or shift some shrub area to trees.` }
-      : { title: "Planted too densely", detail: `Crowns will cover about ${round(canopyPct)}% of the plot at maturity, leaving almost no open ground. Grass and shrubs will thin out under permanent shade and the space loses its lawns and sightlines.`,
-          fix: "Remove trees until mature canopy lands between 40% and 60%, and keep at least one open sunlit area." },
-    canopyPct >= 40 && canopyPct <= 65 ? `Mature canopy lands at ${round(canopyPct)}% — the range where shade and open ground both work.` : null);
+          fix: `${gvAn(GOAL_WORD[goal], true)} should reach ${cLo}-${cHi}% at maturity. Add roughly ${Math.max(1, Math.ceil((((cLo + 5) / 100 * area) - canopyM2) / 60))} more medium canopy trees, or shift some shrub area to trees.` }
+      : { title: "Planted too densely", detail: `Crowns will cover about ${round(canopyPct)}% of the plot at maturity, above the ${cLo}-${cHi}% ${gvAn(GOAL_WORD[goal])} is meant to reach. Ground layers thin out under permanent shade and the open ground this type needs is lost.`,
+          fix: `Remove trees until mature canopy lands between ${cLo}% and ${cHi}%.` },
+    canopyPct >= cLo && canopyPct <= cHi ? `Mature canopy lands at ${round(canopyPct)}% — inside the ${cLo}-${cHi}% ${gvAn(GOAL_WORD[goal])} should reach.` : null);
 
   /* 2 — species share (Santamour 10/20/30) */
   const bySp = {}, byGen = {};
@@ -10107,7 +10863,10 @@ function reviewDesign(d, ctx) {
   const benches = per1000("bench"), lights = per1000("light");
   const amenityScore = clamp(benches / 1.2, 0, 1) * 0.4 + clamp(lights / 1.5, 0, 1) * 0.35 +
                        (elGroups.tap ? 0.15 : 0) + (area > 5000 ? (elGroups.toilet ? 0.10 : 0) : 0.10);
-  check("amenity", "Things to actually use", 0.9, amenityScore,
+  /* Seating and lights are the job in a park and beside no part of the
+     job in a green belt or an industrial buffer, where they invite people
+     to linger in the dust the buffer is there to catch. */
+  check("amenity", "Things to actually use", 0.9 * brief.amenity, brief.amenity ? amenityScore : null,
     { title: "Planted but not furnished",
       detail: `${round(benches, 1)} benches and ${round(lights, 1)} lights per 1,000 m\u00B2. Without somewhere to sit and enough light to feel safe after dark, a park gets walked through rather than used${area > 5000 && !elGroups.toilet ? ", and above half a hectare the absence of a toilet limits how long anyone stays" : ""}.`,
       fix: "Budget roughly one bench and one to two lights per 1,000 m\u00B2, plus a drinking water point." },
@@ -10142,6 +10901,15 @@ function reviewDesign(d, ctx) {
       detail: `This needs about ${inrFull(round(perM2Yr))} per m\u00B2 per year to keep. Indian municipal horticulture budgets typically fund \u20B925-45. Above that, upkeep quietly stops and the design degrades to whatever survives unattended.`,
       fix: "Trade lawn for meadow, cut the number of separately-serviced items, and add composting so leaf litter feeds the beds instead of going to landfill." },
     perM2Yr <= 30 ? `Upkeep at ${inrFull(round(perM2Yr))}/m\u00B2/yr sits inside normal municipal funding.` : null);
+
+  /* 13 — the brief: what this TYPE of project has to have */
+  const br = gvBriefChecks(d);
+  const missing = br.checks.filter(c => c.pass < 0.9);
+  check("brief", "Fits " + gvAn(GOAL_WORD[goal]), 3.0, trees.length || d.items.length ? br.score : null,
+    { title: "Not yet " + gvAn(GOAL_WORD[goal]),
+      detail: missing.length ? missing.map(c => c.label + ": " + c.need).join(" ") : "",
+      fix: missing.length ? missing[0].need : "" },
+    br.score >= 0.9 ? `Has everything ${gvAn(GOAL_WORD[goal])} needs: ${br.checks.map(c => c.label.toLowerCase()).join(", ")}.` : null);
 
   /* --- roll up ------------------------------------------------------ */
   const scored = checks.filter(c => !c.na);
@@ -10182,7 +10950,15 @@ function reviewDesign(d, ctx) {
   const worst = flaws.length ? flaws.reduce((a, f) =>
     ({ critical: 3, major: 2, minor: 1 }[f.severity] > { critical: 3, major: 2, minor: 1 }[a] ? f.severity : a),
     "minor") : null;
-  const capped = worst === "critical" ? Math.min(score, 51) : score;
+  /* NOT WHAT YOU SAID YOU WERE BUILDING.
+     A well-made park drawn under "wetland edge" scored 87, Strong, while
+     meeting a third of a wetland's brief: every generic check passed, and
+     those outvoted the one that asks whether this is the thing chosen on
+     the start screen. Good work on the wrong brief tops out at Workable,
+     and the verdict says why. */
+  const briefCheck = checks.find(c => c.id === "brief" && !c.na);
+  const offBrief = briefCheck && briefCheck.pass < 0.6;
+  const capped = worst === "critical" ? Math.min(score, 51) : offBrief ? Math.min(score, 74) : score;
 
   const verdict =
     capped >= 82 ? { word: "Strong", col: "#12b981", line: "This holds up. Take it to a soil test and a site survey." } :
@@ -10190,12 +10966,16 @@ function reviewDesign(d, ctx) {
     capped >= 52 ? { word: "Needs work", col: "#f5a623", line: "The bones are there but several choices will cause trouble later." } :
     capped >= 35 ? { word: "Weak", col: "#f97316", line: "Enough problems that building this as drawn would waste most of the budget." } :
                   { word: "Not viable", col: "#ef4444", line: "As drawn, this would not survive its first dry season." };
+  if (offBrief && worst !== "critical" && score > capped) {
+    verdict.line = "Scored " + score + " on the checks, but it is not yet " + gvAn(GOAL_WORD[goal]) +
+                   " — the brief is only " + round(briefCheck.pass * 100) + "% met. Fix the brief items and the score stands.";
+  }
   if (worst === "critical" && score > capped) {
     verdict.line = "Scored " + score + " on the checks, but a critical finding is unresolved — " +
                    "so this is not buildable as drawn. Fix that first and the score stands.";
   }
 
-  return { score, verdict, checks, flaws, wins, canopyPct, nativePct, ratio, permPct, conflicts, maintAnnual, perM2Yr, familyNote, trees: trees.length, area, aqi, rain };
+  return { score, verdict, checks, flaws, wins, canopyPct, nativePct, ratio, permPct, conflicts, maintAnnual, perM2Yr, familyNote, trees: trees.length, area, aqi, rain, goal, brief: br };
 }
 
 /* =====================================================================
@@ -10646,7 +11426,37 @@ function drawCostPanel(keep) {
       </div>
     </details>
 
-    <button class="gv-btn gv-btn-ghost" id="gvCsv" style="width:100%;margin-top:12px">Download the bill of quantities (.csv)</button>`, keep);
+    <button class="gv-btn gv-btn-ghost" id="gvCsv" style="width:100%;margin-top:12px">Download the bill of quantities (.csv)</button>
+    <div class="gv-brief" style="margin-top:12px">
+      <div class="gv-briefhead"><b>Tender scope summary</b><span>for the notice inviting tenders</span></div>
+      <div class="gv-briefbtns"><button class="gv-mini gv-mini-ai" id="gvTenderAI">${GV_AI_ICON}Draft it from this estimate</button>
+        <button class="gv-mini" id="gvTenderCopy" style="display:none">Copy</button></div>
+      <div class="gv-briefout" id="gvTenderOut"></div>
+    </div>`, keep);
+
+  /* The scope paragraph a tender notice opens with, drafted on this machine
+     from the bill of quantities above. Every quantity in it is checked
+     against the estimate by the engine before it is shown. */
+  const tb = $("#gvTenderAI");
+  if (tb) tb.onclick = async () => {
+    const out = $("#gvTenderOut");
+    tb.disabled = true;
+    out.innerHTML = '<p class="gv-aiwait">Drafting on this computer…</p>';
+    const big = c.lines.slice().filter(l => !/maintenance|establishment/i.test(l.item))
+      .sort((a, b) => b.amount - a.amount).slice(0, 6);
+    const facts = ["Project type: " + GOAL_WORD[gvGoalOf(d)],
+                   "Plot area: " + fmt(round(d.plot.area_m2)) + " m2"].concat(
+      ["Estimated total cost including GST: " + inrFull(round(c.grand))],
+      big.map(l => "Item: " + l.item + ", " + fmt(l.qty) + " " + l.unit + ", " + inrFull(round(l.amount))));
+    const res = await gvAI("tender_summary", facts);
+    const plain = "Supply, planting and three-year establishment of " + gvAn(GOAL_WORD[gvGoalOf(d)]) + " on a plot of " +
+      fmt(round(d.plot.area_m2)) + " m², comprising " + big.slice(0, 6).map(l => l.item.toLowerCase() + " (" + fmt(l.qty) + " " + l.unit + ")").join(", ") +
+      ", at an estimated cost of " + inrFull(round(c.grand)) + " including GST.";
+    out.innerHTML = gvAIBlock(res, plain, "the estimate");
+    const cp = $("#gvTenderCopy");
+    if (cp) { cp.style.display = ""; cp.onclick = () => { navigator.clipboard.writeText((res && res.ok ? res.text : plain)); toast("Copied"); }; }
+    tb.disabled = false;
+  };
 
   /* Changing an assumption re-prices immediately. Anything less and the
      reader has to work out for themselves whether the number on screen is
@@ -10889,75 +11699,42 @@ function drawReviewPanel() {
     if (!host) return;
     host.innerHTML =       '<div class="gva-vision"><span class="gva-iris"><i></i></span>' +
       '<span class="gva-vtext">Reading the review on this machine</span></div>';
-    const lines2 = r.checks.map(ch => "- " + ch.label + ": " +
-      (ch.na ? "not applicable to this design" : round(ch.pass * 100) + "/100")).join("\n");
-    const flaws = (r.flaws || []).map(f => "- " + f.severity.toUpperCase() + ": " +
-      f.title + ". Fix: " + (f.fix || "")).join("\n") || "- none";
-    const q = [
-      "Explain this design review to a municipal ward officer in plain words.",
-      "The score is " + (r.score == null ? "not applicable" : r.score + "/100") +
-        " and the verdict is \"" + r.verdict.word + "\". Do NOT change or re-score either;",
-      "they come from the twelve checks below and are final. Say what the results mean",
-      "TOGETHER, what to fix first and why, in under 140 words. No bullet lists.",
-      "",
-      "Checks:", lines2, "", "Findings:", flaws,
-      /* NOT "Site: ...". The in-page planner matches intents on the words it
-         is handed, and a line opening with a place-shaped label read as an
-         instruction to move the map: the first run of this came back
-         "Moving to maturity 53%, native share 84%, 81 trees on 0.99 ha".
-         A prompt has to be unambiguous to the matcher as well as the model. */
-      "", "For reference, the design measures: canopy at maturity " +
-        round(r.canopyPct) + " percent, native share " + round(r.nativePct * 100) +
-        " percent, " + r.trees + " trees, plot " + round(r.area / 10000, 2) + " hectares."
-    ].join("\n");
-    let out = null;
-    try { out = await gvAskEngine(q, { ms: 30000 }); } catch (e) {}
+    /* The model is handed the review as FACTS and only rewrites them; the
+       engine rejects any reply carrying a number that is not in them. The
+       old route went through the assistant's intent matcher, which read
+       parts of the prompt as commands ("Moving to maturity 53%...") and
+       took close to a minute. */
+    const weak = r.checks.filter(ch => !ch.na && ch.pass < 0.9).sort((a, b) => a.pass - b.pass);
+    const nChecks = r.checks.filter(ch => !ch.na).length;
+    const plain = (r.score == null ? "This design has no score yet. " :
+        "This design scores " + r.score + " out of 100, rated " + r.verdict.word + ". ") +
+      (weak.length
+        ? "The weakest " + (weak.length > 1 ? "checks are" : "check is") + " " +
+          weak.slice(0, 2).map(ch => "“" + ch.label + "” at " + round(ch.pass * 100) + "/100").join(" and ") + ". " +
+          (((r.flaws || [])[0] && r.flaws[0].fix) ? "First: " + r.flaws[0].fix
+            : weak[0].id === "brief" && r.brief ? "First: " + (r.brief.checks.filter(c => c.pass < 0.9)[0] || {}).need : "")
+        : "All " + nChecks + " checks pass: crowns cover about " + round(r.canopyPct) + "% of the plot at maturity and " +
+          round(r.nativePct * 100) + "% of the " + r.trees + " trees are native. " + r.verdict.line);
+    /* Only what the explanation needs, with every judgement already made.
+       Handed the whole design, the small model listed it back and drew its
+       own comparisons - "90% permeable, below the target of 90%". */
+    const f0 = (r.flaws || [])[0];
+    const firstFix = f0 && f0.fix ? f0.fix
+      : weak[0] && weak[0].id === "brief" && r.brief ? (r.brief.checks.filter(c => c.pass < 0.9)[0] || {}).need : "";
+    const facts = [
+      "Project type: " + GOAL_WORD[r.goal || gvGoalOf(d)],
+      r.score == null ? "Score: not enough planted to score yet" : "Score: " + r.score + " out of 100, rated " + r.verdict.word,
+      "What that rating means: " + r.verdict.line,
+      weak[0] ? "Weakest check: “" + weak[0].label + "”, which scored only " + round(weak[0].pass * 100) + " out of 100" : "Every check passes",
+      f0 ? "Main problem: " + f0.title + ". " + String(f0.detail || "").split(/(?<=\.)\s/)[0] : null,
+      firstFix ? "Most important fix: " + firstFix : null
+    ].filter(Boolean);
+    const res = await gvAI("explain_review", facts);
     if (!$("#gvAix")) return;                 // reader moved on
-
-    /* AN ACTION ACKNOWLEDGEMENT IS NOT AN EXPLANATION.
-
-       The engine answers questions AND drives the app, and when its intent
-       matcher wins it replies with what it did - "Moving to...", "Opened the
-       review". Printing that under a heading promising plain words is worse
-       than printing nothing: it reads as the model's considered view of the
-       design. So the reply has to look like prose about this design before
-       it is shown - a paragraph, not the app narrating itself. */
-    if (out && out.reply) {
-      const t = out.reply.trim();
-      const narrating = /^(moving|moved|opened|opening|showing|switched|placed|planted|sited)\b/i.test(t);
-      if (narrating || t.length < 120) out = null;
-    }
-    if (!out) {
-      /* No usable model reply: say it in plain words from the checks
-         themselves, so the reader always gets an explanation. */
-      const weak = r.checks.filter(ch => !ch.na && ch.pass < 0.9).sort((a, b) => a.pass - b.pass);
-      const plain = (r.score == null ? "This design has no score yet. " :
-          "This design scores " + r.score + " out of 100, rated " + r.verdict.word + ". ") +
-        (weak.length
-          ? "Fix " + weak.slice(0, 2).map(ch => ch.label.toLowerCase() + " (" + round(ch.pass * 100) + "/100)").join(" and ") +
-            " first" + ((r.flaws || [])[0] && r.flaws[0].fix ? ": " + r.flaws[0].fix : ".")
-          : "All twelve checks pass: crowns cover about " + round(r.canopyPct) + "% of the plot at maturity and " +
-            round(r.nativePct * 100) + "% of the " + r.trees + " trees are native. " + r.verdict.line);
-      $("#gvAix").innerHTML = '<p class="gv-aixtext">' + esc(plain) + '</p>' +
-        '<span class="gv-aixsub">Written from the twelve checks. The on-device model can try again for a fuller explanation.</span>' +
-        '<button class="gv-mini" id="gvAixGo">Try again</button>';
-      /* Rebind the one button, do NOT redraw the panel.
-
-         Redrawing was the obvious thing and it was wrong: drawReviewPanel()
-         rebuilds this block from scratch, so the message explaining why
-         there was no explanation was wiped in the same tick it was written.
-         The reader saw the button reset itself and nothing else, which looks
-         like a dead button rather than an answer. */
-      const again = $("#gvAixGo");
-      if (again) again.onclick = explain;
-      return;
-    }
-    $("#gvAix").innerHTML =
-      '<p class="gv-aixtext">' + esc(out.reply).replace(/\n+/g, "<br><br>") + '</p>' +
-      '<div class="gva-llm" title="Written by the language model that runs on this ' +
-      'machine, from the twelve results above. The score and the findings are computed; ' +
-      'this wording is the model’s own.">Written on this device by the local model ' +
-      '· not a measured answer</div>';
+    $("#gvAix").innerHTML = gvAIBlock(res, plain) +
+      '<button class="gv-mini" id="gvAixGo">' + (res && res.ok ? "Write it again" : "Try again") + '</button>';
+    const again = $("#gvAixGo");
+    if (again) again.onclick = explain;
   };
   if (aix) aix.onclick = explain;
 }
@@ -17579,6 +18356,16 @@ function updateHud() {
     <div class="gv3d-hudrow"><span>Elements</span><b>${B.objects.length}</b></div>
     <div class="gv3d-hudrow"><span>Trees</span><b>${nTrees}</b></div>
     <div class="gv3d-hudrow gv3d-hudcost"><span>${B.objects.length ? "This 3D layout" : "Site preparation only"}</span><b>${cost ? GV.util.inr(cost.grand) : "—"}</b></div>
+    ${(() => {
+      /* The brief for what is being built, in one line, so the 3D view
+         keeps the reader on the job they chose on the start screen. */
+      if (!GV.briefChecks || !B.objects.length) return "";
+      const br = GV.briefChecks(d);
+      const done = br.checks.filter(c => c.pass >= 0.9).length;
+      const next = br.checks.find(c => c.pass < 0.9);
+      return `<div class="gv3d-hudrow"><span>${esc(gvAn(({ park: "park", greenbelt: "green belt", riverfront: "riverfront", community: "community garden", campus: "school or campus", avenue: "roadside avenue", residential: "residential green", industrial: "industrial buffer", wetland: "wetland edge" })[br.goal] || br.goal, true))} brief</span><b>${done}/${br.checks.length}</b></div>` +
+        (next ? `<p class="gv3d-hudwhy">Next: ${esc(next.need)}</p>` : "");
+    })()}
     ${B.objects.length ? "" : `<p class="gv3d-hudwhy">Nothing is placed, so that is the allowance for clearing, grading and topsoiling the whole ${(B.plotAreaM2 / 10000).toFixed(2)} ha — not the cost of this layout. It drops as soon as you place something, because the earthworks are then measured against the ground you actually work.</p>`}
     ${note}`;
 }
@@ -17607,11 +18394,32 @@ function builderReview() {
         <div><b>${proj.cum_co2_t} t</b><span>CO\u2082 absorbed</span></div>
         <div><b>\u2212${proj.cooling_end}\u00B0C</b><span>hot-day cooling</span></div>
       </div>
+      ${rev.brief ? `<h5 class="gv-h5">Your brief</h5><ul class="gv-brieflist">${rev.brief.checks.map(c => `
+        <li class="${c.pass >= 0.9 ? "ok" : c.pass >= 0.5 ? "part" : ""}"><i>${c.pass >= 0.9 ? "\u2713" : c.pass >= 0.5 ? "\u25D0" : "\u25CB"}</i>
+          <span>${esc(c.label)}<em>${c.pass >= 0.9 ? "" : esc(c.need)}</em></span></li>`).join("")}</ul>
+        <div class="gv-briefbtns"><button class="gv-mini gv-mini-ai" id="gv3dCoach">${GV_AI_ICON}Ask AI what to do next</button></div>
+        <div class="gv-briefout" id="gv3dCoachOut"></div>` : ""}
       ${rev.flaws.length ? `<h5 class="gv-h5">Fix before you build</h5>` +
         rev.flaws.slice(0,5).map(f => `<div class="gv3d-flaw gv-sev-${f.severity}"><b>${f.title}</b><p>${f.detail}</p><div class="gv-fix">${f.fix}</div></div>`).join("")
         : `<div class="gv-card gv-good"><b>No issues found.</b><p>Solid layout. Save it and it lands in your History and Library.</p></div>`}
       ${rev.wins.length ? `<h5 class="gv-h5">Working well</h5><ul class="gv-wins">${rev.wins.slice(0,4).map(w=>`<li>${w}</li>`).join("")}</ul>` : ""}
     </div>`;
+  const coach = document.getElementById("gv3dCoach");
+  if (coach) coach.onclick = async () => {
+    const out = document.getElementById("gv3dCoachOut");
+    coach.disabled = true;
+    out.innerHTML = '<p class="gv-aiwait">Thinking on this computer\u2026</p>';
+    const todo = rev.brief.checks.filter(c => c.pass < 0.9);
+    const facts = ["Project type: " + ((GV.GOAL_WORD || {})[rev.goal] || rev.goal || "park")]
+      .concat(todo.slice(0, 3).map(c => "Still to do: " + c.need),
+              rev.flaws.slice(0, 2).map(f => "Also fix: " + f.fix));
+    const res = await gvAI("coach", facts);
+    const plain = todo.length || rev.flaws.length
+      ? "Next: " + todo.map(c => c.need).concat(rev.flaws.slice(0, 2).map(f => f.fix)).slice(0, 3).join(" ")
+      : "Everything on the brief is in place and the review found nothing to fix. Save it.";
+    if (document.getElementById("gv3dCoachOut") === out) out.innerHTML = gvAIBlock(res, plain);
+    coach.disabled = false;
+  };
 }
 
 /* ---------- save → designs + history + library ---------- */
@@ -17720,13 +18528,53 @@ const ENGINE_PATHS = [
 /* Priority runs hot: the cells that most need planting read warmest.
    Deliberately not the green ramp used for canopy — that one answers
    "what is there now", this one answers "where is it going". */
-function priColor(score){
-  if(score>=.80) return "#b91c1c";
-  if(score>=.65) return "#ea580c";
-  if(score>=.50) return "#f59e0b";
-  if(score>=.35) return "#84cc16";
-  return "#15803d";
+/* BANDS BY RANK, NOT BY A FIXED SCORE.
+
+   The bands used to be fixed cut-offs - 0.80 and up was Critical. This
+   city's scores run from 0.20 to 0.83, and exactly one cell cleared 0.80,
+   so the "Critical" band held a single hexagon and the other nineteen of
+   the top twenty were the same orange. The colour could not tell #2 from
+   #20, which is the one thing a priority map is for.
+
+   A priority is relative by nature - it is an order of work - so the bands
+   are now shares of the ranked cells: the top 5% Critical, the next 10%
+   High, then 25% Moderate, 30% Low and the rest Least. The legend prints
+   the score range each band actually covers here, so the number behind a
+   colour is never hidden. */
+const PRI_BANDS = [
+  { key: "critical", label: "Critical", share: .05, col: "#b91c1c" },
+  { key: "high",     label: "High",     share: .10, col: "#ea580c" },
+  { key: "moderate", label: "Moderate", share: .25, col: "#f59e0b" },
+  { key: "low",      label: "Low",      share: .30, col: "#84cc16" },
+  { key: "least",    label: "Least",    share: .30, col: "#15803d" }
+];
+
+function priCuts(){
+  const feats = (GVP.data && GVP.data.features) || [];
+  if (GVP._cutsFor === feats && GVP._cuts) return GVP._cuts;
+  const sc = feats.map(f => f.properties.priority_score).filter(v => v != null).sort((a, b) => b - a);
+  let at = 0;
+  const cuts = PRI_BANDS.map((b, i) => {
+    const n = i === PRI_BANDS.length - 1 ? sc.length - at : Math.max(1, Math.round(sc.length * b.share));
+    const slice = sc.slice(at, at + n);
+    at += n;
+    return { ...b, n: slice.length, hi: slice[0], lo: slice[slice.length - 1] };
+  });
+  GVP._cuts = cuts; GVP._cutsFor = feats;
+  return cuts;
 }
+
+function priBand(score){
+  const cuts = priCuts();
+  if (!cuts.length || cuts[0].lo == null) {
+    return score >= .80 ? PRI_BANDS[0] : score >= .65 ? PRI_BANDS[1] : score >= .50 ? PRI_BANDS[2]
+         : score >= .35 ? PRI_BANDS[3] : PRI_BANDS[4];
+  }
+  for (const c of cuts) if (c.lo != null && score >= c.lo) return c;
+  return cuts[cuts.length - 1];
+}
+
+function priColor(score){ return priBand(score).col; }
 
 function priStyle(f){
   const s = f.properties.priority_score;
@@ -17849,7 +18697,8 @@ function priReport(props){
 
   $("#pBody").innerHTML =
     '<div class="hero">' + ring(score, "Priority", priColor(props.priority_score)) + '<div class="rt">' +
-      '<div class="grade" style="color:' + priColor(props.priority_score) + '">Priority ' +
+      '<div class="grade" style="color:' + priColor(props.priority_score) + '">' +
+        priBand(props.priority_score || 0).label + ' priority \u00b7 ' +
         (props.priority_score||0).toFixed(3) + '</div>' +
       '<p>Ranked <b>#' + props.rank + '</b> of the cells the engine scored, on 42 months ' +
         'of satellite and air-quality history.</p>' +
@@ -17908,6 +18757,7 @@ function priReport(props){
       "Chosen for this cell's pollution load and soil, from the engine's species table." +
       '</span></div></div>' : "") +
 
+    priForGoalHTML(props) +
     '<div class="section"><h3>Design something here</h3>' +
       '<p style="font-size:13px;color:var(--ink-soft);line-height:1.6;margin:0 0 10px">' +
       'Open the Studio on this cell to draw a real plot, cost it, and project 25 years.</p>' +
@@ -17925,6 +18775,32 @@ function priReport(props){
   };
 }
 
+/* What the cell means for the project the reader said they are building.
+   The priority is the city's; the response depends on the job. */
+function priForGoalHTML(props){
+  const goal = (window.state && window.state.goal) || "park";
+  const B = window.GV && GV.GOAL_BRIEF && GV.GOAL_BRIEF[goal];
+  if (!B) return "";
+  const word = { park: "park", greenbelt: "green belt", riverfront: "riverfront", community: "community garden",
+                 campus: "school or campus", avenue: "roadside avenue", residential: "residential green",
+                 industrial: "industrial buffer", wetland: "wetland edge" }[goal] || goal;
+  const c = props.components || {};
+  const top = Object.keys(c).sort(function(a, b){ return (c[b] || 0) - (c[a] || 0); })[0];
+  const why = top === "aqi_worsening" ? "Air is the main pressure here, so favour the most pollution-tolerant species and a dense edge on the road side."
+            : top === "ndvi_decline" ? "Green cover is falling here, so protecting the trees that remain is as important as planting new ones."
+            : top === "low_green_cover" ? "There is very little green here now, so large-crowned shade trees give the biggest gain."
+            : top === "plantable_space" ? "There is room to plant here, so a larger planting is realistic."
+            : "";
+  let sp = [];
+  try { sp = (GV.rankedSpecies(GV.ctx || {}, goal) || []).slice(0, 5).map(function(x){ return x.name; }); } catch (e) {}
+  return '<div class="section"><h3>For your ' + word + '</h3>' +
+    '<div class="narr" style="background:linear-gradient(135deg,rgba(18,185,129,.10),rgba(47,126,240,.05))">' +
+    (why ? why + " " : "") + B.intro +
+    (sp.length ? '<br><br><b>Suited species:</b> ' + sp.join(" \u00b7 ") : "") +
+    '<br><span style="font-weight:600;color:var(--ink-soft);font-size:12px">Canopy target at maturity for ' + gvAn(word) + ': ' +
+    B.canopy[0] + "\u2013" + B.canopy[1] + '%.</span></div></div>';
+}
+
 GVP.centre = function(zone){
   const feats = (GVP.data && GVP.data.features) || [];
   const f = feats.find(function(x){ return x.properties.zone === zone; });
@@ -17938,13 +18814,16 @@ GVP.centre = function(zone){
 /* ---------- rendering ---------- */
 function priRender(gj){
   GVP.data = gj;
+  GVP._cuts = null;
   if(GVP.layer){ map.removeLayer(GVP.layer); GVP.layer=null; }
 
   GVP.layer = L.geoJSON(gj, {
     style: priStyle,
     onEachFeature: function(f, lyr){
-      lyr.bindTooltip("#" + f.properties.rank + " · " +
-                      (f.properties.priority_score||0).toFixed(3),
+      lyr.bindTooltip(f.properties.priority_score == null
+                        ? "Not scored \u2014 too few clear satellite months"
+                        : "#" + f.properties.rank + " \u00b7 " + priBand(f.properties.priority_score).label +
+                          " \u00b7 score " + f.properties.priority_score.toFixed(3),
                       {sticky:true, direction:"top"});
       lyr.on("click", function(e){
         L.DomEvent.stopPropagation(e);      // don't also fire a point report
@@ -18075,16 +18954,27 @@ function priLegend(show){
      bounded it before, so the longest sentence inside set the box - which is
      how a colour key ended up 700px wide with its fine print off the edge. */
   el.className = "glass gv-prileg";
-  const rows = [[.85,"Critical"],[.72,"High"],[.57,"Moderate"],[.42,"Low"],[.2,"Least"]];
+  const rows = priCuts();
+  const su = priSummary();
   // No heading here: the drag bar added below already reads PLANTING PRIORITY,
   // and two identical titles stacked on top of each other was the first thing
   // the eye hit.
   el.innerHTML =
     rows.map(function(r){
       return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">' +
-             '<i style="width:13px;height:13px;border-radius:3px;background:' + priColor(r[0]) +
-             ';display:block"></i>' + r[1] + '</div>';
+             '<i style="width:13px;height:13px;border-radius:3px;background:' + r.col +
+             ';display:block;flex:none"></i><span style="flex:1">' + r.label +
+             (r.lo != null ? '<em style="display:block;font-style:normal;font-size:10px;font-weight:600;color:var(--ink-soft)">' +
+               (r.n === 1 ? "1 cell" : r.n + " cells") + " \u00b7 score " +
+               (r.hi === r.lo ? r.lo.toFixed(2) : r.lo.toFixed(2) + "\u2013" + r.hi.toFixed(2)) + "</em>" : "") +
+             '</span></div>';
     }).join("") +
+    (su && su.drivers && su.drivers.length
+      ? '<div style="margin-top:8px;padding-top:7px;border-top:1px solid var(--line);font-size:11px;line-height:1.45;font-weight:600;color:var(--ink-soft);max-width:220px">' +
+        '<b style="color:var(--ink)">What puts the top ' + su.n + ' there:</b> ' +
+        su.drivers.slice(0, 3).map(function(d){ return d.label.toLowerCase() + " (" + d.n + ")"; }).join(", ") +
+        '. Bands are by rank within this city.</div>'
+      : "") +
     '<div style="margin-top:8px;padding-top:7px;border-top:1px solid var(--line);font-weight:600;' +
     'color:var(--ink-soft);font-size:10.5px;max-width:150px;line-height:1.45">' +
     "Click a cell for the engine's reasoning</div>" +
@@ -21139,6 +22029,14 @@ function aBuild() {
       '<div id="gvaStatus" class="gva-status"></div>' +
     "</section>";
   while (wrap.firstChild) document.body.appendChild(wrap.firstChild);
+  /* Speak a question instead of typing it: Whisper on this machine, in the
+     reader's language, then sent as if typed. Only where the model is
+     installed. */
+  if (window.GVAI) GVAI.ready().then(() => {
+    const ta = document.getElementById("gvaInput"), send = document.getElementById("gvaSend");
+    if (!GVAI.can("transcribe") || !ta || !send || send.parentNode.querySelector(".gv-mic")) return;
+    send.parentNode.insertBefore(gvMicButton(ta, t => aSend(t)), send);
+  });
 
   document.getElementById("gvaFab").onclick = () => aToggle(true);
   document.getElementById("gvaClose").onclick = () => aToggle(false);
@@ -23890,7 +24788,9 @@ function b3dTimeSlider(root) {
     '<button class="gv3d-tplay" id="gv3dTPlay" aria-label="Play the next fifty years" title="Play">' +
       '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></button>' +
     '<div class="gv3d-tmain">' +
-      '<div class="gv3d-thead"><b id="gv3dTYear">Planting day</b><span id="gv3dTStats"></span></div>' +
+      '<div class="gv3d-thead"><b id="gv3dTYear">Planting day</b><span id="gv3dTStats"></span>' +
+        '<button class="gv3d-tai" id="gv3dTAI" title="Describe this year in words (on-device AI)">' + GV_AI_ICON + '</button></div>' +
+      '<div class="gv3d-tsay" id="gv3dTSay"></div>' +
       '<input type="range" id="gv3dTRange" min="0" max="50" step="0.25" value="0" aria-label="Years after planting">' +
       '<div class="gv3d-tticks">' + [0, 5, 10, 20, 30, 40, 50].map(y =>
         '<span style="left:' + (y * 2) + '%">' + (y === 50 ? "50 yrs" : y) + '</span>').join("") + '</div>' +
@@ -23910,7 +24810,29 @@ function b3dTimeSlider(root) {
         " t CO₂ stored · ~" + Math.round(st.alivePct) + "% of trees standing" + (t >= 10 ? " if none are replanted" : "")
       : "Plant some trees to watch them grow";
   };
-  range.addEventListener("input", paint);
+  range.addEventListener("input", () => { paint(); const say = host.querySelector("#gv3dTSay"); if (say) say.innerHTML = ""; });
+  const tai = host.querySelector("#gv3dTAI");
+  if (tai) tai.onclick = async () => {
+    const say = host.querySelector("#gv3dTSay");
+    const t = +range.value, y = Math.round(t);
+    const st = b3dYearStats(t), st0 = b3dYearStats(0);
+    if (!st.n) { say.innerHTML = '<p class="gv-aitext">Plant some trees first.</p>'; return; }
+    const d = builderDesign();
+    const facts = (GV.designFacts ? GV.designFacts(d, null) : []).concat([
+      y ? "Year shown: " + y + " years after planting (" + (now + y) + ")" : "Year shown: planting day",
+      "Canopy on planting day: " + Math.round(st0.canopyPct) + "% of the plot",
+      "Canopy in the year shown: " + Math.round(st.canopyPct) + "% of the plot",
+      "Carbon dioxide stored by then: " + (st.co2t < 10 ? st.co2t.toFixed(1) : Math.round(st.co2t)) + " tonnes",
+      "Share of the original trees still standing if none are replanted: " + Math.round(st.alivePct) + "%"]);
+    tai.disabled = true;
+    say.innerHTML = '<p class="gv-aiwait">Imagining year ' + y + ' on this computer\u2026</p>';
+    const res = await gvAI("growth_story", facts);
+    const plain = (y ? "By " + (now + y) + ", " : "On planting day, ") + "crowns cover about " + Math.round(st.canopyPct) +
+      "% of the plot" + (y ? ", up from " + Math.round(st0.canopyPct) + "% on planting day, and the trees have stored about " +
+      (st.co2t < 10 ? st.co2t.toFixed(1) : Math.round(st.co2t)) + " tonnes of CO\u2082." : ".");
+    if (Math.round(+range.value) === y) say.innerHTML = gvAIBlock(res, plain, "the growth projection");
+    tai.disabled = false;
+  };
   let raf = 0, last = 0;
   const stop = () => { cancelAnimationFrame(raf); raf = 0; play.classList.remove("on"); };
   play.onclick = () => {

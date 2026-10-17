@@ -7,6 +7,7 @@ __pycache__/
 # deterministically (seed 42) if you do run it.
 # The OpenVINO weights are not — they are fetched by scripts/fetch_openvino_model.py.
 models/openvino/
+models/media/
 # Downloaded source exports may be large or contain municipal-restricted data.
 data/raw/
 data/*.tif
