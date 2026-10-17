@@ -7501,7 +7501,7 @@ function download(name, text) {
   setTimeout(() => URL.revokeObjectURL(a.href), 4000);
 }
 
-function importDesigns() {
+function importDesigns(done) {
   const inp = document.createElement("input");
   inp.type = "file"; inp.accept = ".json,application/json";
   inp.onchange = () => {
@@ -7509,14 +7509,19 @@ function importDesigns() {
     const rd = new FileReader();
     rd.onload = () => {
       try {
-        const inc = JSON.parse(rd.result);
+        let inc = JSON.parse(rd.result);
+        if (inc && !Array.isArray(inc) && inc.id && Array.isArray(inc.items)) inc = [inc];   // one design on its own
         if (!Array.isArray(inc)) throw 0;
         const have = store.get("designs", []);
         const ids = new Set(have.map(d => d.id));
-        const add = inc.filter(d => d && d.id && !ids.has(d.id));
+        const add = inc.filter(d => d && d.id && Array.isArray(d.items) && !ids.has(d.id));
         store.set("designs", have.concat(add));
+        /* Into the account as well, so an imported design is in the cloud
+           and opens on every machine, like one drawn here. */
+        add.forEach(d => { try { logHistory("saved", d); if (window.gvuSyncProject) gvuSyncProject(d); } catch (e) {} });
         toast(add.length ? "Imported " + add.length + " design" + (add.length > 1 ? "s" : "") : "Nothing new to import");
         closeSheet();
+        if (typeof done === "function") done(add);
       } catch (e) { toast("That file isn't a GreenVision export"); }
     };
     rd.readAsText(f);
@@ -11473,6 +11478,7 @@ async function drawHistory() {
       <div>${GV.auth.isIn()
         ? `<b>${cloudProjects.length}</b> project${cloudProjects.length === 1 ? "" : "s"} in your account \u00B7 <b>${designs.length}</b> on this device`
         : `<b>${log.length}</b> event${log.length > 1 ? "s" : ""} \u00B7 <b>${designs.length}</b> design${designs.length === 1 ? "" : "s"} saved on this device`}</div>
+      <button class="gv-mini" id="gvHistImport" title="Add a design saved as a .json file">Import</button>
       <button class="gv-mini" id="gvHistClear">Clear history</button>
     </div>
     ${groups.map(g => `
@@ -11541,6 +11547,11 @@ async function drawHistory() {
       ? ("Deleted “" + name + "”" + (removedAccount ? " from this device and your account" : " from this device"))
       : "Removed from the timeline — the design was not stored here");
   });
+  /* Import lived only on the old account sheet, which the cloud account
+     sheet replaced - so a signed-in reader had no way to bring in a design
+     file at all. It lives here now, next to the list it adds to. */
+  const imp = $("#gvHistImport");
+  if (imp) imp.onclick = () => importDesigns(() => drawHistory());
   $("#gvHistClear").onclick = () => {
     if (!confirm("Clear the history log? Your saved designs are kept — only the timeline is removed.")) return;
     store.del("history"); drawHistory(); toast("History cleared");
