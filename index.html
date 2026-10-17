@@ -16267,8 +16267,7 @@ function buildOverlay(land, base, plotRing, siteCtx) {
     plotXZ = [[-h, -h], [h, -h], [h, h], [-h, h]];
   }
 
-  const groundMat = new THREE.MeshStandardMaterial({ color: land === "empty" ? 0xd2dcc4 : 0xd6d2c2, roughness: 1,
-    map: (typeof gvTex === "function") ? gvTex("ground") : null });
+  const groundMat = new THREE.MeshStandardMaterial({ color: land === "empty" ? 0x9ec97a : 0xa8c47e, roughness: 1 });
   const gShape = new THREE.Shape();
   // Same mirror correction as the context footprints - see shapeFrom().
   plotXZ.forEach(([x, z], i) => (i ? gShape.lineTo(x, -z) : gShape.moveTo(x, -z)));

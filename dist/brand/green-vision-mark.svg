@@ -15,8 +15,8 @@
     </linearGradient>
   </defs>
   <circle cx="24" cy="24" r="22" fill="url(#gvGrad)"/>
-  <path d="M24 9C17 11 13 17 13 24c0 8 11 15 11 15s11-7 11-15c0-7-4-13-11-15z"
-        fill="#fff" opacity=".92"/>
-  <path d="M24 15v18M24 20l-5-3M24 25l6-4M24 30l-5-3"
+  <path d="M24 9C17 11 13 17 13 24c0 7 7 12.5 11 16c4-3.5 11-9 11-16 0-7-4-13-11-15z"
+        fill="#fff"/>
+  <path d="M24 15v18M24 20l-5-3M24 24l5-3M24 28l-5-3"
         stroke="#0e9f6e" stroke-width="2" stroke-linecap="round" fill="none"/>
 </svg>
