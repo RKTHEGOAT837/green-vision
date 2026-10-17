@@ -10928,8 +10928,18 @@ function drawReviewPanel() {
       if (narrating || t.length < 120) out = null;
     }
     if (!out) {
-      $("#gvAix").innerHTML = '<span class="gv-aixsub">The model did not answer. ' +
-        'The review above is complete without it.</span>' +
+      /* No usable model reply: say it in plain words from the checks
+         themselves, so the reader always gets an explanation. */
+      const weak = r.checks.filter(ch => !ch.na && ch.pass < 0.9).sort((a, b) => a.pass - b.pass);
+      const plain = (r.score == null ? "This design has no score yet. " :
+          "This design scores " + r.score + " out of 100, rated " + r.verdict.word + ". ") +
+        (weak.length
+          ? "Fix " + weak.slice(0, 2).map(ch => ch.label.toLowerCase() + " (" + round(ch.pass * 100) + "/100)").join(" and ") +
+            " first" + ((r.flaws || [])[0] && r.flaws[0].fix ? ": " + r.flaws[0].fix : ".")
+          : "All twelve checks pass: crowns cover about " + round(r.canopyPct) + "% of the plot at maturity and " +
+            round(r.nativePct * 100) + "% of the " + r.trees + " trees are native. " + r.verdict.line);
+      $("#gvAix").innerHTML = '<p class="gv-aixtext">' + esc(plain) + '</p>' +
+        '<span class="gv-aixsub">Written from the twelve checks. The on-device model can try again for a fuller explanation.</span>' +
         '<button class="gv-mini" id="gvAixGo">Try again</button>';
       /* Rebind the one button, do NOT redraw the panel.
 
