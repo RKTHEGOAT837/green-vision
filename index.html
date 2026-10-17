@@ -3819,6 +3819,25 @@ path.gv-surf:hover{ filter:drop-shadow(0 0 4px #12b981); }
 .gv-hc-dim{ font-weight:500; color:#93ada3; }
 .gv-hcard p{ margin:9px 0 0; padding-top:8px; border-top:1px solid rgba(255,255,255,.1); color:#b8cbc3; font-size:11px; }
 .gv3d-hover{ position:absolute; z-index:40; pointer-events:none; }
+/* The design over time */
+.gv3d-time{ position:absolute; left:50%; top:70px; transform:translateX(-50%); z-index:12; width:min(560px, calc(100vw - 560px));
+  display:flex; align-items:center; gap:12px; padding:10px 16px 8px 10px; border-radius:16px; }
+.gv3d-tplay{ flex:none; width:40px; height:40px; border-radius:12px; border:0; cursor:pointer; display:grid; place-items:center;
+  background:var(--brand,#12b981); color:#fff; box-shadow:0 6px 16px -6px rgba(18,185,129,.8); }
+.gv3d-tplay svg{ width:18px; height:18px; }
+.gv3d-tplay.on svg path{ d:path("M7 5h4v14H7zM13 5h4v14h-4z"); }
+.gv3d-tmain{ flex:1; min-width:0; }
+.gv3d-thead{ display:flex; align-items:baseline; justify-content:space-between; gap:10px; margin-bottom:2px; }
+.gv3d-thead b{ font:800 14px 'Sora','Manrope',sans-serif; color:var(--ink); white-space:nowrap; }
+.gv3d-thead span{ font:600 11px 'Manrope',sans-serif; color:var(--ink-soft); text-align:right; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+#gv3dTRange{ width:100%; margin:6px 0 2px; height:6px; -webkit-appearance:none; appearance:none; border-radius:6px; cursor:pointer;
+  background:linear-gradient(90deg, var(--brand,#12b981) 0 var(--p,0%), rgba(127,140,135,.3) var(--p,0%) 100%); }
+#gv3dTRange::-webkit-slider-thumb{ -webkit-appearance:none; width:18px; height:18px; border-radius:50%; background:#fff;
+  border:3px solid var(--brand,#12b981); box-shadow:0 2px 6px rgba(0,0,0,.35); }
+.gv3d-tticks{ position:relative; height:13px; font:700 9.5px 'Manrope',sans-serif; color:var(--ink-soft); }
+.gv3d-tticks span{ position:absolute; transform:translateX(-50%); white-space:nowrap; }
+.gv3d-tticks span:first-child{ transform:none; } .gv3d-tticks span:last-child{ transform:translateX(-100%); }
+@media (max-width:1100px){ .gv3d-time{ width:min(560px, calc(100vw - 32px)); top:auto; bottom:12px; } .gv3d-thead span{ display:none; } }
 .gv3d-hover-act{ margin-top:6px; text-align:center; font:700 10.5px 'Manrope',sans-serif; color:#0b1613;
   background:rgba(255,255,255,.88); border-radius:9px; padding:4px 8px; }
 .gv-plot{ animation:gvRing .5s ease; }
@@ -16455,6 +16474,7 @@ function buildOverlay(land, base, plotRing, siteCtx) {
 
   wireBuilderInput(root, canvas);
   try { b3dWireHover(root, canvas); } catch (e) { console.warn("[builder] hover cards unavailable", e); }
+  try { b3dTimeSlider(root); } catch (e) { console.warn("[builder] time slider unavailable", e); }
   buildPalette();
   updateHud();
 
@@ -23572,6 +23592,13 @@ function gvInfo(o) {
       ["Crown area", gvM2(s.canopy || Math.PI * (def.r || 0) * (def.r || 0))],
       ["Clearance needed", gvLen(2) + " from walls and paving"]
     ];
+    /* With the time slider away from planting day, say how big it is then. */
+    if (typeof B !== "undefined" && B && B.year > 0.4 && o.def) {
+      const sc = gvScaleAt(def, B.year);
+      rows.unshift(["In year " + Math.round(B.year), sc > 0
+        ? "about " + gvLen((def.h || 0) * sc) + " tall, " + gvLen(2 * (def.r || 0) * sc) + " across"
+        : "past its natural life - replanted by now"]);
+    }
     if (s.drought != null) rows.push(["Water", s.drought ? "Drought-hardy once established" : "Needs regular watering"]);
     if (s.pol != null) rows.push(["Pollution tolerance", s.pol + " / 5"]);
     if (s.sapling) rows.push(["Sapling cost", inrF(s.sapling)]);
@@ -23780,6 +23807,123 @@ function gvContextTree(r, h) {
   gvTreeModel(g, { id: "ctx", lite: true, r: r, h: h, shape: "round", foliage: gvShade(0x4f8f52, .85 + Math.random() * .3) });
   g.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; o.userData.context = true; } });
   return g;
+}
+
+/* =====================================================================
+   THE DESIGN OVER TIME - a slider from planting day to year 50
+   =====================================================================
+   A design is judged on the day it is drawn and lived in for fifty years,
+   and those are not the same place: a plot of knee-high saplings and a
+   closed canopy are different things to stand in. The slider grows what
+   is planted, whatever the design is for - park, green belt, campus,
+   avenue, buffer.
+
+   The growth is the studio's own, not a second model: the same logistic
+   the 25-year projection uses (a sapling is ~3% of its mature crown on
+   planting day and reaches 80% at its species' growth-years figure), the
+   same survival curve, the same CO2 per tree. So the slider and the
+   projection always tell the same story. Crown AREA follows the logistic;
+   the model is scaled by its square root, since a crown with a tenth of
+   the area is about a third as wide and as tall. */
+const GV_GROW_AREA = { miyawaki: 4, hedge: 2.5, greenwall: 2.5, shrub: 2, mulch: 1.2, butterfly: 1.2, herb: 1, pergola: 2.5 };
+function gvGrowth(G, t) {
+  G = Math.max(G, 1);
+  const k = 4.862 / G, t0 = 0.715 * G, f = x => 1 / (1 + Math.exp(-k * (x - t0)));
+  return f(t);
+}
+function gvSurvival(t) { return t < 3 ? 1 - 0.067 * t : 0.80 * Math.pow(0.99, t - 3); }
+function gvSpeciesOf(ref) {
+  try { return (GV.studio && GV.studio.speciesList ? GV.studio.speciesList() : []).find(s => s.key === ref) || null; }
+  catch (e) { return null; }
+}
+/* How big this object is at year t, as a scale on its full-size model. */
+function gvScaleAt(def, t) {
+  if (def.kind === "tree") {
+    const s = gvSpeciesOf(def.ref);
+    if (s && s.life && t > s.life) return 0;                     // past its life: gone, and replaced in reality
+    const g = gvGrowth(s ? s.growth : 12, t);
+    return Math.max(0.14, Math.sqrt(g));
+  }
+  const G = GV_GROW_AREA[def.ref];
+  return G ? Math.max(0.3, Math.sqrt(gvGrowth(G, t))) : 1;
+}
+function b3dSetYear(t) {
+  if (!B) return;
+  B.year = t;
+  for (const o of B.objects) {
+    const s = gvScaleAt(o.def, t);
+    o.mesh.visible = s > 0;
+    if (o.def.kind === "tree") o.mesh.scale.set(s, s, s);
+    else if (GV_GROW_AREA[o.def.ref]) o.mesh.scale.set(1, s, 1);      // beds and hedges grow up, not out
+  }
+  B._yearCount = B.objects.length;
+}
+/* The same three numbers the projection reports, for this layout and year. */
+function b3dYearStats(t) {
+  let canopy = 0, co2 = 0, alive = 0, n = 0;
+  const trees = B.objects.filter(o => o.def.kind === "tree").map(o => gvSpeciesOf(o.def.ref)).filter(Boolean);
+  for (const s of trees) {
+    n++;
+    if (s.life && t > s.life) continue;
+    const surv = gvSurvival(t);
+    alive += surv;
+    canopy += (s.canopy || 0) * gvGrowth(s.growth, t) * surv;
+    for (let y = 0; y <= Math.floor(t); y++) co2 += (s.co2 || 0) * gvGrowth(s.growth, y) * gvSurvival(y);
+  }
+  const area = B.plotAreaM2 || 10000;
+  return { n, canopyPct: canopy / area * 100, co2t: co2 / 1000, alivePct: n ? alive / n * 100 : 0 };
+}
+function b3dTimeSlider(root) {
+  const host = document.createElement("div");
+  host.className = "gv3d-time glass"; host.id = "gv3dTime";
+  host.innerHTML =
+    '<button class="gv3d-tplay" id="gv3dTPlay" aria-label="Play the next fifty years" title="Play">' +
+      '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></button>' +
+    '<div class="gv3d-tmain">' +
+      '<div class="gv3d-thead"><b id="gv3dTYear">Planting day</b><span id="gv3dTStats"></span></div>' +
+      '<input type="range" id="gv3dTRange" min="0" max="50" step="0.25" value="0" aria-label="Years after planting">' +
+      '<div class="gv3d-tticks">' + [0, 5, 10, 20, 30, 40, 50].map(y =>
+        '<span style="left:' + (y * 2) + '%">' + (y === 50 ? "50 yrs" : y) + '</span>').join("") + '</div>' +
+    '</div>';
+  root.appendChild(host);
+  const range = host.querySelector("#gv3dTRange"), yearEl = host.querySelector("#gv3dTYear"),
+        statsEl = host.querySelector("#gv3dTStats"), play = host.querySelector("#gv3dTPlay");
+  const now = new Date().getFullYear();
+  const paint = () => {
+    const t = +range.value, y = Math.round(t);
+    b3dSetYear(t);
+    range.style.setProperty("--p", (t * 2) + "%");
+    yearEl.textContent = t < 0.5 ? "Planting day" : "Year " + y + " · " + (now + y);
+    const st = b3dYearStats(t);
+    statsEl.textContent = st.n
+      ? "Canopy " + Math.round(st.canopyPct) + "% · " + (st.co2t < 10 ? st.co2t.toFixed(1) : Math.round(st.co2t)) +
+        " t CO₂ stored · ~" + Math.round(st.alivePct) + "% of trees standing" + (t >= 10 ? " if none are replanted" : "")
+      : "Plant some trees to watch them grow";
+  };
+  range.addEventListener("input", paint);
+  let raf = 0, last = 0;
+  const stop = () => { cancelAnimationFrame(raf); raf = 0; play.classList.remove("on"); };
+  play.onclick = () => {
+    if (raf) return stop();
+    if (+range.value >= 50) range.value = 0;
+    play.classList.add("on"); last = performance.now();
+    const step = now2 => {
+      const dt = (now2 - last) / 1000; last = now2;
+      range.value = Math.min(50, +range.value + dt * 4.5);          // fifty years in about eleven seconds
+      paint();
+      if (+range.value >= 50) return stop();
+      raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+  };
+  /* Anything placed, undone or restored while the slider is away from
+     planting day takes the current year too, rather than appearing full
+     grown among saplings. */
+  const tick = setInterval(() => {
+    if (!B || !document.body.contains(host)) { clearInterval(tick); stop(); return; }
+    if (B._yearCount !== B.objects.length) paint();
+  }, 400);
+  paint();
 }
 
 
