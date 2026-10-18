@@ -10849,21 +10849,56 @@ function gvBriefBind(d) {
   const ai = $("#gvBriefAI");
   if (ai) ai.onclick = async () => {
     const rev = (() => { try { return reviewDesign(d, GV.ctx || {}); } catch (e) { return null; } })();
-    const todo = r.checks.filter(c => c.pass < 0.9);
-    const f0 = rev && rev.flaws && rev.flaws[0];
-    const facts = ["Project type: " + GOAL_WORD[r.goal]]
-      .concat(d.items.length
-        ? (todo.length ? todo.slice(0, 3).map(c => "Still to do: " + c.need) : ["Every item on the brief is done"])
-        : r.brief.steps.map((x, i) => "Step " + (i + 1) + ": " + x))
-      .concat(f0 && f0.fix ? ["Also fix: " + f0.fix] : []);
+    const c = gvCoachFacts(d, rev, r);
     out.innerHTML = '<p class="gv-aiwait">Thinking on this computer…</p>';
-    const res = await gvAI(d.items.length ? "coach" : "brief_help", facts);
-    const fallback = todo.length
-      ? "Next: " + todo.slice(0, 3).map(c => c.need).join(" ")
-      : "Everything on the " + GOAL_WORD[r.goal] + " brief is in place. Open Review for the full score.";
-    out.innerHTML = gvAIBlock(res, fallback, "the brief");
+    const res = await gvAI(d.items.length ? "coach" : "brief_help", c.facts);
+    out.innerHTML = gvAIBlock(res, c.fallback, "the brief and the review");
   };
 }
+
+/* What the coach is told. With the brief complete it used to get two facts
+   - "park" and "everything is done" - and a small model handed that little
+   pads it with advice of its own, which the engine rightly throws away. So
+   a finished brief brings in the review instead: the score and what it
+   means, the lowest check, the problems still open and what is working. */
+function gvCoachFacts(d, rev, br) {
+  br = br || gvBriefChecks(d);
+  const word = GOAL_WORD[br.goal];
+  const facts = ["Project type: " + word];
+  const todo = br.checks.filter(c => c.pass < 0.9);
+  if (!(d.items || []).length) {
+    br.brief.steps.forEach((x, i) => facts.push("Step " + (i + 1) + ": " + x));
+    return { facts, fallback: "Start here: " + br.brief.steps.slice(0, 2).join(" ") };
+  }
+  // Worst first, two at most: every extra number is one more the small
+  // model can attach to the wrong thing ("10 trees per 1,000 m2, currently 42%").
+  todo.slice().sort((a, b) => a.pass - b.pass).slice(0, 2).forEach(c => facts.push("Still to do: " + c.need));
+  if (!todo.length) facts.push("Every item on the " + word + " brief is done");
+  // The brief already speaks for itself above; its review finding would only repeat it.
+  const flaws = (rev && rev.flaws || []).filter(f => f.fix && !/^Not yet /.test(f.title || "")).slice(0, todo.length ? 1 : 2);
+  flaws.forEach(f => facts.push("Problem: " + f.title + ". Fix: " + f.fix));
+  let lowest = null;
+  // With work left, the work is the whole message: a score and a list of
+  // what is fine only gave the model things to invent tasks out of.
+  if (rev && !todo.length && !flaws.length) {
+    if (rev.score != null) {
+      facts.push("Review score: " + rev.score + " out of 100, rated " + rev.verdict.word);
+      if (!todo.length && !flaws.length) facts.push("Next step the review recommends: " + rev.verdict.line.replace(/^This holds up\.\s*/, ""));
+      else facts.push("What that rating means: " + rev.verdict.line);
+    }
+    lowest = (rev.checks || []).filter(c => !c.na).sort((a, b) => a.pass - b.pass)[0];
+    if (!todo.length && !flaws.length && lowest && lowest.pass < 1)
+      facts.push("Lowest check: “" + lowest.label + "”, which scored " + round(lowest.pass * 100) + " out of 100");
+    (rev.wins || []).slice(0, 2).forEach(w => facts.push("Already right, no action needed: " + w));
+  }
+  const fallback = todo.length || flaws.length
+    ? "Next: " + todo.slice().sort((a, b) => a.pass - b.pass).slice(0, 2).map(c => c.need).concat(flaws.map(f => f.fix)).slice(0, 3).join(" ")
+    : "Everything on the " + word + " brief is in place" +
+      (rev && rev.score != null ? ", and the review scores " + rev.score + "/100 (" + rev.verdict.word + "): " + rev.verdict.line : ".") +
+      (lowest && lowest.pass < 1 ? " The lowest check is “" + lowest.label + "” at " + round(lowest.pass * 100) + "/100." : "");
+  return { facts, fallback };
+}
+GV.coachFacts = gvCoachFacts;
 
 function reviewDesign(d, ctx) {
   const sp = speciesList();
@@ -18628,13 +18663,10 @@ function builderReview() {
     coach.disabled = true;
     out.innerHTML = '<p class="gv-aiwait">Thinking on this computer\u2026</p>';
     const todo = rev.brief.checks.filter(c => c.pass < 0.9);
-    const facts = ["Project type: " + ((GV.GOAL_WORD || {})[rev.goal] || rev.goal || "park")]
-      .concat(todo.slice(0, 3).map(c => "Still to do: " + c.need),
-              rev.flaws.slice(0, 2).map(f => "Also fix: " + f.fix));
+    const cf = GV.coachFacts(d, rev, rev.brief);
+    const facts = cf.facts;
     const res = await gvAI("coach", facts);
-    const plain = todo.length || rev.flaws.length
-      ? "Next: " + todo.map(c => c.need).concat(rev.flaws.slice(0, 2).map(f => f.fix)).slice(0, 3).join(" ")
-      : "Everything on the brief is in place and the review found nothing to fix. Save it.";
+    const plain = cf.fallback;
     if (document.getElementById("gv3dCoachOut") === out) out.innerHTML = gvAIBlock(res, plain);
     coach.disabled = false;
   };
