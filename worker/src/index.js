@@ -1001,7 +1001,8 @@ async function handle(req) {
         id: randomToken().slice(0, 12),
         name: String(body.name || "").slice(0, 120),
         role: String(body.role || "").slice(0, 160),
-        stars: Math.max(0, Math.min(5, parseInt(body.stars, 10) || 0)),
+        // Half stars allowed: 8.5 out of 10 is 4.25, honestly shown as 4.5, not 4 or 5.
+        stars: Math.max(0, Math.min(5, Math.round((parseFloat(body.stars) || 0) * 2) / 2)),
         text: String(body.text || "").slice(0, 4000),
         /* A PATH inside the site, never a URL. The page refuses anything
            that is not reviews/media/<name>, and so does this: a reviews
