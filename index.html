@@ -1548,6 +1548,7 @@ window.gvOverpassCacheClear = function () {
           .forEach(k => sessionStorage.removeItem(k)); } catch (e) {}
 };
 
+let _opBest = null;            // the public mirror that answered last
 async function overpassFetch(query, ms, opts) {
   const hit = _opCacheGet(query);
   if (hit) return hit;
@@ -1604,6 +1605,13 @@ async function overpassFetch(query, ms, opts) {
        queue; listing it again would spend a queue slot re-asking something
        that has already answered or refused. */
     let eps = (CFG.OVERPASS || []).filter(e => e.charAt(0) !== "/");
+    /* The mirror that last answered goes first. On 18 Oct 2026 the main
+       instance (overpass-api.de) stopped answering while kumi.systems
+       replied to the same query in under a second - and because the main
+       instance was always tried first with the WHOLE remaining budget, the
+       site finder spent its full 75 seconds on a server that was down and
+       then told every reader "No open ground here". */
+    if (_opBest && eps.indexOf(_opBest) > 0) eps = [_opBest].concat(eps.filter(e => e !== _opBest));
     /* Exponential backoff on the one mirror that has the data, rather than
        a fast sweep across mirrors that do not. Overpass throttles by
        telling you to come back, not by failing outright, so waiting is the
@@ -1631,8 +1639,12 @@ async function overpassFetch(query, ms, opts) {
           await new Promise(r => setTimeout(r, wait));
         }
       }
-      for (const ep of eps) {
-        const budget = Math.min(ms || 90000, Math.max(0, left()));
+      for (let ei = 0; ei < eps.length; ei++) {
+        const ep = eps[ei];
+        /* One mirror may not spend everything while others are still
+           untried: a dead one costs at most 20 s, then the next is asked. */
+        const lastOne = ei === eps.length - 1;
+        const budget = Math.min(ms || 90000, Math.max(0, left()), lastOne ? Infinity : 20000);
         if (budget <= 0) break;
         /* Resolve the local endpoint against the ENGINE's origin, not the
            page's.
@@ -1671,7 +1683,10 @@ async function overpassFetch(query, ms, opts) {
         _opLast = Date.now();
         // An empty array is a throttle or a mirror without your region's
         // data — never proof that nothing is there. See CFG.OVERPASS.
-        if (j && Array.isArray(j.elements) && j.elements.length) { _opCacheSet(query, j); return j; }
+        if (j && Array.isArray(j.elements) && j.elements.length) {
+          if (!local) _opBest = ep;
+          _opCacheSet(query, j); return j;
+        }
       }
     }
     _opLast = Date.now();
@@ -9649,8 +9664,10 @@ async function quickPlot() {
   }
   else if (p.reason === "moved") toast("Moved " + p.moved_m + " m to clear buildings and roads");
   else if (p.reason === "shrunk") toast("Largest clear plot here: " + (p.area_m2 / 10000).toFixed(2) + " ha");
-  else if (p.reason === "no_open_ground" || p.reason === "osm_unavailable")
+  else if (p.reason === "no_open_ground")
     toast("Unchecked plot — densely built here, move it by hand");
+  else if (p.reason === "osm_unavailable")
+    toast("Unchecked plot — the map service did not answer, so check it by hand");
   else toast("Sited on open ground");
 }
 
@@ -12982,7 +12999,7 @@ function gvWelcome(opts) {
       <p>It ranks every neighbourhood by where green cover is falling fastest against
         worsening air, using 42 months of satellite and air-quality history. Then you draw
         a plot and it designs the planting on it: species matched to the measured soil,
-        climate and pollution, a costed bill of quantities, a twelve-check design review,
+        climate and pollution, a costed bill of quantities, a design review against the brief for what you chose to build,
         and a 3D view of the real street.</p>
 
       <h5 class="gv-h5">Who it is for</h5>
@@ -16940,10 +16957,19 @@ async function openBuilder(land) {
          did not open, even if the dialog itself is unavailable. */
       const ask = (typeof gvAsk2 === "function") ? gvAsk2 : window.gvAsk2;
       const msg = why + "\n\nMove the map to a less dense area and try again.";
+      /* The title has to match the reason. "No open ground here" was shown
+         when the map service simply did not answer, so a working search on
+         a bad network day read as "this whole city is built on". */
+      const title = (sited && sited.reason === "no_open_ground") ? "No open ground here"
+                  : (sited && sited.reason === "only_built_ground") ? "Only built-up ground nearby"
+                  : (sited && sited.reason === "check_timed_out") ? "Still checking the ground"
+                  : "Could not read the map here";
+      const msg2 = (sited && sited.reason === "no_open_ground") || (sited && sited.reason === "only_built_ground")
+        ? msg : why + "\n\nThe map service did not answer in time. Wait a few seconds and try again.";
       if (typeof ask === "function") {
-        await ask({ title: "No open ground here", sub: msg, ok: "OK" });
+        await ask({ title, sub: msg2, ok: "OK" });
       } else {
-        toast("No open ground here — " + why);
+        toast(title + " — " + why);
       }
       return;
     }
