@@ -1882,15 +1882,76 @@ const GVG = window.GVG = {
 
 const GREEN_TILE_BUDGET = 30;      // tiles fetched per render; ~2 MB and ~1 s
 
-/* Greens for cover, sand and grey for little or none. Red read as an alarm
-   over every roof and road in a dense city, which is not what "bare" means. */
+/* WHAT IS ON THE GROUND, NOT JUST HOW GREEN IT IS.
+
+   This used to colour every cell by its greenness alone, on a ramp that
+   ended in red for "bare". In a dense city almost nothing is green, so the
+   whole of central Ahmedabad - rooftops, roads and the Sabarmati itself -
+   came out red, labelled bare, as if it were all open ground waiting for
+   trees. A roof is not plantable and a river is not bare.
+
+   Each pixel is now sorted into one of four kinds by its colour: vegetation
+   (the same greenness index as before), water (dark, blue-leaning, low
+   saturation), open ground (tan, ochre and brown soil), and built-up (the
+   greys and whites of roofs and paving). A cell takes the colour of what
+   dominates it, and only open ground - the land you could actually plant -
+   is drawn in a warm colour. Built-up is drawn faint so the city recedes
+   and the green and the opportunities stand out.
+
+   It is still read off an RGB photograph, not a land-cover survey: wet
+   soil can read as built-up and a green roof as canopy. The legend says so. */
+/* The original Green view palette, unchanged: dark green through yellow to
+   orange and red, at the same opacity it always used. Only the sorting into
+   kinds is new; water had no colour before, so it takes the map's own blue. */
+const GV_LAND = {
+  dense:  { col: [15, 110, 60],   a: .58, label: "Dense canopy" },
+  good:   { col: [45, 170, 90],   a: .58, label: "Good canopy" },
+  some:   { col: [130, 200, 90],  a: .58, label: "Some canopy" },
+  sparse: { col: [245, 190, 60],  a: .58, label: "Sparse green" },
+  soil:   { col: [245, 120, 50],  a: .58, label: "Open ground — could be planted" },
+  built:  { col: [239, 68, 68],   a: .58, label: "Built-up or paved" },
+  water:  { col: [56, 132, 246],  a: .58, label: "Water" }
+};
+const GV_LAND_ORDER = ["dense", "good", "some", "sparse", "soil", "built", "water"];
+const GV_TEX = { water: 6, darkBr: 62, darkWater: 22, soil: 26 };
+
+function gvPixelKind(r, g, b) {
+  const v = vegScore(r, g, b);
+  if (v > 0) return { k: 0, v };
+  const br = (r + g + b) / 3, mx = Math.max(r, g, b), mn = Math.min(r, g, b);
+  if ((b > r + 8 && b >= g - 6 && br < 160) || (br < 72 && b >= r - 3 && mx - mn < 26)) return { k: 1, v: 0 };
+  if (r >= g - 3 && r > b + 16 && mx - mn > 20 && br > 70 && br < 220) return { k: 2, v: 0 };
+  return { k: 3, v: 0 };
+}
+
+function gvCellKind(veg, water, soil) {
+  if (veg >= .50) return "dense";
+  if (veg >= .34) return "good";
+  if (veg >= .20) return "some";
+  if (water >= .45) return "water";
+  if (soil >= .30 && soil >= veg) return "soil";
+  if (veg >= .08) return "sparse";
+  return "built";
+}
+
+/* Kept for anything else that colours by greenness alone. */
 function heatColor(f) {
-  if (f < .08) return [168, 162, 150];
-  if (f < .20) return [228, 218, 168];
-  if (f < .34) return [212, 226, 138];
-  if (f < .50) return [140, 198, 92];
-  if (f < .65) return [56, 158, 84];
-  return [18, 108, 58];
+  if (f < .08) return [239, 68, 68];
+  if (f < .20) return [245, 120, 50];
+  if (f < .34) return [245, 190, 60];
+  if (f < .50) return [130, 200, 90];
+  if (f < .65) return [45, 170, 90];
+  return [15, 110, 60];
+}
+
+/* "18% canopy" says how green the view is; this says what the rest is. */
+function gvLandShareLine() {
+  const kc = GVG.kinds;
+  if (!kc || !kc.cells) return "";
+  const pc = k => Math.round(kc.counts[k] / kc.cells * 100);
+  return '<div class="gl-sub"><b style="color:rgb(' + GV_LAND.soil.col.join(",") + ')">' + pc("soil") +
+    '% open ground</b> you could plant · ' + pc("built") + '% built-up' +
+    (pc("water") ? ' · ' + pc("water") + '% water' : '') + '</div>';
 }
 
 /* Largest tile zoom whose tile count over the current viewport stays inside
@@ -2031,22 +2092,41 @@ async function drawGreen() {
 
     let cells = 0, sumFrac = 0;
     const hist = [0, 0, 0, 0, 0, 0];
+    const kinds = {}; GV_LAND_ORDER.forEach(k => kinds[k] = 0);
+    const dim = GVG.showForecast && GVG.loss ? 0.40 / 0.58 : 1;      // the original .40 under the forecast
     for (let cy = 0; cy < gr; cy++) for (let cx = 0; cx < gc; cx++) {
-      let s = 0, t = 0;
-      for (let py = cy * CELL; py < (cy + 1) * CELL; py += 2)
+      let s = 0, t = 0, nw = 0, ns = 0, sumBr = 0, tex = 0, prev = -1;
+      for (let py = cy * CELL; py < (cy + 1) * CELL; py += 2) {
+        prev = -1;
         for (let px = cx * CELL; px < (cx + 1) * CELL; px += 2) {
           const i = (py * W + px) * 4, r = d[i], g = d[i + 1], bl = d[i + 2];
           const br = (r + g + bl) / 3;
-          if (br < 16 || br > 244) continue;       // shadow / specular blowout
-          t++; s += vegScore(r, g, bl);
+          if (prev >= 0) tex += Math.abs(br - prev);
+          prev = br;
+          if (br < 10 || br > 244) continue;       // deep shadow / specular blowout
+          t++; sumBr += br;
+          const pk = gvPixelKind(r, g, bl);
+          if (pk.k === 0) s += pk.v; else if (pk.k === 1) nw++; else if (pk.k === 2) ns++;
         }
+      }
       if (t < 40) continue;                        // too little valid pixel to call
       const f = s / t;
+      /* Texture: how much brightness changes between neighbouring pixels.
+         Tree crowns and rooftops are busy; open water and bare soil are
+         smooth. Without it the Sabarmati - greenish, dark and still - read
+         as canopy, and blocks of tan rooftops read as open ground. */
+      const tx = tex / Math.max(1, t), mb = sumBr / t;
       cells++; sumFrac += f;
       hist[f < .08 ? 0 : f < .20 ? 1 : f < .34 ? 2 : f < .50 ? 3 : f < .65 ? 4 : 5]++;
-      const c = heatColor(f);
-      oc.fillStyle = "rgba(" + c[0] + "," + c[1] + "," + c[2] + "," +
-                     (GVG.showForecast && GVG.loss ? ".40" : ".58") + ")";
+      let kind = gvCellKind(f, nw / t, ns / t);
+      if (kind !== "water" && ((mb < 95 && tx < GV_TEX.water) || (mb < GV_TEX.darkBr && tx < GV_TEX.darkWater))) kind = "water";
+      else if (kind === "soil" && tx > GV_TEX.soil) kind = "built";
+      if (GVG.debug) (GVG.dbg = GVG.dbg || []).push({ lat: y2lat(ymin + (cy * CELL + CELL / 2) / 256, z),
+        lon: x2lon(xmin + (cx * CELL + CELL / 2) / 256, z), f: +f.toFixed(2), tx: +tx.toFixed(1), mb: Math.round(mb),
+        w: +(nw / t).toFixed(2), so: +(ns / t).toFixed(2), kind });
+      kinds[kind]++;
+      const L = GV_LAND[kind];
+      oc.fillStyle = "rgba(" + L.col.join(",") + "," + (L.a * dim).toFixed(2) + ")";
       oc.fillRect(cx * CELL, cy * CELL, CELL, CELL);
     }
 
@@ -2060,6 +2140,7 @@ async function drawGreen() {
        separately at a fixed scale, so it does not move when the reader
        zooms. Drawn first and measured second, because the raster is what
        the reader is waiting to see. */
+    GVG.kinds = { counts: kinds, cells };
     GVG.stats = {
       pct: cells ? Math.round((sumFrac / cells) * 100) : 0,
       cells, z, hist,
@@ -2098,7 +2179,7 @@ const LOSS_COL = { green: "#15803d", yellow: "#f59e0b", red: "#b91c1c" };
 const LOSS_WORD = {
   green: "Vegetated and holding",
   yellow: "Green now, forecast to lose it",
-  red: "Low vegetation — plantable"
+  red: "Low greenness — mostly built-up or bare"
 };
 
 async function greenLoadLoss() {
@@ -2137,7 +2218,9 @@ function greenDrawHexes() {
     }),
     onEachFeature: (f, lyr) => {
       const p = f.properties;
-      lyr.bindTooltip(LOSS_WORD[p.status] + " · NDVI " + p.ndvi_latest.toFixed(3),
+      lyr.bindTooltip(LOSS_WORD[p.status] + " · NDVI " + p.ndvi_latest.toFixed(3) +
+                      (p.status === "yellow" && p.ndvi_latest > 0.01
+                        ? " · forecast " + Math.round(p.ndvi_pred_delta / p.ndvi_latest * 100) + "% of its greenness" : ""),
                       { sticky: true, direction: "top" });
       lyr.on("click", e => { L.DomEvent.stopPropagation(e); greenCellReport(p); });
       lyr.on("mouseover", () => lyr.setStyle({ weight: 3, fillOpacity: .6 }));
@@ -2230,9 +2313,10 @@ function greenSummaryHTML(){
   if(!su) return "";
   return '<div class="gl-sum">' +
     '<div class="gl-sum-h">Cover at risk</div>' +
-    '<div class="gl-sum-row"><b>' + su.atRiskKm2.toFixed(0) + "</b> km\u00b2 vegetated today, " +
-      "forecast to decline</div>" +
-    '<div class="gl-sum-row">across <b>' + su.atRisk + "</b> cells</div>" +
+    '<div class="gl-sum-row"><b>' + su.atRisk + "</b> of " + su.total + " cells are green today and " +
+      "forecast to lose greenness</div>" +
+    '<div class="gl-sum-row">They cover about <b>' + su.atRiskKm2.toFixed(0) + "</b> km\u00b2 of the city " +
+      "(the whole cell, not only its green part)</div>" +
     (su.meanTrend != null
       ? '<div class="gl-sum-why">Losing NDVI at ' + su.meanTrend.toFixed(4) +
         "/yr on average \u2014 the steepest is " + su.worstDelta.toFixed(3) +
@@ -2260,11 +2344,15 @@ function greenDrawLabels(){
     let x = 0, y = 0;
     for(const q of ring){ x += q[0]; y += q[1]; }
     const d = pr.ndvi_pred_delta;
+    /* "-0.08" is an NDVI delta, a unit nobody reading a map has. As a share
+       of the cell's own greenness it reads as what it is: this much of the
+       green here is forecast to go. */
+    const rel = d != null && pr.ndvi_latest > 0.01 ? Math.round(d / pr.ndvi_latest * 100) : null;
     marks.push(L.marker([y / ring.length, x / ring.length], {
       interactive: false, keyboard: false,
       icon: L.divIcon({
         className: "pri-badge-wrap",
-        html: '<span class="grn-badge">' + (d == null ? "?" : d.toFixed(2)) + "</span>",
+        html: '<span class="grn-badge">' + (rel == null ? "?" : rel + "%") + "</span>",
         iconSize: [44, 20], iconAnchor: [22, 10]
       })
     }));
@@ -2349,8 +2437,7 @@ function greenLegend() {
                ? st.cells.toLocaleString() + ' tiles sampled at z' + st.z +
                  ' (about 2 m a pixel)'
                : 'measuring at crown scale…') +
-           '</div>' +
-           '<div class="gl-sub">' + st.bare + '% reads as bare or near-bare</div>';
+           '</div>' + gvLandShareLine();
   } else {
     head = '<div class="gl-big gl-wait">·&nbsp;·&nbsp;·</div>' +
            '<div class="gl-sub">reading tiles…</div>';
@@ -2359,10 +2446,16 @@ function greenLegend() {
   const lossCount = GVG.loss && GVG.loss.count;
   el.innerHTML =
     '<div class="gl-h">Canopy now</div>' + head +
-    '<div class="gl-ramp">' + ramp.map(r => {
-      const c = heatColor(r[0]);
-      return '<div class="gl-row"><i style="background:rgb(' + c.join(",") + ')"></i>' + r[1] + "</div>";
+    '<div class="gl-ramp">' + GV_LAND_ORDER.map(k => {
+      const L = GV_LAND[k], kc = GVG.kinds;
+      const share = kc && kc.cells ? Math.round(kc.counts[k] / kc.cells * 100) : null;
+      return '<div class="gl-row"><i style="background:rgb(' + L.col.join(",") + ')' +
+        '"></i>' + L.label +
+        (share != null ? '<b>' + share + '%</b>' : '') + "</div>";
     }).join("") + "</div>" +
+    '<div class="gl-fine">Source: Esri World Imagery (Maxar, Earthstar), read cell by cell by Green Vision ' +
+      'from colour and texture \u2014 a visible-band index, not NDVI, and not AI. Orange is open soil with no ' +
+      'building on it \u2014 the first places to check for planting. Wet soil can read as built-up; confirm on site.</div>' +
     '<label class="gl-tog"><input type="checkbox" id="glCanopy"' +
       (GVG.showCanopy ? " checked" : "") + "> Show canopy</label>" +
     (GVG.loss
@@ -2370,7 +2463,7 @@ function greenLegend() {
         '<div class="gl-ramp">' +
           ["green", "yellow", "red"].map(k =>
             '<div class="gl-row"><i style="background:' + LOSS_COL[k] + '"></i>' +
-            (k === "yellow" ? "Losing cover" : k === "green" ? "Holding" : "Already bare") +
+            (k === "yellow" ? "Green now, forecast to decline" : k === "green" ? "Green and holding" : "Low greenness (mostly built-up)") +
             '<b>' + (lossCount ? lossCount[k] : "") + "</b></div>").join("") +
         "</div>" +
         /* The three buckets are the zones the forecast could SCORE, and
@@ -2384,7 +2477,8 @@ function greenLegend() {
         '<label class="gl-tog"><input type="checkbox" id="glLabels"' +
           (GVG.showLabels ? " checked" : "") + "> Show the rate of loss</label>" +
         greenSummaryHTML() +
-        '<div class="gl-fine">Amber = green today, predicted to decline. ' +
+        '<div class="gl-fine">Amber hexagons are green today and forecast to lose ' +
+        'greenness; the badge is the forecast change as a share of today\u2019s greenness. ' +
         'Click a hexagon for its history.</div>'
       : '<div class="gl-fine">Canopy here is a visible-band greenness index from ' +
         'current imagery — <b>not</b> NDVI, and not a time series. The ' +
