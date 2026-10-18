@@ -4353,6 +4353,7 @@ path.gv-surf:hover{ filter:drop-shadow(0 0 4px #12b981); }
 .gv-brieflist li.ok span{ color:var(--ink-soft); }
 .gv-brieflist em{ display:block; font-style:normal; font-weight:600; font-size:11px; color:var(--ink-soft); }
 .gv-briefmeta{ margin:8px 0 0; font-size:11px; color:var(--ink-soft); font-weight:600; }
+.gv-check-na{ opacity:.55; }
 .gv-briefsrc{ margin:6px 0 0; font-size:10px; line-height:1.45; color:var(--ink-soft); font-weight:600; opacity:.9; }
 .gv-briefbtns{ display:flex; flex-wrap:wrap; gap:6px; margin-top:9px; }
 .gv-briefout:not(:empty){ margin-top:10px; padding-top:10px; border-top:1px solid var(--line); }
@@ -11732,12 +11733,19 @@ function drawReviewPanel() {
 
 
     <div class="gv-checks">
-      ${r.checks.map(ch => `
+      ${r.checks.map(ch => ch.na ? `
+        <div class="gv-check gv-check-na" title="Not scored: it does not apply to this design or project type, so it is left out of the score rather than counted as zero">
+          <span>${ch.label}</span>
+          <i></i>
+          <b>n/a</b>
+        </div>` : `
         <div class="gv-check">
           <span>${ch.label}</span>
           <i><em style="width:${ch.pass * 100}%;background:${ch.pass >= .85 ? "#12b981" : ch.pass >= .72 ? "#4ade80" : ch.pass >= .5 ? "#f5a623" : "#ef4444"}"></em></i>
           <b>${round(ch.pass * 100)}</b>
         </div>`).join("")}
+    <p class="gv-briefsrc">Source: Green Vision’s rule-based design review (thirteen checks, weights shown in the code), scored against
+      the brief for ${gvAn(GOAL_WORD[r.goal || gvGoalOf(d)])}. Computed, not AI. n/a = does not apply here, left out of the score.</p>
     </div>
 
     ${r.flaws.length ? `

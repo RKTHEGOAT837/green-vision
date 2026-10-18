@@ -730,7 +730,10 @@ class Engine:
                 facts.append(f"Green cover is {'falling' if row['ndvi_slope'] < 0 else 'rising'} "
                              f"by {abs(row['ndvi_slope']):.4f} NDVI a year")
             if row.get("plantable_space") is not None:
-                facts.append(f"Share of the cell not vegetated: {round(row['plantable_space'] * 100)}%")
+                # Worded so it cannot be read as green cover: the model turned
+                # "not vegetated: 55%" into "green cover at 55%".
+                facts.append(f"Ground without any vegetation, so with room to plant: "
+                             f"{round(row['plantable_space'] * 100)}% of the cell")
             if row.get("soil"):
                 sd = row["soil"]
                 if sd.get("ph") is not None:
