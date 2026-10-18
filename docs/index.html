@@ -922,16 +922,48 @@ const GVAI = window.GVAI = { status: null, asked: null };
 function gvAn(w, cap) { const t = String(w || ""); return (/^[aeiou]/i.test(t) ? (cap ? "An " : "an ") : (cap ? "A " : "a ")) + t; }
 window.gvAn = gvAn;
 
-GVAI.ready = async function () {
-  if (GVAI.status) return GVAI.status;
+/* "Not running" is never remembered.
+
+   The studio opens in a second and the engine takes several to start (and
+   the page only learns the engine's address once its probe answers). The
+   first status check used to land in that gap, record { offline: true },
+   and keep it for the whole session - so every AI button said "the engine
+   is not running" while the engine sat there, warm, with the model loaded
+   on the GPU. Only a real answer is cached now; an unreachable engine is
+   asked again on the next call, and polled in the background until it
+   answers, at which point the buttons appear by themselves. */
+GVAI.ready = async function (force) {
+  if (GVAI.status && !GVAI.status.offline && !force) return GVAI.status;
   if (!GVAI.asked) GVAI.asked = (async () => {
     try {
       const r = await fetch(gvEngineUrl("/api/ai/status"), { cache: "no-cache" });
-      GVAI.status = r.ok ? await r.json() : { old: true };
+      // A 404 before the engine's address is known comes from the page's own
+      // server, not from an old engine, so it is retried like any miss.
+      GVAI.status = r.ok ? await r.json()
+        : (r.status === 404 && window.__gvEngineOrigin ? { old: true } : { offline: true });
     } catch (e) { GVAI.status = { offline: true }; }
+    GVAI.asked = null;
+    if (GVAI.status.offline) GVAI.watch();
     return GVAI.status;
   })();
   return GVAI.asked;
+};
+GVAI.watch = function () {
+  if (GVAI._watching) return;
+  GVAI._watching = true;
+  let n = 0;
+  const tick = async () => {
+    n++;
+    await GVAI.ready(true);
+    if (!GVAI.status.offline) {
+      GVAI._watching = false;
+      if (GVAI.applyFlags) GVAI.applyFlags();
+      return;
+    }
+    // Every 3 s for the first minute, then every 15 s.
+    setTimeout(tick, n < 20 ? 3000 : 15000);
+  };
+  setTimeout(tick, 3000);
 };
 GVAI.can = function (job) {
   const s = GVAI.status;
@@ -960,6 +992,8 @@ async function gvAIPost(path, body, ms) {
    use the fallback. */
 async function gvAI(task, facts, extra) {
   await GVAI.ready();
+  // Unreachable a moment ago is not unreachable now: ask once more first.
+  if (GVAI.status && GVAI.status.offline) await GVAI.ready(true);
   if (GVAI.status && (GVAI.status.old || GVAI.status.offline))
     return { ok: false, old: !!GVAI.status.old,
              reason: GVAI.status.old ? "this install predates on-device AI writing" : "the engine is not running" };
