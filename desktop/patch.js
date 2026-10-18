@@ -246,6 +246,17 @@ async function check(version, log = () => {}) {
 
     const st = readState();
     if (st.active && st.active.version === pt.version) return null;     // already running it
+    /* Never stage an OLDER studio than the one running. "Different" was
+       treated as "newer": a copy given 1.9.20 directly staged the published
+       1.9.18 on its next start and would have downgraded itself. */
+    const newer = (a, b) => {
+      const x = String(a).split(".").map(Number), y = String(b).split(".").map(Number);
+      for (let i = 0; i < Math.max(x.length, y.length); i++) {
+        if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) > (y[i] || 0);
+      }
+      return false;
+    };
+    if (st.active && st.active.version && !newer(pt.version, st.active.version)) return null;
     if (st.staged && st.staged.version === pt.version) return null;     // already waiting
     if (st.rolledBack && st.rolledBack.version === pt.version) {
       log("patch " + pt.version + " was rolled back here before — not retrying it");
