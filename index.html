@@ -3712,12 +3712,16 @@ window.addEventListener("DOMContentLoaded",()=>{
 }
 
 /* ---------- account button ---------- */
+/* Beside the report panel, never under it. It sat at a fixed right:14px
+   while the panel (z-index 1200) opened over it - open or railed, the
+   account button was covered and could only be reached by keyboard. It now
+   follows the panel's measured inner edge, like the zoom column does. */
 .gv-authbtn{
-  position:absolute; top:70px; right:14px; z-index:1100;
+  position:absolute; top:70px; right:calc(14px + var(--gv-ir,0px)); z-index:1100;
+  transition:right .18s, transform .12s ease;
   height:40px; padding:0 13px; border:0; border-radius:13px;
   display:flex; align-items:center; gap:8px;
   font:700 12.5px 'Manrope',sans-serif; color:var(--ink);
-  transition:transform .12s ease;
 }
 .gv-authbtn:hover{ transform:translateY(-2px); }
 .gv-authbtn svg{ width:17px; height:17px; }
