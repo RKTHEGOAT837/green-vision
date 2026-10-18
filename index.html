@@ -971,18 +971,47 @@ window.gvAI = gvAI;
 const GV_AI_ICON = '<svg class="gv-aiico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l2 5 5 2-5 2-2 5-2-5-5-2 5-2z"/><path d="M19 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/></svg>';
 window.GV_AI_ICON = GV_AI_ICON;
 
+/* Every model by its full name, quantisation and runtime - a reader is
+   owed the name of whatever wrote the sentence they are reading. */
+const GV_MODEL_NAME = {
+  "qwen2.5-1.5b-instruct-int4-ov": "Qwen 2.5 1.5B Instruct (Alibaba Qwen, INT4)",
+  "whisper-small-int8-ov": "Whisper small (OpenAI, INT8)",
+  "internvl2-1b-int4-ov": "InternVL2 1B (Shanghai AI Lab, INT4)"
+};
+function gvModelName(id) { return GV_MODEL_NAME[id] || id || "the local model"; }
+window.gvModelName = gvModelName;
+/* The engine's own source tag, said in words. */
+function gvEngineSourceLabel(src) {
+  const t = String(src || "");
+  if (/^openvino-local \(written/.test(t)) {
+    const dev = (t.match(/\(written on this machine, (\w+)\)/) || [])[1];
+    return "Species: Green Vision matcher (soil, rainfall, air quality). Reason AI-written by " +
+      gvModelName("qwen2.5-1.5b-instruct-int4-ov") + " via Intel OpenVINO on " + gvDeviceName(dev) + ", checked against the cell’s figures";
+  }
+  if (/^offline-engine/.test(t)) return "Green Vision offline engine — rule-based, no AI model used";
+  if (/^openvino-local/.test(t)) return "Green Vision engine with " + gvModelName("qwen2.5-1.5b-instruct-int4-ov") + " via Intel OpenVINO";
+  return "Engine · " + (t || "local");
+}
+window.gvEngineSourceLabel = gvEngineSourceLabel;
+function gvDeviceName(d) { return d === "GPU" ? "this computer\u2019s Intel GPU" : d === "CPU" ? "this computer\u2019s CPU" : d === "NPU" ? "this computer\u2019s NPU" : (d || "this computer"); }
+window.gvDeviceName = gvDeviceName;
+
 /* The answer, labelled with where it came from. */
 function gvAIBlock(res, fallback, from) {
   const e = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   if (res && res.ok && res.text) {
     return '<p class="gv-aitext">' + e(res.text) + "</p>" +
-      '<span class="gv-aisub">' + GV_AI_ICON + "Written on this computer by " + e(res.model || "the local model") +
-      " on " + e(res.device || "OpenVINO") + " in " + (Math.round((res.ms || 0) / 100) / 10) +
-      " s, from the design’s own numbers. Nothing left this machine.</span>";
+      '<span class="gv-aisub">' + GV_AI_ICON + "<span><b>AI-written.</b> Model: " + e(gvModelName(res.model)) +
+      ", run by Intel OpenVINO on " + e(gvDeviceName(res.device)) + " in " + (Math.round((res.ms || 0) / 100) / 10) +
+      " s. Source facts: " + e(from || "the design") + " computed by Green Vision; every number was checked against them " +
+      "before showing. Nothing left this machine.</span></span>";
   }
+  const web = !window.__GV_DESKTOP__;
   return '<p class="gv-aitext">' + e(fallback) + "</p>" +
-    '<span class="gv-aisub">Written from ' + (from || "the checks") + (res && res.reason ? " — the on-device model was not used: " + e(res.reason) : "") +
-    (res && res.old ? ". Install the latest Green Vision for on-device AI." : ".") + "</span>";
+    '<span class="gv-aisub"><span><b>Not AI-written.</b> Assembled by Green Vision\u2019s own rules from ' + e(from || "the review\u2019s checks") + ". " +
+    (web ? "On-device AI (Qwen 2.5 1.5B on Intel OpenVINO) runs only in the Green Vision desktop app, not in a browser."
+         : res && res.old ? "Install the latest Green Vision for on-device AI."
+         : res && res.reason ? "The on-device model was not used: " + e(res.reason) + "." : "") + "</span></span>";
 }
 window.gvAIBlock = gvAIBlock;
 
@@ -1055,6 +1084,7 @@ function gvMicButton(input, onText) {
     b.classList.remove("busy"); rec = null;
     if (res && res.ok && res.text) {
       input.value = res.text; input.dispatchEvent(new Event("input", { bubbles: true }));
+      if (window.toast) toast("Heard by " + gvModelName(res.model) + " on " + gvDeviceName(res.device) + " (Intel OpenVINO), offline");
       if (onText) onText(res.text);
     } else if (window.toast) toast("Voice: " + ((res && res.reason) || "nothing heard"));
   };
@@ -1184,8 +1214,9 @@ document.addEventListener("click", async ev => {
       '<ul class="gv-brieflist">' + Object.keys(GV_SITE_WORDS).filter(k => a[k] != null).map(k =>
         '<li class="' + (a[k] ? "part" : "ok") + '"><i>' + (a[k] ? "\u25CF" : "\u25CB") + "</i><span>" +
         e(GV_SITE_WORDS[k][a[k] ? 0 : 1]) + "</span></li>").join("") + "</ul>" +
-      '<span class="gv-aisub">' + GV_AI_ICON + "Seen by " + e(res.model) + " on " + e(res.device) + " in " +
-      Math.round(res.ms / 100) / 10 + " s. A small vision model\u2019s reading of one photo \u2014 confirm on site.</span>";
+      '<span class="gv-aisub">' + GV_AI_ICON + "<span><b>AI-read.</b> Model: " + e(gvModelName(res.model)) + ", run by Intel OpenVINO on " +
+      e(gvDeviceName(res.device)) + " in " + Math.round(res.ms / 100) / 10 + " s, from your photo only. A small vision model\u2019s reading " +
+      "of one photo \u2014 confirm on site.</span></span>";
     return;
   }
   // Species from a photo, chosen from the palette the studio is offering.
@@ -1199,7 +1230,7 @@ document.addEventListener("click", async ev => {
   if (!res || !res.ok) { if (window.toast) toast("Could not tell: " + ((res && res.reason) || "no answer")); return; }
   const chip = chips.find(c => c.dataset.tree === res.species);
   if (chip) { chip.scrollIntoView({ block: "center", behavior: "smooth" }); chip.classList.add("gv-chip-flash"); setTimeout(() => chip.classList.remove("gv-chip-flash"), 2400); }
-  if (window.toast) toast("Looks most like " + res.species + " \u2014 a guess from one photo; check the leaves and bark. Click it to plant.");
+  if (window.toast) toast("Looks most like " + res.species + " \u2014 a guess by " + gvModelName(res.model) + " (Intel OpenVINO) from one photo; check the leaves and bark.");
 });
 
 /* Area explainer: one delegated handler, because the point report is
@@ -2414,9 +2445,9 @@ function greenLegend() {
         (k === "built" ? ';opacity:.55' : '') + '"></i>' + L.label +
         (share != null ? '<b>' + share + '%</b>' : '') + "</div>";
     }).join("") + "</div>" +
-    '<div class="gl-fine">Read from today\u2019s satellite photo, cell by cell. Orange is open ' +
-      'soil with no building on it \u2014 the first places to check for planting. Wet soil can ' +
-      'read as built-up; confirm on site.</div>' +
+    '<div class="gl-fine">Source: Esri World Imagery (Maxar, Earthstar), read cell by cell by Green Vision ' +
+      'from colour and texture \u2014 a visible-band index, not NDVI, and not AI. Orange is open soil with no ' +
+      'building on it \u2014 the first places to check for planting. Wet soil can read as built-up; confirm on site.</div>' +
     '<label class="gl-tog"><input type="checkbox" id="glCanopy"' +
       (GVG.showCanopy ? " checked" : "") + "> Show canopy</label>" +
     (GVG.loss
@@ -2891,7 +2922,7 @@ async function engineNarrative(lat,lon,aqi,vegPct){
   box.innerHTML=
     '<div class="ai"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '+
     'stroke-width="2"><path d="M12 2l2 5 5 2-5 2-2 5-2-5-5-2 5-2z"/></svg>'+
-    'Engine · '+esc(j.source||"local")+'</div>'+
+    esc(gvEngineSourceLabel(j.source))+'</div>'+
     esc(j.justification||"")+
     (sp.length?
       '<div style="margin-top:11px;padding-top:10px;border-top:1px solid var(--line)">'+
@@ -4253,8 +4284,28 @@ path.gv-surf:hover{ filter:drop-shadow(0 0 4px #12b981); }
 .gv-hcard p{ margin:9px 0 0; padding-top:8px; border-top:1px solid rgba(255,255,255,.1); color:#b8cbc3; font-size:11px; }
 .gv3d-hover{ position:absolute; z-index:40; pointer-events:none; }
 /* The design over time */
-.gv3d-time{ position:absolute; left:50%; top:70px; transform:translateX(-50%); z-index:12; width:min(560px, calc(100vw - 560px));
-  display:flex; align-items:center; gap:12px; padding:10px 16px 8px 10px; border-radius:16px; }
+.gv3d-time{ position:absolute; left:50%; top:70px; transform:translateX(-50%); z-index:12; width:min(600px, calc(100vw - 560px));
+  display:block; padding:6px 14px 8px 10px; border-radius:16px; }
+.gv3d-trow{ display:flex; align-items:center; gap:12px; }
+.gv3d-tgrip{ display:flex; align-items:center; gap:6px; cursor:move; margin:0 0 4px 2px; user-select:none;
+  font:800 10px 'Manrope',sans-serif; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-soft); }
+.gv3d-tgrip span{ flex:1; }
+.gv3d-tx{ border:0; background:transparent; color:var(--ink-soft); cursor:pointer; font:700 13px/1 'Manrope',sans-serif;
+  width:22px; height:20px; border-radius:6px; }
+.gv3d-tx:hover{ background:rgba(127,140,135,.2); color:var(--ink); }
+.gv3d-tcollapsed .gv3d-tplan, .gv3d-tcollapsed .gv3d-tsay, .gv3d-tcollapsed .gv3d-tticks{ display:none; }
+.gv3d-tplan{ display:flex; flex-wrap:wrap; gap:5px; margin-top:6px; }
+.gv3d-tchip{ font:600 11px 'Manrope',sans-serif; color:var(--ink); background:rgba(127,140,135,.16); border-radius:8px; padding:3px 8px; }
+.gv3d-tchip.bad{ background:rgba(239,68,68,.16); }
+.gv3d-tchip i.w{ font-style:normal; color:#c08a2a; font-weight:800; }
+.gv3d-trisk{ width:100%; font:600 11px/1.45 'Manrope',sans-serif; color:var(--ink); }
+.gv3d-tfine{ width:100%; font:600 9.5px/1.4 'Manrope',sans-serif; color:var(--ink-soft); }
+.gv3d-treopen{ position:absolute; left:50%; top:70px; transform:translateX(-50%); z-index:12; border:0; cursor:pointer;
+  display:flex; align-items:center; gap:6px; padding:8px 14px; border-radius:12px; font:700 12px 'Manrope',sans-serif; color:var(--ink); }
+.gv3d-treopen svg{ width:15px; height:15px; color:var(--brand); }
+.gv3d-crownbtn{ width:100%; margin-top:6px; border:1px solid var(--line); background:transparent; color:var(--ink); cursor:pointer;
+  border-radius:9px; padding:6px 8px; font:700 11px 'Manrope',sans-serif; }
+.gv3d-crownbtn.on{ background:rgba(18,185,129,.16); border-color:var(--brand); }
 .gv3d-tplay{ flex:none; width:40px; height:40px; border-radius:12px; border:0; cursor:pointer; display:grid; place-items:center;
   background:var(--brand,#12b981); color:#fff; box-shadow:0 6px 16px -6px rgba(18,185,129,.8); }
 .gv3d-tplay svg{ width:18px; height:18px; }
@@ -4302,6 +4353,7 @@ path.gv-surf:hover{ filter:drop-shadow(0 0 4px #12b981); }
 .gv-brieflist li.ok span{ color:var(--ink-soft); }
 .gv-brieflist em{ display:block; font-style:normal; font-weight:600; font-size:11px; color:var(--ink-soft); }
 .gv-briefmeta{ margin:8px 0 0; font-size:11px; color:var(--ink-soft); font-weight:600; }
+.gv-briefsrc{ margin:6px 0 0; font-size:10px; line-height:1.45; color:var(--ink-soft); font-weight:600; opacity:.9; }
 .gv-briefbtns{ display:flex; flex-wrap:wrap; gap:6px; margin-top:9px; }
 .gv-briefout:not(:empty){ margin-top:10px; padding-top:10px; border-top:1px solid var(--line); }
 .gv-briefsteps{ margin:0; padding-left:18px; font-size:12px; line-height:1.6; font-weight:600; color:var(--ink); }
@@ -9658,6 +9710,7 @@ async function quickPlot() {
     toast("Placed UNCHECKED — verify it against the imagery yourself");
     warnIfPlotOnBuildings(p, "it was placed without a check");
   }
+  else if (p.imagery_only) toast("Sited from the satellite photo only \u2014 the map service is down, so check the plot before costing it");
   else if (p.reason === "moved") toast("Moved " + p.moved_m + " m to clear buildings and roads");
   else if (p.reason === "shrunk") toast("Largest clear plot here: " + (p.area_m2 / 10000).toFixed(2) + " ha");
   else if (p.reason === "no_open_ground")
@@ -10733,6 +10786,8 @@ function gvBriefCard(d) {
     </ul>
     <p class="gv-briefmeta">Canopy target at maturity: <b>${B.canopy[0]}–${B.canopy[1]}%</b>${
       B.amenity ? "" : " · seating and lights are not scored for this type"}</p>
+    <p class="gv-briefsrc">Source: Green Vision brief for ${esc(gvAn(GOAL_WORD[r.goal]))}, planning rules of thumb drawn from CPCB green-belt
+      guidance, MoHUA/URDPFI open-space norms and IRC SP:21 for avenues. Targets, not statutory requirements. Ticks are measured from your drawing.</p>
     <div class="gv-briefbtns">
       <button class="gv-mini" id="gvBriefSteps">How to lay it out</button>
       <button class="gv-mini gv-mini-ai" id="gvBriefAI">${GV_AI_ICON}Ask AI what to do next</button>
@@ -10898,7 +10953,7 @@ function reviewDesign(d, ctx) {
   check("spacing", "Mature spacing", 1.2, spacePass,
     { title: `${conflicts} pairs will grow into each other`,
       detail: worstPair ? `The tightest is a ${worstPair.a} and a ${worstPair.b} at ${worstPair.got} m apart where their full crowns need ${worstPair.need} m. Crowded trees grow lopsided, shed limbs, and around year 12-18 someone has to fell half of them — the cost of which nobody budgets.` : "Several trees are closer than their mature crowns allow.",
-      fix: "Move trees apart now, while it costs nothing. Use the drawn circles: they are the crown at full size, and they should touch rather than overlap." },
+      fix: "Move trees apart now, while it costs nothing. The circles drawn round each tree (on the map, and in 3D under \u201CShow crowns at full size\u201D) are the crown at full size: they should touch rather than overlap. Red ones overlap a neighbour." },
     trees.length >= 6 && conflicts === 0 ? "No crowding at maturity — the crowns drawn on the map are true to full size." : null);
 
   /* 6 — shade over walking routes */
@@ -14401,7 +14456,7 @@ async function findOpenPlot(area_m2) {
      working. The number is here to stop an UNBOUNDED wait - the bug was a
      promise that never settled - and not to make a slow query quick. The
      result is cached per place, so this is paid once. */
-  const OBST_MS  = (GV.CFG && GV.CFG.SITE_OBSTACLE_MS) || 75000;
+  const OBST_MS  = (GV.CFG && GV.CFG.SITE_OBSTACLE_MS) || (window.__GV_DESKTOP__ ? 75000 : 45000);
   const SEARCH_MS = (GV.CFG && GV.CFG.SITE_SEARCH_MS) || 20000;
   const before = ms => Promise.race([
     Promise.resolve(ms.p).catch(() => null),
@@ -14414,6 +14469,20 @@ async function findOpenPlot(area_m2) {
   } catch (e) { obstacles = null; }
 
   const deadline = Date.now() + SEARCH_MS;
+
+  /* NO MAP, BUT STILL A PHOTOGRAPH.
+     On 18 Oct 2026 every public Overpass mirror was down at once (no
+     answer, 500, 500, 504), and the web version - which has no local map
+     index - told every reader there was no open ground anywhere. The
+     satellite imagery was loading fine the whole time. So when the map
+     cannot answer and is not merely warming up, the search carries on from
+     the imagery alone, with a stricter limit on how much of a square may
+     read as built, and the plot says plainly that only the photo checked
+     it. Roads read as built in the imagery, so they are still avoided. */
+  let imageryOnly = false;
+  if (!obstacles && !(typeof gvOsmWarming === "function" && gvOsmWarming())) {
+    obstacles = []; imageryOnly = true;
+  }
 
   if (!obstacles) {
     // Cannot see what is on the ground, so will not put a park on it.
@@ -14487,7 +14556,7 @@ async function findOpenPlot(area_m2) {
          reading grey is a threshing floor or a track; on an unmapped hole
          in a dense block the same reading is a row of sheds, and at 25% it
          was being accepted. */
-      const cap = hit.open_land ? 30 : 22;
+      const cap = imageryOnly ? 12 : hit.open_land ? 30 : 22;
       if (Date.now() > deadline) { ranOutOfTime = true; break; }
       let built = null;
       try {
@@ -14499,8 +14568,11 @@ async function findOpenPlot(area_m2) {
                                        ms: Math.max(1500, deadline - Date.now()) });
       } catch (e) {}
       if (built != null && built >= cap) { lookedBuilt++; continue; }
+      // From the photo alone, an unread square is not a checked one.
+      if (imageryOnly && built == null) continue;
 
       return {
+        imagery_only: imageryOnly || undefined,
         ring, area_m2: ringAreaM2(ring), sited: true,
         moved_m: Math.round(hit.moved_m),
         shrunk: frac < 1 ? frac : null,
@@ -18445,6 +18517,7 @@ function updateHud() {
     <div class="gv3d-hudrow"><span>Elements</span><b>${B.objects.length}</b></div>
     <div class="gv3d-hudrow"><span>Trees</span><b>${nTrees}</b></div>
     <div class="gv3d-hudrow gv3d-hudcost"><span>${B.objects.length ? "This 3D layout" : "Site preparation only"}</span><b>${cost ? GV.util.inr(cost.grand) : "—"}</b></div>
+    ${nTrees ? `<button class="gv3d-crownbtn${B.showCrowns ? " on" : ""}" onclick="b3dCrownRings(!B.showCrowns); updateHud();">${B.showCrowns ? "Hide" : "Show"} crowns at full size</button>` : ""}
     ${(() => {
       /* The brief for what is being built, in one line, so the 3D view
          keeps the reader on the job they chose on the start screen. */
@@ -18468,6 +18541,8 @@ function builderReview() {
   try { cost = GV.engines.computeCost(d, ctx); rev = GV.engines.reviewDesign(d, ctx); proj = GV.engines.project(d, rev, ctx, 25); }
   catch(e) { toast("Review failed: " + e.message); return; }
 
+  // Spacing trouble: draw the rings the advice talks about.
+  if (rev.flaws.some(f => /grow into each other/.test(f.title || ""))) { GV_FATE.key = null; b3dCrownRings(true); updateHud(); }
   const pane = document.getElementById("gv3dReviewPane");
   pane.classList.add("on");
   pane.innerHTML = `
@@ -18483,6 +18558,10 @@ function builderReview() {
         <div><b>${proj.cum_co2_t} t</b><span>CO\u2082 absorbed</span></div>
         <div><b>\u2212${proj.cooling_end}\u00B0C</b><span>hot-day cooling</span></div>
       </div>
+      <p class="gv-briefsrc">Sources: cost from Green Vision\u2019s cost engine on catalogue rates (2026 Ahmedabad municipal tender order of
+        magnitude, marked assumed: replace with your own schedule). Canopy, CO\u2082 and cooling from Green Vision\u2019s 25-year projection:
+        species growth curves, published per-tree sequestration figures and an urban survival curve (modelled, not measured).
+        Climate and air from Open-Meteo where the area has been read. The review is Green Vision\u2019s rule-based checks, not AI.</p>
       ${rev.brief ? `<h5 class="gv-h5">Your brief</h5><ul class="gv-brieflist">${rev.brief.checks.map(c => `
         <li class="${c.pass >= 0.9 ? "ok" : c.pass >= 0.5 ? "part" : ""}"><i>${c.pass >= 0.9 ? "\u2713" : c.pass >= 0.5 ? "\u25D0" : "\u25CB"}</i>
           <span>${esc(c.label)}<em>${c.pass >= 0.9 ? "" : esc(c.need)}</em></span></li>`).join("")}</ul>
@@ -19062,7 +19141,10 @@ function priLegend(show){
       ? '<div style="margin-top:8px;padding-top:7px;border-top:1px solid var(--line);font-size:11px;line-height:1.45;font-weight:600;color:var(--ink-soft);max-width:220px">' +
         '<b style="color:var(--ink)">What puts the top ' + su.n + ' there:</b> ' +
         su.drivers.slice(0, 3).map(function(d){ return d.label.toLowerCase() + " (" + d.n + ")"; }).join(", ") +
-        '. Bands are by rank within this city.</div>'
+        '. Bands are by rank within this city.</div>' +
+        '<div style="margin-top:6px;font-size:10px;line-height:1.4;font-weight:600;color:var(--ink-soft);max-width:220px">' +
+        'Source: Green Vision engine ranking from 42 months of NASA MODIS NDVI (MOD13Q1) and CAMS air quality via ' +
+        'Open-Meteo, weighted by a published multi-criteria formula. Computed, not AI.</div>'
       : "") +
     '<div style="margin-top:8px;padding-top:7px;border-top:1px solid var(--line);font-weight:600;' +
     'color:var(--ink-soft);font-size:10.5px;max-width:150px;line-height:1.45">' +
@@ -22058,7 +22140,7 @@ async function aSend(text, opts) {
       '<div class="gva-llm" title="Written by the language model that runs ' +
       'on this machine, from the readings above. The figures are checked ' +
       'against those readings; the wording is the model’s own.">' +
-      "Written on this device by the local model · not a measured answer</div>");
+      "AI-written on this device by " + ((window.gvModelName && gvModelName("qwen2.5-1.5b-instruct-int4-ov")) || "the local model") + " via Intel OpenVINO · not a measured answer</div>");
   }
   if (j.source) {
     bubble.insertAdjacentHTML("beforeend",
@@ -24593,9 +24675,21 @@ function gvInfo(o) {
     /* With the time slider away from planting day, say how big it is then. */
     if (typeof B !== "undefined" && B && B.year > 0.4 && o.def) {
       const sc = gvScaleAt(def, B.year);
-      rows.unshift(["In year " + Math.round(B.year), sc > 0
-        ? "about " + gvLen((def.h || 0) * sc) + " tall, " + gvLen(2 * (def.r || 0) * sc) + " across"
-        : "past its natural life - replanted by now"]);
+      rows.unshift(["In year " + Math.round(B.year),
+        "about " + gvLen((def.h || 0) * sc) + " tall, " + gvLen(2 * (def.r || 0) * sc) + " across"]);
+    }
+    /* This tree's own outlook, from the same model the time slider draws. */
+    if (typeof B !== "undefined" && B && o.id && typeof gvTreeFates === "function") {
+      const f = gvTreeFates().get(o.id);
+      if (f) {
+        const yr = new Date().getFullYear();
+        const st = gvTreeState(f, B.year || 0);
+        rows.unshift(["Outlook", st === "dead" ? "Dead by now (" + (f.why[0] || "normal losses") + ") — replant"
+          : st === "wilting" ? "Wilting — likely to die around " + (yr + Math.round(f.death)) + (f.why[0] ? " (" + f.why[0] + ")" : "")
+          : f.death != null && f.death <= 50 ? "At risk — likely to die around " + (yr + Math.round(f.death)) + (f.why[0] ? " (" + f.why[0] + ")" : "")
+          : f.stressed ? "Stressed (" + f.why.join("; ") + ") but likely to survive 50 years"
+          : "Healthy — expected to stand for 50 years"]);
+      }
     }
     if (s.drought != null) rows.push(["Water", s.drought ? "Drought-hardy once established" : "Needs regular watering"]);
     if (s.pol != null) rows.push(["Pollution tolerance", s.pol + " / 5"]);
@@ -24771,7 +24865,7 @@ function b3dWireHover(root, canvas) {
     if (!o) { clear(); return; }
     if (id !== curId) {
       curId = id;
-      tip.innerHTML = gvCardHtml(gvInfo({ def: o.def })) +
+      tip.innerHTML = gvCardHtml(gvInfo({ def: o.def, id: o.id })) +
         '<div class="gv3d-hover-act">' + (B.tool ? "Pick <b>Select</b> to remove it" : "Click to remove") + '</div>';
       if (box) B.scene.remove(box);
       box = new THREE.Box3Helper(gvBounds(o.mesh), 0x12b981); box.material.depthTest = false; box.renderOrder = 999;
@@ -24838,69 +24932,307 @@ function gvSpeciesOf(ref) {
 function gvScaleAt(def, t) {
   if (def.kind === "tree") {
     const s = gvSpeciesOf(def.ref);
-    if (s && s.life && t > s.life) return 0;                     // past its life: gone, and replaced in reality
     const g = gvGrowth(s ? s.growth : 12, t);
     return Math.max(0.14, Math.sqrt(g));
   }
   const G = GV_GROW_AREA[def.ref];
   return G ? Math.max(0.3, Math.sqrt(gvGrowth(G, t))) : 1;
 }
+
+/* =====================================================================
+   WHICH TREES WILT, AND WHICH DIE
+   =====================================================================
+   The slider used to grow every tree, and report one city-wide survival
+   figure ("~50% of trees standing") that no single tree in the scene
+   obeyed. A planner cannot act on an average: the question is WHICH trees
+   are in trouble, why, and when.
+
+   Each tree now has its own outlook, from three things the studio already
+   measures:
+     - fit: how well its species suits this place's air, rainfall, heat
+       and the project type (the same score the palette ranks by);
+     - crowding: how many neighbours its full-grown crown runs into
+       (the review's 0.78 x (ra + rb) rule);
+     - lifespan: the species' natural life.
+   The baseline is the same urban survival curve the projection uses (about
+   80% alive at year 3, then about 1% loss a year). A tree's risk raises
+   that curve to a power, so an ill-suited, crowded tree loses survival
+   several times faster. Which of the at-risk trees actually dies is fixed
+   per tree (a stable draw from its id), so the same layout always tells
+   the same story and scrubbing the slider back and forth does not flicker.
+
+   Shown in the scene: yellowing when a tree is stressed, browning in the
+   three years before it is predicted to die, and a bare grey tree after.
+   It is a projection from planning rules of thumb, not a diagnosis, and
+   the panel says so. */
+const GV_FATE = { key: null, map: null };
+
+function gvHash01(str) {
+  let h = 2166136261;
+  for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return ((h >>> 0) % 100000) / 100000 * 0.98 + 0.01;
+}
+
+function gvTreeFates() {
+  if (!B) return new Map();
+  const trees = B.objects.filter(o => o.def.kind === "tree");
+  const goal = (window.state && window.state.goal) || "park";
+  const key = goal + "|" + trees.map(o => o.id + "@" + Math.round(o.x) + "," + Math.round(o.z)).join(";");
+  if (GV_FATE.key === key && GV_FATE.map) return GV_FATE.map;
+  let ranked = [];
+  try { ranked = (GV.rankedSpecies && GV.rankedSpecies(GV.ctx || {}, goal)) || []; } catch (e) {}
+  const fitOf = k => ranked.find(s => s.key === k) || null;
+  const map = new Map();
+  for (const o of trees) {
+    const s = gvSpeciesOf(o.def.ref) || {};
+    const fr = fitOf(o.def.ref);
+    const fit = fr && fr.fit != null ? fr.fit : 0.7;
+    const ra = s.radius || o.def.r || 4;
+    let crowd = 0;
+    for (const q of trees) {
+      if (q === o) continue;
+      const sq = gvSpeciesOf(q.def.ref) || {};
+      const rb = sq.radius || q.def.r || 4;
+      const d = Math.hypot(o.x - q.x, o.z - q.z);
+      if (d < 0.78 * (ra + rb)) crowd++;
+    }
+    const why = [];
+    let risk = 1;
+    if (fit < 0.42) { risk += 2.2; why.push(fr && fr.warn ? fr.warn : "poorly suited to this site"); }
+    else if (fit < 0.62) { risk += 0.8; why.push(fr && fr.warn ? fr.warn : "only a fair fit for this site"); }
+    if (crowd) { risk += 0.9 * Math.min(crowd, 3); why.push("crowded by " + crowd + " neighbour" + (crowd > 1 ? "s" : "") + " at full size"); }
+    if (!why.length) why.push("normal urban losses (storms, damage, disease)");
+    const u = gvHash01(o.id + "|" + o.def.ref);
+    let death = null;
+    for (let t = 0.25; t <= 50; t += 0.25) {
+      if (Math.pow(gvSurvival(t), risk) < u) { death = t; break; }
+    }
+    if (s.life && s.life <= 50 && (death == null || s.life < death)) {
+      death = s.life; why.push("reaches the end of its natural life (about " + s.life + " years)");
+    }
+    map.set(o.id, { death, risk, crowd, fit, why, stressed: risk >= 1.8 });
+  }
+  GV_FATE.key = key; GV_FATE.map = map;
+  return map;
+}
+
+/* What state a tree is in at year t. */
+function gvTreeState(f, t) {
+  if (!f) return "ok";
+  if (f.death != null && t >= f.death) return "dead";
+  if (f.death != null && t >= Math.max(0.5, f.death - 3)) return "wilting";
+  if (f.stressed && t >= 2) return "stressed";
+  return "ok";
+}
+
+const GV_TINT = { stressed: 0xd9c25a, wilting: 0xa0703a, dead: 0x7d746a };
+function gvTintTree(o, state) {
+  if (o._tint === state) return;
+  // A tree that has never been unwell keeps its shared materials.
+  if (state === "ok" && !o._tinted) { o._tint = "ok"; return; }
+  o._tint = state; o._tinted = true;
+  o.mesh.traverse(m => {
+    if (!m.material || !m.isMesh) return;
+    const mats = Array.isArray(m.material) ? m.material : [m.material];
+    if (!m.userData._origMat) {
+      m.userData._origMat = m.material;
+      m.material = Array.isArray(m.material) ? mats.map(x => x.clone()) : m.material.clone();
+    }
+    const now = Array.isArray(m.material) ? m.material : [m.material];
+    const orig = Array.isArray(m.userData._origMat) ? m.userData._origMat : [m.userData._origMat];
+    now.forEach((mat, i) => {
+      if (!mat.color || !orig[i] || !orig[i].color) return;
+      mat.color.copy(orig[i].color);
+      if (state !== "ok") mat.color.lerp(new B.THREE.Color(GV_TINT[state]), state === "stressed" ? 0.45 : 0.75);
+      // A dead tree keeps its branches but loses its leaves.
+      if (mat.transparent || mat.alphaTest > 0) { mat.opacity = state === "dead" ? 0.08 : (orig[i].opacity == null ? 1 : orig[i].opacity); }
+      mat.needsUpdate = true;
+    });
+  });
+}
+
 function b3dSetYear(t) {
   if (!B) return;
   B.year = t;
+  const fates = gvTreeFates();
   for (const o of B.objects) {
-    const s = gvScaleAt(o.def, t);
-    o.mesh.visible = s > 0;
-    if (o.def.kind === "tree") o.mesh.scale.set(s, s, s);
-    else if (GV_GROW_AREA[o.def.ref]) o.mesh.scale.set(1, s, 1);      // beds and hedges grow up, not out
+    let s = gvScaleAt(o.def, t);
+    if (o.def.kind === "tree") {
+      const f = fates.get(o.id);
+      const st = gvTreeState(f, t);
+      // A dead tree stops growing at the size it died.
+      if (st === "dead" && f.death != null) s = Math.min(s, gvScaleAt(o.def, f.death));
+      o.mesh.visible = true;
+      o.mesh.scale.set(s, s * (st === "wilting" ? 0.94 : 1), s);
+      gvTintTree(o, st);
+    } else {
+      o.mesh.visible = s > 0;
+      if (GV_GROW_AREA[o.def.ref]) o.mesh.scale.set(1, s, 1);      // beds and hedges grow up, not out
+    }
   }
   B._yearCount = B.objects.length;
 }
-/* The same three numbers the projection reports, for this layout and year. */
+
+/* CROWNS AT FULL SIZE, ON THE GROUND.
+   The review's spacing advice says "use the drawn circles" - and in 3D
+   there were none, so the one instruction that fixes crowding pointed at
+   something that did not exist. Each tree now gets a ring the size of its
+   mature crown (the radius the review measures with), green where it is
+   clear and red where it runs into a neighbour by the review's own rule. */
+function b3dCrownRings(show) {
+  if (!B) return;
+  const THREE = B.THREE;
+  if (B._crowns) { B.scene.remove(B._crowns); B._crowns.traverse(m => { if (m.geometry) m.geometry.dispose(); }); B._crowns = null; }
+  B.showCrowns = !!show;
+  if (!show) return;
+  const g = new THREE.Group();
+  const fates = gvTreeFates();
+  const ok = new THREE.MeshBasicMaterial({ color: 0x12b981, transparent: true, opacity: 0.85, side: THREE.DoubleSide, depthWrite: false });
+  const bad = new THREE.MeshBasicMaterial({ color: 0xef4444, transparent: true, opacity: 0.9, side: THREE.DoubleSide, depthWrite: false });
+  const fillBad = new THREE.MeshBasicMaterial({ color: 0xef4444, transparent: true, opacity: 0.12, side: THREE.DoubleSide, depthWrite: false });
+  for (const o of B.objects) {
+    if (o.def.kind !== "tree") continue;
+    const sp = gvSpeciesOf(o.def.ref) || {};
+    const r = sp.radius || o.def.r || 4;
+    const f = fates.get(o.id);
+    const crowded = f && f.crowd > 0;
+    const ring = new THREE.Mesh(new THREE.RingGeometry(Math.max(0.2, r - 0.18), r, 56), crowded ? bad : ok);
+    ring.rotation.x = -Math.PI / 2; ring.position.set(o.x, 0.06, o.z); ring.renderOrder = 5;
+    g.add(ring);
+    if (crowded) {
+      const disc = new THREE.Mesh(new THREE.CircleGeometry(r, 48), fillBad);
+      disc.rotation.x = -Math.PI / 2; disc.position.set(o.x, 0.05, o.z);
+      g.add(disc);
+    }
+  }
+  B.scene.add(g); B._crowns = g;
+  B._crownCount = B.objects.length;
+}
+window.b3dCrownRings = b3dCrownRings;
+
+/* What a planner needs from this year: what is standing, what to replant,
+   when the canopy target is met, what the upkeep has cost so far. */
 function b3dYearStats(t) {
-  let canopy = 0, co2 = 0, alive = 0, n = 0;
-  const trees = B.objects.filter(o => o.def.kind === "tree").map(o => gvSpeciesOf(o.def.ref)).filter(Boolean);
-  for (const s of trees) {
+  const fates = gvTreeFates();
+  let canopy = 0, co2 = 0, n = 0, alive = 0, wilting = 0, dead = 0, replantCost = 0;
+  const atRisk = [];
+  for (const o of B.objects) {
+    if (o.def.kind !== "tree") continue;
+    const s = gvSpeciesOf(o.def.ref); if (!s) continue;
     n++;
-    if (s.life && t > s.life) continue;
-    const surv = gvSurvival(t);
-    alive += surv;
-    canopy += (s.canopy || 0) * gvGrowth(s.growth, t) * surv;
-    for (let y = 0; y <= Math.floor(t); y++) co2 += (s.co2 || 0) * gvGrowth(s.growth, y) * gvSurvival(y);
+    const f = fates.get(o.id), st = gvTreeState(f, t);
+    const lived = st === "dead" ? f.death : t;
+    if (st === "dead") { dead++; replantCost += (s.sapling || 200) * 2.2; }
+    else { alive++; canopy += (s.canopy || 0) * gvGrowth(s.growth, t); if (st === "wilting") wilting++; }
+    for (let y = 0; y < Math.floor(lived); y++) co2 += (s.co2 || 0) * gvGrowth(s.growth, y);
+    if (f && f.death != null && f.death <= 50 && st !== "dead") atRisk.push({ name: s.name, death: f.death, why: f.why[0] || "", risk: f.risk });
   }
   const area = B.plotAreaM2 || 10000;
-  return { n, canopyPct: canopy / area * 100, co2t: co2 / 1000, alivePct: n ? alive / n * 100 : 0 };
+  const goal = (window.state && window.state.goal) || "park";
+  const brief = GV.GOAL_BRIEF && GV.GOAL_BRIEF[goal];
+  // The first year the canopy reaches this project type's target band.
+  let targetYear = null;
+  if (brief) {
+    for (let y = 0; y <= 50; y++) {
+      let c = 0;
+      for (const o of B.objects) {
+        if (o.def.kind !== "tree") continue;
+        const s = gvSpeciesOf(o.def.ref); if (!s) continue;
+        // As a programme would run it: a lost tree is replanted, and its
+        // replacement grows from the year it went in.
+        const f = fates.get(o.id);
+        const age = f && f.death != null && y >= f.death ? y - f.death : y;
+        c += (s.canopy || 0) * gvGrowth(s.growth, age);
+      }
+      if (c / area * 100 >= brief.canopy[0]) { targetYear = y; break; }
+    }
+  }
+  let upkeepYr = 0;
+  try { const d = builderDesign(); const r = GV.engines.reviewDesign(d, GV.ctx || {}); upkeepYr = r.maintAnnual || 0; } catch (e) {}
+  // Trees in trouble for a REASON the planner can fix come first; ordinary
+  // attrition, which no layout change prevents, after them.
+  atRisk.sort((a, b) => ((b.risk > 1) - (a.risk > 1)) || (a.death - b.death));
+  return { n, alive, dead, wilting, canopyPct: canopy / area * 100, co2t: co2 / 1000,
+           alivePct: n ? alive / n * 100 : 0, replantCost, targetYear, target: brief ? brief.canopy : null,
+           upkeepToDate: upkeepYr * t, atRisk };
 }
+
 function b3dTimeSlider(root) {
+  const inr = (GV.util && GV.util.inr) || (v => "₹" + Math.round(v));
   const host = document.createElement("div");
   host.className = "gv3d-time glass"; host.id = "gv3dTime";
   host.innerHTML =
+    '<div class="gv3d-tgrip" title="Drag to move · double-click to reset"><span>Growth over time</span>' +
+      '<button class="gv3d-tx" id="gv3dTMin" title="Collapse">−</button>' +
+      '<button class="gv3d-tx" id="gv3dTClose" title="Close">✕</button></div>' +
+    '<div class="gv3d-trow">' +
     '<button class="gv3d-tplay" id="gv3dTPlay" aria-label="Play the next fifty years" title="Play">' +
       '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></button>' +
     '<div class="gv3d-tmain">' +
       '<div class="gv3d-thead"><b id="gv3dTYear">Planting day</b><span id="gv3dTStats"></span>' +
         '<button class="gv3d-tai" id="gv3dTAI" title="Describe this year in words (on-device AI)">' + GV_AI_ICON + '</button></div>' +
-      '<div class="gv3d-tsay" id="gv3dTSay"></div>' +
       '<input type="range" id="gv3dTRange" min="0" max="50" step="0.25" value="0" aria-label="Years after planting">' +
       '<div class="gv3d-tticks">' + [0, 5, 10, 20, 30, 40, 50].map(y =>
         '<span style="left:' + (y * 2) + '%">' + (y === 50 ? "50 yrs" : y) + '</span>').join("") + '</div>' +
-    '</div>';
+    '</div></div>' +
+    '<div class="gv3d-tplan" id="gv3dTPlan"></div>' +
+    '<div class="gv3d-tsay" id="gv3dTSay"></div>';
   root.appendChild(host);
+  const reopen = document.createElement("button");
+  reopen.className = "gv3d-treopen glass"; reopen.id = "gv3dTReopen"; reopen.style.display = "none";
+  reopen.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Growth over time';
+  root.appendChild(reopen);
+
   const range = host.querySelector("#gv3dTRange"), yearEl = host.querySelector("#gv3dTYear"),
-        statsEl = host.querySelector("#gv3dTStats"), play = host.querySelector("#gv3dTPlay");
+        statsEl = host.querySelector("#gv3dTStats"), play = host.querySelector("#gv3dTPlay"),
+        planEl = host.querySelector("#gv3dTPlan");
   const now = new Date().getFullYear();
+  const e = x => String(x == null ? "" : x).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const paint = () => {
     const t = +range.value, y = Math.round(t);
     b3dSetYear(t);
     range.style.setProperty("--p", (t * 2) + "%");
     yearEl.textContent = t < 0.5 ? "Planting day" : "Year " + y + " · " + (now + y);
     const st = b3dYearStats(t);
-    statsEl.textContent = st.n
-      ? "Canopy " + Math.round(st.canopyPct) + "% · " + (st.co2t < 10 ? st.co2t.toFixed(1) : Math.round(st.co2t)) +
-        " t CO₂ stored · ~" + Math.round(st.alivePct) + "% of trees standing" + (t >= 10 ? " if none are replanted" : "")
-      : "Plant some trees to watch them grow";
+    if (!st.n) { statsEl.textContent = "Plant some trees to watch them grow"; planEl.innerHTML = ""; return; }
+    statsEl.textContent = "Canopy " + Math.round(st.canopyPct) + "% · " +
+      (st.co2t < 10 ? st.co2t.toFixed(1) : Math.round(st.co2t)) + " t CO₂ stored";
+    const chips = [];
+    chips.push('<span class="gv3d-tchip"><b>' + st.alive + '</b> of ' + st.n + ' trees standing' +
+      (st.wilting ? ' · <i class="w">' + st.wilting + ' wilting</i>' : '') + '</span>');
+    if (st.dead) chips.push('<span class="gv3d-tchip bad">Replant <b>' + st.dead + '</b> by ' + (now + y) +
+      ' · about ' + inr(st.replantCost) + '</span>');
+    if (st.target) chips.push('<span class="gv3d-tchip' + (st.targetYear == null ? ' bad' : '') + '">' +
+      (st.targetYear == null ? 'Canopy does not reach the ' + st.target[0] + '% target in 50 years, even with replanting'
+        : 'Canopy target ' + st.target[0] + '% reached in <b>' + (now + st.targetYear) + '</b> with replanting') + '</span>');
+    if (t >= 1 && st.upkeepToDate) chips.push('<span class="gv3d-tchip">Upkeep to date <b>' + inr(st.upkeepToDate) + '</b></span>');
+    const risk = st.atRisk.slice(0, 3);
+    planEl.innerHTML = chips.join("") +
+      (risk.length ? '<div class="gv3d-trisk"><b>At risk next:</b> ' + risk.map(r =>
+        e(r.name) + ' (around ' + (now + Math.round(r.death)) + (r.why ? ', ' + e(r.why) : '') + ')').join('; ') +
+        (st.atRisk.length > 3 ? ' and ' + (st.atRisk.length - 3) + ' more' : '') + '</div>' : '') +
+      '<div class="gv3d-tfine">Yellow = stressed, brown = wilting, grey = dead. Sources: growth from each species\u2019 growth ' +
+      'rate (logistic curve); survival from an urban planting curve (about 80% at year 3, then about 1% a year), sped up by ' +
+      'poor species fit to this site\u2019s air, rain and heat (Open-Meteo, CPCB) and by crowding; lifespans and CO\u2082 from ' +
+      'Green Vision\u2019s species table; upkeep from catalogue maintenance rates (assumed). Modelled by Green Vision, not AI \u2014 ' +
+      'a planning estimate, not a diagnosis.</div>';
   };
   range.addEventListener("input", () => { paint(); const say = host.querySelector("#gv3dTSay"); if (say) say.innerHTML = ""; });
+
+  // Move, collapse, close and reopen.
+  try { gvlMakeMovable(host, { key: "b3dTime", handle: ".gv3d-tgrip" }); } catch (err) {}
+  host.querySelector("#gv3dTMin").onclick = ev => {
+    ev.stopPropagation();
+    host.classList.toggle("gv3d-tcollapsed");
+    ev.currentTarget.textContent = host.classList.contains("gv3d-tcollapsed") ? "+" : "−";
+  };
+  host.querySelector("#gv3dTClose").onclick = ev => {
+    ev.stopPropagation();
+    host.style.display = "none"; reopen.style.display = "";
+    range.value = 0; paint();                       // the scene goes back to planting day
+  };
+  reopen.onclick = () => { host.style.display = ""; reopen.style.display = "none"; };
+
   const tai = host.querySelector("#gv3dTAI");
   if (tai) tai.onclick = async () => {
     const say = host.querySelector("#gv3dTSay");
@@ -24908,21 +25240,25 @@ function b3dTimeSlider(root) {
     const st = b3dYearStats(t), st0 = b3dYearStats(0);
     if (!st.n) { say.innerHTML = '<p class="gv-aitext">Plant some trees first.</p>'; return; }
     const d = builderDesign();
-    const facts = (GV.designFacts ? GV.designFacts(d, null) : []).concat([
+    const facts = (GV.designFacts ? GV.designFacts(d, null).slice(0, 3) : []).concat([
       y ? "Year shown: " + y + " years after planting (" + (now + y) + ")" : "Year shown: planting day",
       "Canopy on planting day: " + Math.round(st0.canopyPct) + "% of the plot",
       "Canopy in the year shown: " + Math.round(st.canopyPct) + "% of the plot",
       "Carbon dioxide stored by then: " + (st.co2t < 10 ? st.co2t.toFixed(1) : Math.round(st.co2t)) + " tonnes",
-      "Share of the original trees still standing if none are replanted: " + Math.round(st.alivePct) + "%"]);
+      "Trees still standing if none are replaced: " + st.alive + " of " + st.n,
+      st.dead ? "Trees that need replanting by then: " + st.dead : "No tree needs replanting yet",
+      st.atRisk[0] ? "Next tree at risk: " + st.atRisk[0].name + ", around " + (now + Math.round(st.atRisk[0].death)) +
+        (st.atRisk[0].why ? ", because it is " + st.atRisk[0].why : "") : "No tree is predicted to die in the next fifty years"]);
     tai.disabled = true;
-    say.innerHTML = '<p class="gv-aiwait">Imagining year ' + y + ' on this computer\u2026</p>';
+    say.innerHTML = '<p class="gv-aiwait">Imagining ' + (y ? "year " + y : "planting day") + ' on this computer…</p>';
     const res = await gvAI("growth_story", facts);
-    const plain = (y ? "By " + (now + y) + ", " : "On planting day, ") + "crowns cover about " + Math.round(st.canopyPct) +
-      "% of the plot" + (y ? ", up from " + Math.round(st0.canopyPct) + "% on planting day, and the trees have stored about " +
-      (st.co2t < 10 ? st.co2t.toFixed(1) : Math.round(st.co2t)) + " tonnes of CO\u2082." : ".");
+    const plain = (y ? "By " + (now + y) + ", " : "On planting day, ") + st.alive + " of " + st.n +
+      " trees are standing and crowns cover about " + Math.round(st.canopyPct) + "% of the plot" +
+      (st.dead ? "; " + st.dead + " need replanting." : ".");
     if (Math.round(+range.value) === y) say.innerHTML = gvAIBlock(res, plain, "the growth projection");
     tai.disabled = false;
   };
+
   let raf = 0, last = 0;
   const stop = () => { cancelAnimationFrame(raf); raf = 0; play.classList.remove("on"); };
   play.onclick = () => {
@@ -24944,6 +25280,7 @@ function b3dTimeSlider(root) {
   const tick = setInterval(() => {
     if (!B || !document.body.contains(host)) { clearInterval(tick); stop(); return; }
     if (B._yearCount !== B.objects.length) paint();
+    if (B.showCrowns && B._crownCount !== B.objects.length) { GV_FATE.key = null; b3dCrownRings(true); }
   }, 400);
   paint();
 }
