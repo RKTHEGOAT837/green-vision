@@ -1385,6 +1385,8 @@ const fmt=n=>Number(n).toLocaleString("en-IN");
 function toast(msg){const t=$("#toast");t.textContent=msg;t.classList.add("show");clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove("show"),2600);}
 window.toast = toast;
 async function fetchT(url,opts={},ms=14000){const c=new AbortController();const id=setTimeout(()=>c.abort(),ms);
+  // A caller's own signal (the mirror race aborts the loser) is honoured as well as the timeout.
+  if(opts.signal){if(opts.signal.aborted)c.abort();else opts.signal.addEventListener("abort",()=>c.abort(),{once:true});}
   try{return await fetch(url,{...opts,signal:c.signal});}catch(e){return null;}finally{clearTimeout(id);}}
 async function getJSON(url,opts,ms){const r=await fetchT(url,opts,ms);if(!r||!r.ok)return null;try{return await r.json();}catch(e){return null;}}
 function overpassReq(q){return{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded","Accept":"application/json"},body:"data="+encodeURIComponent(q)};}
@@ -1639,54 +1641,42 @@ async function overpassFetch(query, ms, opts) {
           await new Promise(r => setTimeout(r, wait));
         }
       }
-      for (let ei = 0; ei < eps.length; ei++) {
-        const ep = eps[ei];
-        /* One mirror may not spend everything while others are still
-           untried: a dead one costs at most 20 s, then the next is asked. */
-        const lastOne = ei === eps.length - 1;
-        const budget = Math.min(ms || 90000, Math.max(0, left()), lastOne ? Infinity : 20000);
-        if (budget <= 0) break;
-        /* Resolve the local endpoint against the ENGINE's origin, not the
-           page's.
+      /* TWO MIRRORS AT ONCE, first good answer wins.
 
-           "/api/osm" was fetched as a relative URL, so it only ever worked
-           when greenplan.server was also the web server. Serve index.html
-           from anything else - a static host, a different port, Pages behind
-           a tunnel - and it 404s, the loop falls through to the public
-           Overpass instance, and the census gets throttled while a local
-           index holding a million features for this exact city sits unused
-           three ports away. The page already discovers the engine origin for
-           /api/zones and /api/health; this is the one call that was not
-           using it. */
-        const local = ep.charAt(0) === "/";
-        const url = local ? gvEngineUrl(ep) : ep;
-        let j;
-        if (local) {
-          const res = await _osmLocalFetch(url, query, budget);
-          /* Worth a short wait, but only a short one. If the index will be
-             ready inside this call's remaining budget, waiting beats going
-             to a throttled public instance. If it will not, fall through
-             and let the public mirrors try - and the caller can come back
-             once `gvOsmWarming()` goes quiet. */
-          if (res.warming) {
-            const wait = res.secs * 1000 + 500;
-            if (wait <= left() - 2000 && wait <= 20000) {
-              await new Promise(r => setTimeout(r, wait));
-              const again = await _osmLocalFetch(url, query,
-                                                 Math.min(ms || 90000, Math.max(0, left())));
-              j = again.data || null;
-            } else j = null;
-          } else j = res.data || null;
-        } else {
-          j = await getJSON(url, overpassReq(query), budget);
-        }
+         Asked one after another, a mirror that is down costs its whole
+         timeout before the next is tried - and capping that timeout cuts
+         off a mirror that is merely slow, because a site query over a dense
+         neighbourhood legitimately takes the public instance 40-60 s. Each
+         mirror rations requests per IP on its own, so asking two different
+         ones together costs neither of them a slot it would not have given.
+         The loser is aborted the moment there is a winner. */
+      const tryGroup = group => new Promise(resolve => {
+        if (!group.length) return resolve(null);
+        let pending = group.length, done = false;
+        const ctrls = group.map(() => new AbortController());
+        group.forEach((ep, i) => {
+          const budget = Math.min(ms || 90000, Math.max(0, left()));
+          if (budget <= 0) { if (--pending === 0 && !done) resolve(null); return; }
+          const opts = Object.assign({}, overpassReq(query), { signal: ctrls[i].signal });
+          getJSON(ep, opts, budget).catch(() => null).then(j => {
+            if (done) return;
+            // An empty array is a throttle or a mirror without your
+            // region's data - never proof that nothing is there.
+            if (j && Array.isArray(j.elements) && j.elements.length) {
+              done = true;
+              ctrls.forEach((c, k) => { if (k !== i) try { c.abort(); } catch (e) {} });
+              _opBest = ep;
+              return resolve(j);
+            }
+            if (--pending === 0) resolve(null);
+          });
+        });
+      });
+      for (let gi = 0; gi < eps.length; gi += 2) {
+        if (left() <= 0) break;
+        const j = await tryGroup(eps.slice(gi, gi + 2));
         _opLast = Date.now();
-        // An empty array is a throttle or a mirror without your region's
-        // data — never proof that nothing is there. See CFG.OVERPASS.
-        if (j && Array.isArray(j.elements) && j.elements.length) {
-          if (!local) _opBest = ep;
-          _opCacheSet(query, j); return j;
-        }
+        if (j) { _opCacheSet(query, j); return j; }
       }
     }
     _opLast = Date.now();
@@ -2593,7 +2583,13 @@ function placeNames(a){
    plot may be sited. Measured at 1,200 m over Bodakdev: ~1.1 MB, 2,714
    features, 2.6 s warm. Wider than this and Overpass takes 100 s+, which
    even a prefetch cannot hide. */
-const SITE_SEARCH_R = 1200;
+/* 1.2 km on the desktop, where the engine's local map answers it in a
+   moment; 600 m in a browser, where the public Overpass mirrors have to.
+   Over a dense neighbourhood the 1.2 km query is tens of thousands of
+   footprints and the public instances time out on it (504), so the web
+   version reported "No open ground" everywhere. 600 m still holds dozens
+   of hectare-sized candidates in most of a city. */
+const SITE_SEARCH_R = window.__GV_DESKTOP__ ? 1200 : 600;
 const SITE_ROAD_SETBACK = 7;    // metres either side of a road centreline
 const SITE_EDGE_BUFFER = 4;     // metres of clearance around every obstacle
 
