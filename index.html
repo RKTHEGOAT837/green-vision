@@ -2864,7 +2864,30 @@ async function analyse(lat,lon){
   lastPoint=[lat,lon]; window.lastPoint=lastPoint;
   marker.setLatLng([lat,lon]);
   skeleton();
-  const [geo,wa,osm,veg]=await Promise.all([reverseGeocode(lat,lon),getWeatherAir(lat,lon),getOSM(lat,lon),sampleVeg(lat,lon)]);
+  /* The map census gets 8 seconds, not as long as it likes. While the
+     desktop's local map index is still loading (about two minutes after the
+     engine starts) and the public mirrors are slow, it could hold the whole
+     report back for a minute - place, air, canopy and all. Now the report
+     shows what it has, and redraws itself the moment the census lands. */
+  const osmP=getOSM(lat,lon).catch(()=>null);
+  const [geo,wa,osm0,veg]=await Promise.all([reverseGeocode(lat,lon),getWeatherAir(lat,lon),
+    Promise.race([osmP,new Promise(r=>setTimeout(()=>r(undefined),8000))]),sampleVeg(lat,lon)]);
+  const osmLate=osm0===undefined, osm=osmLate?null:osm0;
+  if(osmLate||!osm){
+    // Keep asking while the reader is still on this point: the local index
+    // takes a minute or two to load after the engine starts, and the first
+    // answer to come back may only be "still loading".
+    const here=()=>lastPoint&&lastPoint[0]===lat&&lastPoint[1]===lon;
+    const redraw=()=>{ if(here()&&!window.__gvOsmRedraw){ window.__gvOsmRedraw=true;
+      Promise.resolve(analyse(lat,lon)).finally(()=>{window.__gvOsmRedraw=false;}); } };
+    let tries=0;
+    const retry=o=>{
+      if(o) return redraw();
+      if(!here()||++tries>12) return;
+      setTimeout(()=>{ if(here()) getOSM(lat,lon).catch(()=>null).then(retry); },15000);
+    };
+    (osmLate?osmP:Promise.resolve(null)).then(retry);
+  }
   const vegPct=veg?round(veg.frac*100):0;
   const trees=osm?osm.trees:0, parks=osm?osm.parks:0, water=osm?osm.water:0, bld=osm?osm.buildings:0;
   const osmOK=!!osm;
@@ -2908,7 +2931,7 @@ async function analyse(lat,lon){
   $("#pTitle").textContent=place; $("#pSub").textContent=sub;
   $("#pBody").innerHTML=
     `<div class="hero">${ring(green)}<div class="rt"><div class="grade" style="color:${osmOK?grade(green)[1]:"var(--ink-soft)"}">${gLabel}</div><p><b>${vegPct}% canopy</b> in this view${osmOK?` · ${parks} parks · ${fmt(bld)} buildings`:""}</p>`+
-    (osmOK?"":`<p style="font-size:11.5px;color:var(--ink-soft);margin:6px 0 0;line-height:1.5">OpenStreetMap did not answer, so parks and water bodies are not counted here. Treat this as a floor, not a grade.</p>`)+`</div></div>`+
+    (osmOK?"":`<p style="font-size:11.5px;color:var(--ink-soft);margin:6px 0 0;line-height:1.5">${osmLate?"The map data is still loading, so parks and water bodies are not counted yet — this report updates itself when they arrive.":"OpenStreetMap did not answer, so parks and water bodies are not counted here. Treat this as a floor, not a grade."}</p>`)+`</div></div>`+
     `<div class="section" style="margin-top:16px"><div class="narr" id="pNarr"><div class="ai"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l2 5 5 2-5 2-2 5-2-5-5-2 5-2z"/></svg>Read from this page</div>${narr}</div></div>`+
     `<div class="section gv-areaai"><div class="gv-briefbtns"><button class="gv-mini gv-mini-ai" id="pExplainAI">${GV_AI_ICON}Explain this area in plain words</button>`+
       `<button class="gv-mini gv-mini-ai gv-needs-see" id="pPhotoAI" title="Upload a photo taken on site; the on-device vision model checks it">${GV_AI_ICON}Check a site photo</button></div>`+
