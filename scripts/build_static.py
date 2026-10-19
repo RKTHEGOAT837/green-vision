@@ -245,6 +245,7 @@ def build(config: str, out_dir: Path, slug: str | None = None,
         log.info("  %-14s %8.1f KB in engine/%s/", eng.cfg.city.name, total / 1024, slug)
         return _city_entry(eng, slug)
 
+    html = _inline_vendor(html)
     (out_dir / "index.html").write_text(html, encoding="utf-8")
     i18n_src, i18n_dst = ROOT / "data" / "i18n", out_dir / "data" / "i18n"
     if i18n_src.is_dir():
@@ -385,6 +386,55 @@ def _city_entry(eng, slug: str | None) -> dict:
 def _slug(name: str) -> str:
     import re as _re
     return _re.sub(r"[^a-z0-9]+", "-", (name or "").lower()).strip("-") or "city"
+
+
+def _inline_vendor(html: str) -> str:
+    """Fold Leaflet, three.js and the two web fonts into the page.
+
+    The studio loaded all of them from public CDNs - unpkg, cdnjs and Google
+    Fonts - and nothing on the page ran until they arrived. Measured on
+    18 Oct 2026 in the desktop app: each took 29 to 31 seconds, and the page
+    was not usable for 52 seconds, so clicking the map did nothing and the
+    point report "never loaded". It also meant the app that says it works
+    offline did not start offline at all. The files in vendor/ are the exact
+    published versions (their SHA-384 matches the integrity attributes the
+    CDN tags carried); the source page keeps the CDN tags for development.
+    """
+    import re as _re
+    vendor = ROOT / "vendor"
+    def read(name):
+        f = vendor / name
+        if not f.is_file():
+            log.warning("vendor/%s missing - the page will load it from the CDN", name)
+            return None
+        return f.read_text(encoding="utf-8")
+    def swap(pattern, repl, label):
+        nonlocal html
+        new, n = _re.subn(pattern, lambda m: repl, html, count=1, flags=_re.S)
+        if n:
+            html = new
+            log.info("  inlined %s", label)
+        else:
+            log.warning("  could not find the %s tag to inline", label)
+    css = read("leaflet.css")
+    if css:
+        swap(r'<link rel="stylesheet" href="https://unpkg\.com/leaflet@1\.9\.4/dist/leaflet\.css".*?/>',
+             "<style>/* Leaflet 1.9.4 (BSD-2-Clause) */\n" + css + "</style>", "leaflet.css")
+    fonts = read("fonts.css")
+    if fonts:
+        swap(r'<link href="https://fonts\.googleapis\.com/css2\?[^"]*" rel="stylesheet">',
+             "<style>" + fonts + "</style>", "fonts")
+    js = read("leaflet.js")
+    if js:
+        swap(r'<script src="https://unpkg\.com/leaflet@1\.9\.4/dist/leaflet\.js"[^>]*></script>',
+             "<script>/* Leaflet 1.9.4 (BSD-2-Clause) */\n" + js.replace("</script", "<\\/script") + "</script>",
+             "leaflet.js")
+    three = read("three.min.js")
+    if three:
+        swap(r'<script src="https://cdnjs\.cloudflare\.com/ajax/libs/three\.js/r128/three\.min\.js"[^>]*></script>',
+             "<script>/* three.js r128 (MIT) */\n" + three.replace("</script", "<\\/script") + "</script>",
+             "three.min.js")
+    return html
 
 
 def main() -> None:

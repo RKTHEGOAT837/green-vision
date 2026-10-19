@@ -2887,7 +2887,11 @@ async function analyse(lat,lon){
     osmOK?"Parks nearby: "+parks:null,
     osmOK?"Buildings in the area: "+fmt(bld):null,
     osmOK?"Water bodies nearby: "+water:null,
-    "Overall greenness of this neighbourhood: "+green+" out of 100, rated "+(osmOK?gTxt:"from canopy only"),
+    // grade() here, not gTxt: gTxt is declared further down, and reading it
+    // first threw "cannot access before initialization" - which killed the
+    // whole point report whenever OpenStreetMap answered (always, on the
+    // desktop, which reads its own local map).
+    "Overall greenness of this neighbourhood: "+green+" out of 100, rated "+(osmOK?grade(green)[0]:"from canopy only"),
     "Nothing has been built yet. The reader is thinking of adding a new "+((window.GV&&GV.GOAL_BRIEF&&window.state&&{park:"public park",greenbelt:"green belt",riverfront:"riverfront",community:"community garden",campus:"school or campus",avenue:"roadside avenue",residential:"residential green",industrial:"industrial buffer",wetland:"wetland edge"}[state.goal])||"park")
   ].filter(Boolean);
 
