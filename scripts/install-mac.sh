@@ -7,14 +7,19 @@
 #   --dir <folder>   install somewhere other than /Applications
 #   --no-open        install but do not launch it
 #   --keep-zip       leave the downloaded zip in ~/Downloads
+#   --force          download and reinstall even if the newest is installed
 #
 #   curl -fsSL .../install-mac.sh | bash -s -- --dir ~/Applications --no-open
 #
 # What it does, in order: checks this is an Apple Silicon Mac with room for
-# the app, finds the newest macOS release, downloads it, checks its SHA-256
-# against the one GitHub published, quits any running copy, replaces it,
-# clears the download quarantine so macOS opens it without the "cannot be
-# opened" refusal, and launches it.
+# the app, finds the newest macOS release and the copy already installed.
+#   not installed     -> downloads, checks its SHA-256, installs
+#   older version     -> downloads, checks it, replaces the installed copy
+#   already newest    -> skips the 1.1 GB download
+# Then, in every case, brings the studio up to the newest published patch
+# (update-studio-mac.sh: downloaded, hash-checked, staged the way the app
+# does it) and opens the app. Saved projects, account and settings are kept.
+# Run the same command any time to update.
 #
 # Written for the bash 3.2 and BSD tools every Mac ships with: no Homebrew,
 # no Python, no Xcode needed.
@@ -40,6 +45,8 @@ APP_NAME="Green Vision"
 DEST="/Applications"
 OPEN_AFTER=1
 KEEP_ZIP=0
+FORCE="${GV_FORCE:-0}"
+STUDIO_URL="https://raw.githubusercontent.com/RKTHEGOAT837/green-vision/main/scripts/update-studio-mac.sh"
 NEED_GB=4            # 1.1 GB zip + about 2.5 GB unpacked, with room to spare
 
 while [ $# -gt 0 ]; do
@@ -47,6 +54,7 @@ while [ $# -gt 0 ]; do
     --dir)      DEST="${2:?--dir needs a folder}"; shift 2 ;;
     --no-open)  OPEN_AFTER=0; shift ;;
     --keep-zip) KEEP_ZIP=1; shift ;;
+    --force)    FORCE=1; shift ;;
     -h|--help)  sed -n '2,20p' "$0" 2>/dev/null || true; exit 0 ;;
     *) echo "Unknown option: $1" >&2; exit 2 ;;
   esac
@@ -55,6 +63,32 @@ done
 say()  { printf '\033[1;32m==>\033[0m %s\n' "$*"; }
 warn() { printf '\033[1;33m!!\033[0m  %s\n' "$*" >&2; }
 die()  { printf '\033[1;31mxx\033[0m  %s\n' "$*" >&2; exit 1; }
+
+# 0 when version $1 >= version $2, compared number by number (1.10 > 1.9).
+# awk, because the BSD sort on older Macs has no -V.
+ver_ge() {
+  awk -v a="$1" -v b="$2" 'BEGIN {
+    n = split(a, x, "."); m = split(b, y, "."); k = (n > m ? n : m)
+    for (i = 1; i <= k; i++) { p = x[i] + 0; q = y[i] + 0
+      if (p > q) exit 0; if (p < q) exit 1 }
+    exit 0 }'
+}
+
+# The studio patch step. The update script stages the newest studio exactly
+# as the app does and restarts the app so it switches over. A failure here
+# is not fatal: the app checks for studio updates by itself on every start.
+studio_update() {
+  say "Bringing the studio up to the newest published update..."
+  if curl -fsSL "$STUDIO_URL" -o "$WORK/update-studio-mac.sh" 2>/dev/null; then
+    bash "$WORK/update-studio-mac.sh" < /dev/null \
+      || warn "The studio update did not finish; the app will fetch it by itself."
+    # The updater opens the app on success; make sure it is open either way.
+    pgrep -f "$APP_NAME.app/Contents/MacOS" >/dev/null 2>&1 || open "$DEST/$APP_NAME.app"
+  else
+    warn "Could not fetch the studio updater; the app will update its studio by itself."
+    [ "$OPEN_AFTER" = "1" ] && open "$DEST/$APP_NAME.app"
+  fi
+}
 
 # ---- 1. the right kind of machine ---------------------------------------
 [ "$(uname -s)" = "Darwin" ] || die "This installer is for macOS. On Windows, use the .exe from the download page."
@@ -158,19 +192,39 @@ sleep 30
 done
 
 INSTALLED=""
+# A copy in ~/Applications counts too, and an update goes where it already is.
+if [ ! -d "$DEST/$APP_NAME.app" ] && [ "$DEST" = "/Applications" ] && [ -d "$HOME/Applications/$APP_NAME.app" ]; then
+  DEST="$HOME/Applications"
+fi
 if [ -d "$DEST/$APP_NAME.app" ]; then
   INSTALLED="$(defaults read "$DEST/$APP_NAME.app/Contents/Info" CFBundleShortVersionString 2>/dev/null || true)"
 fi
 if [ -n "$INSTALLED" ]; then
   say "Installed: $INSTALLED   Newest: ${VERSION:-unknown}"
 else
-  say "Newest: ${VERSION:-unknown}"
+  say "Green Vision is not installed yet. Newest: ${VERSION:-unknown}"
 fi
 
-# ---- 4. download --------------------------------------------------------
 WORK="$(mktemp -d -t greenvision)"
 cleanup() { rm -rf "$WORK"; }
 trap cleanup EXIT
+
+# ---- already the newest? then only the studio needs updating -------------
+if [ -n "$INSTALLED" ] && [ -n "${VERSION:-}" ] && [ "$FORCE" != "1" ] && ver_ge "$INSTALLED" "$VERSION"; then
+  say "The app is already the newest version ($INSTALLED) - no download needed."
+  if [ "$OPEN_AFTER" = "1" ]; then
+    studio_update
+  else
+    say "Skipping the studio update because of --no-open; the app updates its studio by itself."
+  fi
+  say "Done. Run the same command any time to update."
+  return 0
+fi
+if [ -n "$INSTALLED" ]; then
+  say "Updating Green Vision from $INSTALLED to ${VERSION:-the newest version}..."
+fi
+
+# ---- 4. download --------------------------------------------------------
 
 ZIP="$WORK/$ZIP_NAME"
 say "Downloading $ZIP_NAME (about 1.1 GB)..."
@@ -234,10 +288,13 @@ say "Green Vision $INSTALLED_NOW is installed at $DEST/$APP_NAME.app"
 echo "    Your saved projects, account and settings are kept between updates."
 echo "    To update later, run the same command again."
 
-# ---- 8. open it ---------------------------------------------------------
+# ---- 8. newest studio, then open it ---------------------------------------
+# The app just installed carries the studio it was built with; a newer studio
+# patch may be published since. The updater stages it and opens the app.
 if [ "$OPEN_AFTER" = "1" ]; then
-  say "Opening it... (the first start takes up to a minute while the engine loads)"
-  open "$DEST/$APP_NAME.app"
+  say "(the first start takes up to a minute while the engine loads)"
+  studio_update
+  pgrep -f "$APP_NAME.app/Contents/MacOS" >/dev/null 2>&1 || open "$DEST/$APP_NAME.app"
 fi
 }
 

@@ -147,8 +147,8 @@ Patches apply on the next start (download) and the start after (promote). 1.6.1+
 
 ### Update and install commands
 
-- **Windows install:** `powershell -NoProfile -ExecutionPolicy Bypass -Command "irm https://raw.githubusercontent.com/RKTHEGOAT837/green-vision/main/scripts/install-windows.ps1 | iex"`
-- **Mac install:** `curl -fsSL https://raw.githubusercontent.com/RKTHEGOAT837/green-vision/main/scripts/install-mac.sh | bash`
+- **Windows install or update** (skips the download if the newest app is installed, then stages the newest studio patch; `GV_FORCE=1` reinstalls): `powershell -NoProfile -ExecutionPolicy Bypass -Command "irm https://raw.githubusercontent.com/RKTHEGOAT837/green-vision/main/scripts/install-windows.ps1 | iex"`
+- **Mac install or update** (same behaviour; `bash -s -- --force` reinstalls): `curl -fsSL https://raw.githubusercontent.com/RKTHEGOAT837/green-vision/main/scripts/install-mac.sh | bash`
 - **Mac studio update now:** `curl -fsSL https://raw.githubusercontent.com/RKTHEGOAT837/green-vision/main/scripts/update-studio-mac.sh | bash`
 
 ## Testing
