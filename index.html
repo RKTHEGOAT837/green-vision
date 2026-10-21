@@ -1800,7 +1800,24 @@ function _tilePump(){
   }
 }
 
-function loadTile(z, x, y){
+/* Three fixes measured against the 3D builder's site check, which waits on
+   twenty-five of these at about 1.7 s each from Esri:
+
+   ONE REQUEST PER TILE. Two callers asking for the same tile before the
+   first answer landed both queued a download - the site finder and the area
+   read overlap almost completely, so a cold open fetched many tiles twice.
+   The second caller now shares the first one's promise.
+
+   URGENT JOBS GO FIRST. The queue was strictly first-come, so the tiles a
+   person is waiting on (the site check behind "Real surroundings") sat
+   behind the green view's background repaint. `urgent` puts them at the
+   front; the cap of five is unchanged, so the basemap is still never starved.
+
+   A MISS IS NOT REMEMBERED. A timed-out tile was cached as null for the
+   rest of the session, so one slow second blinded that square of the site
+   check until the app restarted. Only real images are kept now. */
+const _tilePending = new Map();
+function loadTile(z, x, y, opts){
   const key = z + "/" + x + "/" + y;
   const hit = _tileCache.get(key);
   if (hit !== undefined) {
@@ -1809,27 +1826,44 @@ function loadTile(z, x, y){
     _tileCache.delete(key); _tileCache.set(key, hit);
     return Promise.resolve(hit);
   }
-  return new Promise(res => {
-    _tileQueue.push(() => new Promise(done => {
+  const pend = _tilePending.get(key);
+  if (pend) {
+    // Already queued: an urgent caller pulls the waiting job to the front.
+    if (opts && opts.urgent && pend.job) {
+      const at = _tileQueue.indexOf(pend.job);
+      if (at > 0) { _tileQueue.splice(at, 1); _tileQueue.unshift(pend.job); }
+    }
+    return pend.p;
+  }
+  const rec = {};
+  rec.p = new Promise(res => {
+    rec.job = () => new Promise(done => {
+      rec.job = null;                    // running: nothing left to reorder
       const i = new Image();
       i.crossOrigin = "anonymous";
       let settled = false;
       const finish = v => {
         if (settled) return;
         settled = true;
-        if (_tileCache.size >= TILE_CACHE_MAX) {
-          _tileCache.delete(_tileCache.keys().next().value);
+        _tilePending.delete(key);
+        if (v) {
+          if (_tileCache.size >= TILE_CACHE_MAX) {
+            _tileCache.delete(_tileCache.keys().next().value);
+          }
+          _tileCache.set(key, v);
         }
-        _tileCache.set(key, v);
         res(v); done();
       };
       i.onload = () => finish(i);
       i.onerror = () => finish(null);
       setTimeout(() => finish(null), 9000);
       i.src = CFG.ESRI.replace("{z}", z).replace("{x}", x).replace("{y}", y);
-    }));
+    });
+    if (opts && opts.urgent) _tileQueue.unshift(rec.job); else _tileQueue.push(rec.job);
     _tilePump();
   });
+  _tilePending.set(key, rec);
+  return rec.p;
 }
 function vegScore(r,g,b){const denom=(g+r-b)||1;const vari=(g-r)/denom;return (2*g-r-b)>22 && g>r+6 && g>b+4 ? clamp((vari+.1)/.5,0,1):0;}
 Object.assign(window,{lon2x,lat2y,x2lon,y2lat,loadTile,vegScore});
@@ -2047,9 +2081,14 @@ async function greenSampleCanopy(b) {
   cv.width = 256; cv.height = 256;
   const cx = cv.getContext("2d", { willReadFrequently: true });
   let sum = 0, n = 0, bare = 0, cells = 0;
-  for (const [tx, ty] of picks) {
-    let im = null;
-    try { im = await loadTile(z, tx, ty); } catch (e) { im = null; }
+  /* Requested together, read in order. Awaiting each tile before asking for
+     the next made 25 round trips back to back - about 40 s on a slow link
+     while the legend said "measuring". The tile queue still caps how many
+     are in flight; this only stops the queue sitting idle between them. */
+  const ims = await Promise.all(picks.map(([tx, ty]) =>
+    loadTile(z, tx, ty).catch(() => null)));
+  for (let pi = 0; pi < picks.length; pi++) {
+    const im = ims[pi];
     if (!im) continue;
     cx.clearRect(0, 0, 256, 256);
     cx.drawImage(im, 0, 0);
@@ -2723,7 +2762,7 @@ node(around:1200,${lat},${lon})[amenity~"^(school|college|university)$"];out cou
 async function sampleVeg(lat,lon){
   const z=16,xc=lon2x(lon,z),yc=lat2y(lat,z);
   const cv=document.createElement("canvas");cv.width=768;cv.height=768;const ctx=cv.getContext("2d",{willReadFrequently:true});let any=false;const jobs=[];
-  for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++)jobs.push(loadTile(z,xc+dx,yc+dy).then(im=>{if(im){any=true;ctx.drawImage(im,(dx+1)*256,(dy+1)*256);}}));
+  for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++)jobs.push(loadTile(z,xc+dx,yc+dy,{urgent:true}).then(im=>{if(im){any=true;ctx.drawImage(im,(dx+1)*256,(dy+1)*256);}}));  // urgent: the point report is waiting on these
   await Promise.all(jobs);if(!any)return null;
   let data;try{data=ctx.getImageData(0,0,768,768).data;}catch(e){return null;}
   let s=0,t=0;for(let i=0;i<data.length;i+=4){const r=data[i],g=data[i+1],b=data[i+2];const br=(r+g+b)/3;if(br<16||br>244)continue;t++;s+=vegScore(r,g,b);}
@@ -2870,8 +2909,16 @@ async function analyse(lat,lon){
      report back for a minute - place, air, canopy and all. Now the report
      shows what it has, and redraws itself the moment the census lands. */
   const osmP=getOSM(lat,lon).catch(()=>null);
-  const [geo,wa,osm0,veg]=await Promise.all([reverseGeocode(lat,lon),getWeatherAir(lat,lon),
-    Promise.race([osmP,new Promise(r=>setTimeout(()=>r(undefined),8000))]),sampleVeg(lat,lon)]);
+  /* The census waits for the rest of the report, not for a fixed 8 s: once
+     place, weather and imagery are in, it gets half a second more and then
+     the report draws without it and fills the counts in when they land. On
+     the web, where only the public mirrors answer, this is the difference
+     between a report in ~4 s and one held for the full 8. */
+  const geoP=reverseGeocode(lat,lon), waP=getWeatherAir(lat,lon), vegP=sampleVeg(lat,lon);
+  const restP=Promise.all([geoP,waP,vegP].map(p=>Promise.resolve(p).catch(()=>null)));
+  const osmCap=Promise.race([new Promise(r=>setTimeout(()=>r(undefined),8000)),
+    restP.then(()=>new Promise(r=>setTimeout(()=>r(undefined),500)))]);
+  const [geo,wa,osm0,veg]=await Promise.all([geoP,waP,Promise.race([osmP,osmCap]),vegP]);
   const osmLate=osm0===undefined, osm=osmLate?null:osm0;
   if(osmLate||!osm){
     // Keep asking while the reader is still on this point: the local index
@@ -13218,6 +13265,17 @@ function gvWelcome(opts) {
    number, and where to look. Inventing a feature list would be worse than
    a short card. */
 const GV_RELEASES = {
+  "1.6.2": {
+    headline: "A faster, lighter Green Vision. Real surroundings opens in a second or two.",
+    items: [
+      ["Real surroundings, fast", "The 3D builder's real surroundings now open in about 1-3 seconds. Before, they waited for the map index, which took minutes to load after every start."],
+      ["Uses far less memory", "The map engine used to hold about 10 GB of memory while it loaded, which slowed the whole computer. It now reads only the neighbourhood you are looking at, using a few hundred MB."],
+      ["Ready sooner after opening", "Maps answer within a second of opening the app, and the full engine (AI, rankings) in about 15 seconds. It used to be 20 seconds or more, and minutes for maps."],
+      ["Quicker point reports and green view", "Satellite imagery loads in parallel, the tiles you are waiting on go first, and a slow tile no longer blinds a spot for the rest of the session."],
+      ["Smoother 3D", "The 3D builder redraws only when something changes, instead of sixty times a second, so the rest of the app stays responsive while it is open."],
+      ["Keeps working in the background", "Switching to another window no longer slows down a site check or a 3D build that is still running."]
+    ]
+  },
   "1.4.2": {
     headline: "A working 3D builder, an honest design review, and undo everywhere.",
     items: [
@@ -14335,34 +14393,61 @@ function pixIsPlantable(r, g, b) {
 /* One pixel buffer covering the whole search area, fetched once and reused
    for every candidate — the alternative is loading tiles per candidate,
    which is thousands of requests. */
-async function loadSitePixels(lat, lon, reachM) {
-  const key = siteKey(lat, lon) + "/" + Math.round(reachM);
+/* Same place, same reach, already loading: share it. The site finder and
+   the builder's placement guard both ask for a buffer around the same point
+   within the same second, and each used to fetch its own. */
+const _sitePixPending = new Map();
+/* `opts.zoom` pins the zoom (so a small buffer reads pixels at the same
+   scale as the big one and the built-up thresholds mean the same thing);
+   `opts.urgent` puts its tiles at the front of the download queue. */
+function loadSitePixels(lat, lon, reachM, opts) {
+  const key = siteKey(lat, lon) + "/" + Math.round(reachM) + "/" + ((opts && opts.zoom) || "");
   const hit = _sitePixLRU.get(key);
   if (hit !== undefined) {
     _sitePixLRU.delete(key); _sitePixLRU.set(key, hit);   // refresh recency
-    return hit;
+    return Promise.resolve(hit);
   }
+  if (_sitePixPending.has(key)) return _sitePixPending.get(key);
+  const p = _loadSitePixels(lat, lon, reachM, opts, key)
+    .finally(() => _sitePixPending.delete(key));
+  _sitePixPending.set(key, p);
+  return p;
+}
 
+/* The zoom the full site search reads at, so a smaller buffer can match it. */
+function sitePixZoom(lat, lon, reachM) {
+  const dLat = reachM / 111320, dLon = reachM / (111320 * Math.cos(lat * Math.PI / 180));
+  for (let z = 17; z >= 14; z--) {
+    const cols = lon2x(lon + dLon, z) - lon2x(lon - dLon, z) + 1;
+    const rows = lat2y(lat - dLat, z) - lat2y(lat + dLat, z) + 1;
+    if (cols * rows <= SITE_PIX_BUDGET) return z;
+  }
+  return null;
+}
+
+async function _loadSitePixels(lat, lon, reachM, opts, key) {
   const dLat = reachM / 111320, dLon = reachM / (111320 * Math.cos(lat * Math.PI / 180));
   let chosen = null;
-  for (let z = 17; z >= 14; z--) {
+  for (let z = (opts && opts.zoom) || 17; z >= 14; z--) {
     const xmin = lon2x(lon - dLon, z), xmax = lon2x(lon + dLon, z);
     const ymin = lat2y(lat + dLat, z), ymax = lat2y(lat - dLat, z);
     const cols = xmax - xmin + 1, rows = ymax - ymin + 1;
     if (cols * rows <= SITE_PIX_BUDGET) { chosen = { z, xmin, ymin, cols, rows }; break; }
   }
   if (!chosen) return null;
+  const urgent = !!(opts && opts.urgent);
 
   const { z, xmin, ymin, cols, rows } = chosen;
   const W = cols * 256, H = rows * 256;
   const cv = document.createElement("canvas"); cv.width = W; cv.height = H;
   const ctx = cv.getContext("2d", { willReadFrequently: true });
-  let any = false;
+  let any = false, missing = 0;
   await Promise.all((() => {
     const jobs = [];
     for (let ty = 0; ty < rows; ty++) for (let tx = 0; tx < cols; tx++) {
-      jobs.push(loadTile(z, xmin + tx, ymin + ty).then(im => {
+      jobs.push(loadTile(z, xmin + tx, ymin + ty, { urgent }).then(im => {
         if (im) { any = true; ctx.drawImage(im, tx * 256, ty * 256); }
+        else missing++;
       }));
     }
     return jobs;
@@ -14373,7 +14458,9 @@ async function loadSitePixels(lat, lon, reachM) {
   catch (e) { return null; }          // tainted canvas (file://) — no opinion
 
   const buf = { data, W, H, z, xmin, ymin };
-  _sitePixLRU.set(key, buf);
+  // A buffer with holes serves this search, but is not kept: the next one
+  // should get the chance to fill them rather than inherit them.
+  if (!missing) _sitePixLRU.set(key, buf);
   while (_sitePixLRU.size > SITE_PIX_KEEP) {
     _sitePixLRU.delete(_sitePixLRU.keys().next().value);
   }
@@ -14539,7 +14626,26 @@ async function findOpenPlot(area_m2) {
      Overpass; neither waits on the other, and the imagery buffer is the
      slower of the two on a cold start, so starting it first and awaiting it
      last takes it off the clock entirely. */
-  const scoreP = builtScorer(lat, lon, SITE_SEARCH_R).catch(() => null);
+  /* NEAR FIRST, FAR ONLY IF NEEDED.
+
+     The buffer used to cover the whole 1.2 km search radius before a single
+     candidate could be checked: about 25 Esri tiles at ~1.7 s each, five at
+     a time - nine seconds on a good day, forty-five on a bad one, and it
+     was the whole of the wait behind "Real surroundings" once the map index
+     answered locally. But candidates are walked nearest first and the first
+     one usually passes, so almost every search only ever looked at the
+     ground within a few hundred metres of the click.
+
+     So a small buffer around the click comes first (a handful of tiles, at
+     the SAME zoom as the big one so the built-up thresholds read pixels at
+     the same scale), and the full-radius buffer is fetched only when a
+     candidate lies outside it. Both are urgent: someone is waiting. */
+  const SITE_NEAR_R = 450;
+  const zSite = sitePixZoom(lat, lon, SITE_SEARCH_R);
+  const scoreP = builtScorer(lat, lon, SITE_NEAR_R, { zoom: zSite, urgent: true }).catch(() => null);
+  let farP = null;
+  const farScore = () => farP || (farP =
+    builtScorer(lat, lon, SITE_SEARCH_R, { zoom: zSite, urgent: true }).catch(() => null));
 
   /* The budget starts HERE, not after the obstacle fetch.
 
@@ -14572,7 +14678,7 @@ async function findOpenPlot(area_m2) {
      working. The number is here to stop an UNBOUNDED wait - the bug was a
      promise that never settled - and not to make a slow query quick. The
      result is cached per place, so this is paid once. */
-  const OBST_MS  = (GV.CFG && GV.CFG.SITE_OBSTACLE_MS) || (window.__GV_DESKTOP__ ? 75000 : 45000);
+  const OBST_MS  = (GV.CFG && GV.CFG.SITE_OBSTACLE_MS) || (window.__GV_DESKTOP__ ? 75000 : 10000);   // web: the imagery-only search takes over sooner
   const SEARCH_MS = (GV.CFG && GV.CFG.SITE_SEARCH_MS) || 20000;
   const before = ms => Promise.race([
     Promise.resolve(ms.p).catch(() => null),
@@ -14642,7 +14748,7 @@ async function findOpenPlot(area_m2) {
      clock. Running out of time returns a REASON, not a plot: an unchecked
      square is what put a design on rooftops, and "I could not check this
      in time" is an answer a planner can act on. */
-  let score = null;
+  let score = null, scoreFar;          // scoreFar: undefined = not asked yet
   try { score = await before({ p: scoreP, ms: Math.min(12000, SEARCH_MS) }); } catch (e) { score = null; }
 
   let lookedBuilt = 0, ranOutOfTime = false;
@@ -14676,12 +14782,24 @@ async function findOpenPlot(area_m2) {
       if (Date.now() > deadline) { ranOutOfTime = true; break; }
       let built = null;
       try {
-        /* The per-candidate read is the slow path and the one that has to
-           be held to the clock; the shared buffer, when there is one,
-           answers from memory and costs nothing. */
-        built = score ? score(hit.lat, hit.lon, hit.side)
-                      : await before({ p: GV.builtFractionAt(hit.lat, hit.lon, hit.side),
-                                       ms: Math.max(1500, deadline - Date.now()) });
+        /* The near buffer answers for candidates well inside it; anything
+           further out (or on its edge, where it returns null rather than
+           guess) is read from the full-radius buffer, fetched the first time
+           one is needed. The per-candidate read is the last resort, held to
+           the clock, for when neither buffer could be loaded. */
+        const inNear = (hit.moved_m || 0) + hit.side * 0.75 < SITE_NEAR_R - 40;
+        if (score && inNear) built = score(hit.lat, hit.lon, hit.side);
+        if (built == null) {
+          if (scoreFar === undefined) {
+            scoreFar = await before({ p: farScore(),
+                                      ms: Math.max(1500, Math.min(12000, deadline - Date.now())) });
+          }
+          if (scoreFar) built = scoreFar(hit.lat, hit.lon, hit.side);
+        }
+        if (built == null && !score && !scoreFar) {
+          built = await before({ p: GV.builtFractionAt(hit.lat, hit.lon, hit.side),
+                                 ms: Math.max(1500, deadline - Date.now()) });
+        }
       } catch (e) {}
       if (built != null && built >= cap) { lookedBuilt++; continue; }
       // From the photo alone, an unread square is not a checked one.
@@ -15035,8 +15153,8 @@ function builtPctFromBuf(buf, lat, lon, side) {
 /* One buffer for a whole search, and a function that scores squares out of
    it. Returns null when the imagery could not be read - which must always
    be treated as "unknown", never as "clear". */
-async function builtScorer(lat, lon, reachM) {
-  const buf = await loadSitePixels(lat, lon, reachM);
+async function builtScorer(lat, lon, reachM, opts) {
+  const buf = await loadSitePixels(lat, lon, reachM, opts);
   if (!buf) return null;
   return (la, lo, side) => builtPctFromBuf(buf, la, lo, side);
 }
@@ -15069,6 +15187,13 @@ async function builtScorer(lat, lon, reachM) {
    placement quietly fell back to OpenStreetMap alone. The guard made a
    wiring mistake look like a feature that had not loaded yet. */
 GV.builtScorer = builtScorer;
+// For the 3D builder's imagery-only surroundings (gvImageryContext).
+GV.sitePixels = loadSitePixels;
+GV.builtPctFromBuf = builtPctFromBuf;
+GV.plantableFromBuf = (buf, lat, lon, side) => {
+  const hLa = (side / 2) / 111320, hLo = (side / 2) / (111320 * Math.cos(lat * Math.PI / 180));
+  return plantableFraction(buf, { s: lat - hLa, n: lat + hLa, w: lon - hLo, e: lon + hLo });
+};
 
 GV.builtFractionAt = async function (lat, lon, side_m) {
   const side = side_m || 100;
@@ -16258,7 +16383,10 @@ out geom;`;
      patience with a public mirror that is throttling us. Past it the builder
      says so and draws the plot without context, which is a far better answer
      than a spinner. */
-  const j = await window.overpassFetch(q, 60000, { deadlineMs: 150000 });
+  // The web has no local index; past 25 s there the imagery estimate
+  // (gvImageryContext) is a better answer than more waiting on mirrors.
+  const j = await window.overpassFetch(q, window.__GV_DESKTOP__ ? 60000 : 20000,
+                                       { deadlineMs: window.__GV_DESKTOP__ ? 150000 : 25000 });
   if (!j || !j.elements || !j.elements.length) return publish(null);
 
   /* NOT awaited — see the note at the top of this function's history: the
@@ -16289,6 +16417,51 @@ out geom;`;
 /* One Overpass answer -> the shape the builder draws from. Separate so the
    late-arriving greenery is folded in by the same code that built the first
    version, rather than a second copy of it that can drift. */
+/* SURROUNDINGS FROM THE PHOTOGRAPH, when no map service answers.
+
+   The web version has no local map index, and on 21 Oct 2026 every public
+   Overpass mirror it can use was down or timing out at once - so "Real
+   surroundings" drew an empty plot and said OpenStreetMap did not answer.
+   The satellite imagery was loading the whole time. So the site is read
+   from it instead: the area is cut into ~12 m squares, a square that reads
+   as roof or concrete becomes a low block, and a square that reads as
+   leaves becomes a tree. Heights are not in a photograph, so every block is
+   a two-storey estimate, and the label says plainly that this is an
+   estimate from imagery, not mapped buildings. Same shape as ctx3dShape's
+   output, so the scene draws it with the same code. */
+async function gvImageryContext(lat, lon, reachM) {
+  const getPix = GV.sitePixels;
+  if (typeof getPix !== "function") return null;
+  const buf = await getPix(lat, lon, reachM, { urgent: true });
+  if (!buf || !buf.data) return null;
+  const out = { buildings: [], roads: [], water: [], green: [], rows: [], trees: [],
+                fromImagery: true };
+  const CELL = 12, mLat = 111320, mLon = 111320 * Math.cos(lat * Math.PI / 180);
+  const n = Math.floor(reachM / CELL);
+  const dLa = (CELL / 2 - 1) / mLat, dLo = (CELL / 2 - 1) / mLon;
+  for (let iy = -n; iy <= n; iy++) {
+    for (let ix = -n; ix <= n; ix++) {
+      if (ix * ix + iy * iy > n * n) continue;                 // a disc, not a square
+      const la = lat + (iy * CELL) / mLat, lo = lon + (ix * CELL) / mLon;
+      const built = GV.builtPctFromBuf(buf, la, lo, CELL);
+      if (built == null) continue;
+      if (built >= 60 && out.buildings.length < 900) {
+        out.buildings.push({
+          pts: [[la - dLa, lo - dLo], [la - dLa, lo + dLo], [la + dLa, lo + dLo], [la + dLa, lo - dLo]],
+          h: 7, measured: false, kind: "estimated", name: null
+        });
+      } else if (built <= 8 && (ix + iy) % 2 === 0 && out.trees.length < 400) {
+        const green = GV.plantableFromBuf ? GV.plantableFromBuf(buf, la, lo, CELL) : null;
+        if (green != null && green >= 0.8) {
+          out.trees.push({ lat: la, lon: lo, r: 3.5, h: 8, measured: false, name: null,
+                           why: "a crown read from the satellite photo" });
+        }
+      }
+    }
+  }
+  return out.buildings.length || out.trees.length ? out : null;
+}
+
 function ctx3dShape(j) {
   const out = { buildings: [], roads: [], water: [], green: [], rows: [], trees: [] };
   for (const el of j.elements) {
@@ -17245,9 +17418,19 @@ async function openBuilder(land) {
 
   const span = plotRing ? Math.sqrt(Math.max(400, GV.engines.ringAreaM2(plotRing))) : 100;
   const scene = B;                       // capture: the reader may close and reopen
-  let ctx = null;
-  try { ctx = await fetchSiteContext(base.lat, base.lon, span / 2 + CTX3D_MARGIN); }
-  catch (e) { ctx = null; }
+  let ctx = null, lateCtx = null;
+  const ctxP = Promise.resolve()
+    .then(() => fetchSiteContext(base.lat, base.lon, span / 2 + CTX3D_MARGIN))
+    .catch(() => null);
+  if (window.__GV_DESKTOP__) {
+    ctx = await ctxP;
+  } else {
+    /* The web has only the public mirrors. Give them six seconds; past that
+       the photo estimate below is drawn, and if the mirrors answer later
+       their mapped buildings replace it in place. */
+    ctx = await Promise.race([ctxP, new Promise(r => setTimeout(() => r(undefined), 6000))]);
+    if (ctx === undefined) { ctx = null; lateCtx = ctxP; }
+  }
 
   // Bail if the builder was closed, or reopened onto a different site,
   // while that request was in flight.
@@ -17255,6 +17438,39 @@ async function openBuilder(land) {
 
   const lbl = document.getElementById("gv3dLandLabel");
   const ha = ((B.plotAreaM2 || 10000) / 10000).toFixed(2) + " ha";
+  if (!ctx && !(typeof gvOsmWarming === "function" && gvOsmWarming())) {
+    // No map service answered: read the surroundings from the photograph.
+    let est = null;
+    try { est = await gvImageryContext(base.lat, base.lon, Math.min(300, span / 2 + CTX3D_MARGIN)); }
+    catch (e) { est = null; }
+    if (!B || B !== scene || !document.getElementById("gv3dCanvas")) return;
+    if (est) {
+      try {
+        addRealContext(B, est, B.plotXZ);
+        window.GV3D_CTX = est;
+        if (lbl) lbl.textContent = ha + " · " + est.buildings.length + " buildings and " +
+          est.trees.length + " trees ESTIMATED from satellite imagery (map service not answering)";
+        toast("Map service not answering - surroundings estimated from the satellite photo");
+      } catch (e) {
+        console.warn("imagery context failed to draw", e);
+      }
+      // The mirrors answered after all: swap the estimate for mapped data.
+      if (lateCtx) lateCtx.then(c => {
+        if (!c || !B || B !== scene) return;
+        try {
+          for (const m of (B.context || [])) B.scene.remove(m);
+          B.context = [];
+          const n = addRealContext(B, c, B.plotXZ);
+          const nl = ctx3dAddLabels(B, c);
+          window.GV3D_CTX = c;
+          const l2 = document.getElementById("gv3dLandLabel");
+          if (l2) l2.textContent = ctx3dSummary(ha, n, nl);
+          if (B.invalidate) B.invalidate();
+        } catch (e) { console.warn("late context failed to draw", e); }
+      });
+      return;
+    }
+  }
   if (!ctx) {
     /* Say WHICH of the three it is - still loading, no index, or a real
        miss. "Unavailable" during a two-minute first load reads as broken,
@@ -17332,6 +17548,13 @@ function builderLandPicker() {
 
 function buildOverlay(land, base, plotRing, siteCtx) {
   const THREE = window.THREE;
+  // Reopening over an open builder: stop the old scene's render loop and
+  // key handler first, or they keep running, unseen, for the whole session.
+  if (B) {
+    try { if (B._keyUndo) document.removeEventListener("keydown", B._keyUndo, true); } catch (e) {}
+    try { if (B._stop) B._stop(); } catch (e) {}
+    try { if (B.renderer) B.renderer.dispose(); } catch (e) {}
+  }
   let root = document.getElementById("gv3d");
   if (root) root.remove();
   root = document.createElement("div");
@@ -17521,14 +17744,37 @@ function buildOverlay(land, base, plotRing, siteCtx) {
   window.addEventListener("resize", resize); resize();
 
   // render loop
-  let raf;
-  (function loop(){
+  /* DRAW WHEN SOMETHING CHANGED, not sixty times a second regardless.
+
+     Profiled with a 650-object park on screen, this loop was two thirds of
+     all the page's CPU time while the reader sat looking at a scene that was
+     not moving - and everything else in the page (placing a park, the AI
+     writing, the panels) queued behind it. A frame is drawn now when the
+     camera moved, when objects came or went, while the pointer, wheel or
+     keyboard is in use (and a moment after), when code asks with
+     B.invalidate(), and otherwise four times a second as a floor, so a
+     change nothing announced still shows within a quarter of a second. */
+  let raf, lastSig = "", lastDraw = 0, hotUntil = 0;
+  B.invalidate = (ms) => { hotUntil = Math.max(hotUntil, performance.now() + (ms || 150)); };
+  const wake = () => { hotUntil = performance.now() + 1200; };
+  // On the window, not the canvas: the plot mover, HUD and slider are
+  // separate panels, and their clicks change the scene too.
+  const WAKE_EVENTS = ["pointerdown", "pointermove", "pointerup", "wheel", "keydown", "input"];
+  WAKE_EVENTS.forEach(ev => window.addEventListener(ev, wake, { passive: true, capture: true }));
+  (function loop(now){
     raf = requestAnimationFrame(loop);
-    renderer.render(scene, camera);
-    ctx3dSyncLabels(B);          // HTML labels track their world anchors
-  })();
+    const p = camera.position;
+    const sig = p.x.toFixed(3) + "," + p.y.toFixed(3) + "," + p.z.toFixed(3) + "," +
+                B.objects.length + "," + scene.children.length;
+    if (now < hotUntil || sig !== lastSig || now - lastDraw > 250) {
+      lastSig = sig; lastDraw = now;
+      renderer.render(scene, camera);
+      ctx3dSyncLabels(B);        // HTML labels track their world anchors
+    }
+  })(performance.now());
   B._stop = () => {
     cancelAnimationFrame(raf);
+    WAKE_EVENTS.forEach(ev => window.removeEventListener(ev, wake, { capture: true }));
     window.removeEventListener("resize", resize);
     const lh = document.getElementById("gv3dLabels");
     if (lh) lh.remove();
@@ -17581,6 +17827,11 @@ function buildOverlay(land, base, plotRing, siteCtx) {
 function closeBuilder() {
   if (B && B._keyUndo) document.removeEventListener("keydown", B._keyUndo, true);
   if (B && B._stop) B._stop();
+  /* Hand the GPU context back. Each open made a new WebGL context and
+     closing never released one; Chromium keeps about sixteen, and past
+     that it drops the oldest, so a long session of opening and closing 3D
+     would eventually lose a live one. */
+  try { if (B && B.renderer) { B.renderer.dispose(); B.renderer.forceContextLoss(); } } catch (e) {}
   const r = document.getElementById("gv3d"); if (r) r.remove();
   B = null;
 }
@@ -22431,6 +22682,8 @@ function aRenderStatus() {
       ? "Offline planner · the baked engine, running in your browser"
       : GVA.online === true
       ? "Local engine · nothing leaves this machine"
+      : GVA.starting
+      ? "Local engine starting · maps already work, the rest in a few seconds"
       : GVA.online === false && local
       ? "Engine unreachable — start <code>greenplan.server</code>"
       : GVA.online === false
@@ -22466,33 +22719,65 @@ GVA.ask = aSend;
    Walks ENGINE_ORIGINS and keeps the first that answers, so a page opened
    straight off the filesystem still finds an engine running on localhost
    instead of announcing that one is not there. */
+/* ALL AT ONCE, not one after another.
+
+   The walk used to ask each candidate in turn with a 2.5 s timeout, and on a
+   desktop start the engine is still booting, so every candidate timed out:
+   eight of them made one sweep cost about fifteen seconds, and the engine was
+   found at second eighteen - with the assistant, the AI and the local map
+   index all reading "offline" until then. Asked together, a sweep costs one
+   timeout at most, and the answer comes from whichever port actually
+   answers. Same-origin still wins when it answers, because it is checked
+   first among the winners. */
 async function aProbe() {
-  for (const origin of ENGINE_ORIGINS) {
+  const cands = ENGINE_ORIGINS.filter(origin =>
     // Skip the loopback guesses when we ARE on http(s) — if the engine were
     // on this origin the first entry would already have answered, and
     // probing localhost from a real deployment is pointless noise.
-    if (origin && location.protocol !== "file:" &&
-        !/^(127\.0\.0\.1|localhost)$/.test(location.hostname)) continue;
-    try {
-      const c = new AbortController();
-      const id = setTimeout(() => c.abort(), 2500);
-      const r = await fetch(origin + "/api/health", { method: "GET", signal: c.signal });
-      clearTimeout(id);
-      if (!r.ok) continue;
-      const h = await r.json();
-      if (!h || !h.ok) continue;
-      GVA.origin = origin;
-      window.__gvEngineOrigin = origin;
-      GVA.online = true;
-      GVA.health = h;
-      if (origin) console.info("%cGreen Vision", "color:#12b981;font-weight:800",
-        "engine found at " + origin + " (this page is not served by it)");
-      aRenderStatus();
-      return;
-    } catch (e) { /* try the next one */ }
+    !(origin && location.protocol !== "file:" &&
+      !/^(127\.0\.0\.1|localhost)$/.test(location.hostname)) &&
+    // On file:// the same-origin guess resolves to file:///api/health.
+    !(origin === "" && location.protocol === "file:"));
+  const race = async (path, ms, list) => {
+    const c = new AbortController();
+    const id = setTimeout(() => c.abort(), ms);
+    const ask = origin => fetch(origin + path, { method: "GET", signal: c.signal, cache: "no-store" })
+      .then(r => r.ok ? r.json() : null)
+      .then(h => { if (!h || !h.ok) throw new Error("not the engine"); return { origin, h }; });
+    let w = null;
+    try { w = await Promise.any(list.map(ask)); } catch (e) { w = null; }
+    clearTimeout(id);
+    c.abort();                         // the losers need not finish
+    return w;
+  };
+  /* PING FIRST. Since 1.6.2 the engine listens before its city analysis is
+     built and /api/ping answers at once, while /api/health waits for the
+     city. Knowing WHERE the engine is already lets the local map index
+     answer (it needs no city), so the origin is recorded straight away and
+     the engine is only marked online when the city is ready. An older
+     engine has no /api/ping; then this is the health race as before. */
+  const ping = await race("/api/ping", 1500, cands);
+  if (ping) {
+    window.__gvEngineOrigin = ping.origin;
+    GVA.origin = ping.origin;
+    if (!ping.h.city_ready) { GVA.online = false; GVA.starting = true; aRenderStatus(); return; }
   }
-  GVA.origin = null;
-  window.__gvEngineOrigin = null;
+  const won = await race("/api/health", 2500, ping ? [ping.origin] : cands);
+  GVA.starting = false;
+  if (won) {
+    GVA.origin = won.origin;
+    window.__gvEngineOrigin = won.origin;
+    GVA.online = true;
+    GVA.health = won.h;
+    if (won.origin) console.info("%cGreen Vision", "color:#12b981;font-weight:800",
+      "engine found at " + won.origin + " (this page is not served by it)");
+    aRenderStatus();
+    return;
+  }
+  // A server that answered the ping is still there, merely busy: keep its
+  // address so the map index stays local while health catches up.
+  GVA.origin = ping ? ping.origin : null;
+  window.__gvEngineOrigin = ping ? ping.origin : null;
   GVA.online = false;
   aRenderStatus();
 }
@@ -22512,7 +22797,14 @@ async function aProbe() {
    This is a startup race, not a health monitor - an engine that goes away
    later is a different problem, and the panels that need it already report
    its absence when they ask. */
-const ENGINE_PROBE_RETRIES_MS = [3000, 8000, 20000, 45000];
+/* The desktop app always starts an engine beside the page, so there it is
+   asked every second for its first minute and a half: the engine is found
+   within a second of answering rather than at the next long back-off step.
+   A plain web page keeps the old, sparse schedule - there is usually no
+   engine to find, and knocking on loopback every second would be noise. */
+const ENGINE_PROBE_RETRIES_MS = window.__GV_DESKTOP__
+  ? Array.from({ length: 90 }, () => 1000)
+  : [3000, 8000, 20000, 45000];
 
 async function aProbeUntilFound() {
   await aProbe();
@@ -25304,6 +25596,7 @@ function b3dTimeSlider(root) {
   const paint = () => {
     const t = +range.value, y = Math.round(t);
     b3dSetYear(t);
+    if (B && B.invalidate) B.invalidate();     // trees changed size: draw it
     range.style.setProperty("--p", (t * 2) + "%");
     yearEl.textContent = t < 0.5 ? "Planting day" : "Year " + y + " · " + (now + y);
     const st = b3dYearStats(t);

@@ -277,6 +277,28 @@ class LocalOSM:
         if not self.path.is_file():
             log.info("no local OSM index at %s — the public Overpass stays the only source", self.path)
             return
+        # The cell pack first: it answers the same queries from the same
+        # records, but reads only the cells a query touches - see CellPack.
+        pack = find_pack(self.path)
+        if pack is None:
+            # No pack beside the index (or a stale one): write one into the
+            # user's cache. This runs on the loader thread, streams with
+            # bounded memory, and is a one-time cost - the full parse below
+            # costs the same time on EVERY start and holds gigabytes.
+            try:
+                pack = CellPack(build_pack(self.path))
+            except Exception as exc:
+                log.warning("could not build the OSM cell pack (%s) - loading "
+                            "the whole index into memory instead", exc)
+                pack = None
+        if pack is not None:
+            self.grid = pack.cells
+            self.n = pack.n
+            self.bbox = list(pack.bbox)
+            log.info("local OSM index: cell pack %s opened in %.2fs - %s features, "
+                     "%s cells, read on demand", pack.path.name, pack.open_s,
+                     f"{self.n:,}", f"{len(pack.table):,}")
+            return
         # Pre-compute a degree box per focus so the haversine runs only for
         # points that are already close to one of them.
         boxes = []
@@ -349,6 +371,13 @@ class LocalOSM:
         if not self.ready:
             return False
         if not self.focus:
+            # A cell pack opened before the server knew its cities (the boot
+            # listener does this): its bbox spans every city at once, so it
+            # would claim Surat because Surat lies between Ahmedabad and
+            # Mumbai. Ask the pack instead whether it holds ANY cell near
+            # here - the same honest "covered or not" as the focus discs.
+            if isinstance(self.grid, _LazyCells):
+                return self.grid.has_near(lat, lon)
             # No focus means the whole extract was loaded; the bbox IS the
             # coverage in that case.
             return (self.bbox[0] - margin <= lat <= self.bbox[2] + margin
@@ -681,6 +710,267 @@ def _as_overpass(rec: dict, bounds_only: bool = False) -> dict:
         else:
             out["center"] = {"lat": rec["lat"], "lon": rec["lon"]}
     return out
+
+
+# --- the cell pack ------------------------------------------------------------
+#
+# WHY THIS EXISTS. The index used to be parsed whole on every start: 2.6
+# million JSON lines plus Overture's buildings, each turned into a Python dict
+# and held in memory. Measured on the user's laptop in 1.6.1 that took over
+# five minutes and 10 GB of private memory - Windows paged, the machine
+# crawled, and every map read in that window (the 3D builder's real
+# surroundings above all) went to the public Overpass mirrors and waited on
+# them. A single query only ever touches a handful of 1 km cells.
+#
+# So the same records are stored once, cell by cell, each cell compressed on
+# its own, with a table of where each cell sits. Opening the pack reads the
+# table (milliseconds); a query reads the cells it touches and keeps them.
+# The records are byte-for-byte the ones the full parse produced, with the
+# Overture buildings already swapped in per cell by the same rule
+# _load_overture applies, so every answer is the same answer.
+#
+# Layout:  MAGIC | u64 header offset | cell blobs... | header
+# A cell blob is zlib(marshal({kind: [record, ...]})); the header is
+# zlib(marshal({"v", "src", "n", "bbox", "table": {(y, x): (off, len)}})).
+
+import marshal
+import os
+import struct
+import sys
+import zlib
+
+PACK_NAME = "index.cells.pack"
+_PACK_MAGIC = b"GVCELLS1"
+_PACK_V = 1
+_TILE = 10                     # cells per temp tile side while building
+
+
+def _pack_cache_dir() -> Path:
+    """Where the engine may write a pack it built itself. The install folder
+    is read-only on Windows (Program Files) and inside a signed bundle on a
+    Mac, so never there."""
+    env = os.environ.get("GV_CACHE_DIR")
+    if env:
+        return Path(env)
+    if sys.platform == "win32":
+        base = os.environ.get("LOCALAPPDATA") or str(Path.home() / "AppData" / "Local")
+        return Path(base) / "Green Vision" / "engine" / "cache"
+    if sys.platform == "darwin":
+        return Path.home() / "Library" / "Caches" / "Green Vision"
+    return Path(os.environ.get("XDG_CACHE_HOME") or Path.home() / ".cache") / "green-vision"
+
+
+def _pack_sources(index_path: Path) -> dict:
+    """What a pack was built from: names and sizes. Sizes, not mtimes - an
+    installer rewrites mtimes, and a different extract is a different size."""
+    ov = index_path.parent / LocalOSM.OVERTURE_NAME
+    return {"index": [index_path.name, index_path.stat().st_size],
+            "overture": [ov.name, ov.stat().st_size] if ov.is_file() else None}
+
+
+class _LazyCells(dict):
+    """grid[(y, x)] -> {kind: [records]}, read from the pack on first use.
+
+    Only .get() is used by queries (LocalOSM._near), so that is the one
+    lookup that reads through. A cell is read once and then kept: the cells a
+    session touches are a few dozen, not the whole country."""
+
+    def __init__(self, pack: "CellPack") -> None:
+        super().__init__()
+        self._pack = pack
+
+    def get(self, key, default=None):
+        try:
+            return dict.__getitem__(self, key)
+        except KeyError:
+            pass
+        ent = self._pack.table.get(key)
+        if ent is None:
+            return default
+        v = self._pack.read(ent)
+        dict.__setitem__(self, key, v)
+        return v
+
+    def __len__(self) -> int:
+        return len(self._pack.table)
+
+    def has_near(self, lat: float, lon: float, reach: int = 2) -> bool:
+        """Does the pack hold any cell within `reach` cells (~2 km) of here?"""
+        cy, cx = int(lat / LocalOSM.CELL), int(lon / LocalOSM.CELL)
+        t = self._pack.table
+        return any((cy + dy, cx + dx) in t
+                   for dy in range(-reach, reach + 1) for dx in range(-reach, reach + 1))
+
+
+class CellPack:
+    def __init__(self, path: Path) -> None:
+        t = time.time()
+        self.path = Path(path)
+        self._fh = open(self.path, "rb")
+        self._lock = threading.Lock()
+        if self._fh.read(8) != _PACK_MAGIC:
+            self._fh.close()
+            raise ValueError("not a Green Vision cell pack")
+        (hoff,) = struct.unpack("<Q", self._fh.read(8))
+        self._fh.seek(hoff)
+        head = marshal.loads(zlib.decompress(self._fh.read()))
+        if head.get("v") != _PACK_V:
+            self._fh.close()
+            raise ValueError("cell pack version %r" % head.get("v"))
+        self.src = head["src"]
+        self.n = head["n"]
+        self.bbox = head["bbox"]
+        self.table = head["table"]
+        self.cells = _LazyCells(self)
+        self.open_s = time.time() - t
+
+    def read(self, ent) -> dict:
+        off, ln = ent
+        with self._lock:
+            self._fh.seek(off)
+            blob = self._fh.read(ln)
+        return marshal.loads(zlib.decompress(blob))
+
+
+def find_pack(index_path: Path) -> CellPack | None:
+    """A pack built from exactly this index (and Overture file), if one
+    exists beside it or in the user's cache. A stale pack is ignored, never
+    trusted: an index rebuilt from a newer extract must not be answered from
+    the old one's cells."""
+    index_path = Path(index_path)
+    try:
+        want = _pack_sources(index_path)
+    except OSError:
+        return None
+    for cand in (index_path.parent / PACK_NAME, _pack_cache_dir() / PACK_NAME):
+        if not cand.is_file():
+            continue
+        try:
+            p = CellPack(cand)
+        except Exception as exc:
+            log.warning("ignoring unreadable cell pack %s (%s)", cand, exc)
+            continue
+        if p.src == want:
+            return p
+        log.info("cell pack %s was built from %s, not %s - ignoring it", cand, p.src, want)
+    return None
+
+
+def build_pack(index_path: Path, out: Path | None = None) -> Path:
+    """Write the cell pack for `index_path`. Streams: memory is bounded by one
+    10 x 10 km tile at a time, never the whole index. Returns the pack path.
+
+    Two passes. The first sorts every line into a temporary file per tile,
+    the second reads one tile at a time, buckets it into cells, swaps in the
+    Overture buildings cell by cell, and writes each cell compressed."""
+    import shutil
+    import tempfile
+    index_path = Path(index_path)
+    src = _pack_sources(index_path)
+    out = Path(out) if out else _pack_cache_dir() / PACK_NAME
+    out.parent.mkdir(parents=True, exist_ok=True)
+    t0 = time.time()
+    tmp = Path(tempfile.mkdtemp(prefix="gvpack-", dir=str(out.parent)))
+    CELL = LocalOSM.CELL
+    bbox = [90.0, 180.0, -90.0, -180.0]
+    n_index = 0
+    try:
+        # Pass 1: lines -> tile files. Buffered so the open/close count stays
+        # in the hundreds, not the millions.
+        def spill(path: Path, prefix: str) -> int:
+            nonlocal n_index
+            buf: dict[tuple[int, int], list[str]] = {}
+            held = 0
+            got = 0
+
+            def flush() -> None:
+                for (ty, tx), lines in buf.items():
+                    with open(tmp / f"{prefix}_{ty}_{tx}", "a", encoding="utf-8") as fh:
+                        fh.writelines(lines)
+                buf.clear()
+
+            opener = gzip.open if path.suffix == ".gz" else open
+            with opener(path, "rt", encoding="utf-8") as fh:
+                for line in fh:
+                    try:
+                        rec = json.loads(line)
+                    except Exception:
+                        continue
+                    lat, lon = rec.get("lat"), rec.get("lon")
+                    if lat is None or lon is None:
+                        continue
+                    if prefix == "i":
+                        if lat < bbox[0]: bbox[0] = lat
+                        if lon < bbox[1]: bbox[1] = lon
+                        if lat > bbox[2]: bbox[2] = lat
+                        if lon > bbox[3]: bbox[3] = lon
+                    cy, cx = int(lat / CELL), int(lon / CELL)
+                    if not line.endswith("\n"):
+                        line += "\n"
+                    buf.setdefault((cy // _TILE, cx // _TILE), []).append(line)
+                    held += len(line)
+                    got += 1
+                    if held > 48_000_000:
+                        flush()
+                        held = 0
+            flush()
+            return got
+
+        n_index = spill(index_path, "i")
+        ov = index_path.parent / LocalOSM.OVERTURE_NAME
+        n_ov = spill(ov, "o") if ov.is_file() else 0
+        log.info("cell pack: sorted %s index + %s Overture records into tiles in %.0fs",
+                 f"{n_index:,}", f"{n_ov:,}", time.time() - t0)
+
+        # Pass 2: tile files -> compressed cells.
+        tiles = sorted({tuple(int(v) for v in p.name.split("_")[1:]) for p in tmp.iterdir()})
+        table: dict[tuple[int, int], tuple[int, int]] = {}
+        n_total = 0
+        part = out.with_name(out.name + ".part")
+        with open(part, "wb") as w:
+            w.write(_PACK_MAGIC)
+            w.write(struct.pack("<Q", 0))
+            for ty, tx in tiles:
+                cells: dict[tuple[int, int], dict[str, list]] = {}
+                ip = tmp / f"i_{ty}_{tx}"
+                if ip.is_file():
+                    with open(ip, encoding="utf-8") as fh:
+                        for line in fh:
+                            rec = json.loads(line)
+                            key = (int(rec["lat"] / CELL), int(rec["lon"] / CELL))
+                            cells.setdefault(key, {}).setdefault(rec.get("k"), []).append(rec)
+                op = tmp / f"o_{ty}_{tx}"
+                if op.is_file():
+                    staged: dict[tuple[int, int], list] = {}
+                    with open(op, encoding="utf-8") as fh:
+                        for line in fh:
+                            rec = json.loads(line)
+                            key = (int(rec["lat"] / CELL), int(rec["lon"] / CELL))
+                            staged.setdefault(key, []).append(rec)
+                    # The rule _load_overture applies: per cell, whichever
+                    # source maps more buildings wins, and the two are never
+                    # mixed inside one cell.
+                    for key, recs in staged.items():
+                        cell = cells.setdefault(key, {})
+                        if len(recs) >= len(cell.get("building") or []):
+                            cell["building"] = recs
+                for key, cell in cells.items():
+                    n_total += sum(len(v) for v in cell.values())
+                    blob = zlib.compress(marshal.dumps(cell), 6)
+                    table[key] = (w.tell(), len(blob))
+                    w.write(blob)
+            hoff = w.tell()
+            w.write(zlib.compress(marshal.dumps(
+                {"v": _PACK_V, "src": src, "n": n_total, "bbox": bbox, "table": table}), 6))
+            w.seek(8)
+            w.write(struct.pack("<Q", hoff))
+        os.replace(part, out)
+        log.info("cell pack written: %s (%s features, %s cells, %.0f MB) in %.0fs",
+                 out, f"{n_total:,}", f"{len(table):,}", out.stat().st_size / 1e6,
+                 time.time() - t0)
+        return out
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
 
 
 _INSTANCE: LocalOSM | None = None

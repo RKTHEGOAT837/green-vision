@@ -74,10 +74,16 @@ function isBundled(app) {
 
 /* A HEAD-weight health probe with a short deadline. Used both to find an
    engine already running and to wait for the one we start. */
-function probe(port, ms = 1500) {
+/* /api/ping first: since 1.6.2 the engine listens within a second of starting
+   and answers it at once, while /api/health waits for the city analysis
+   (~15 s). An older engine has no /api/ping, so health is still asked. */
+async function probe(port, ms = 1500) {
+  return (await probePath(port, "/api/ping", ms)) || probePath(port, "/api/health", ms);
+}
+function probePath(port, path, ms) {
   return new Promise(resolve => {
     const req = http.get(
-      { host: "127.0.0.1", port, path: "/api/health", timeout: ms },
+      { host: "127.0.0.1", port, path, timeout: ms },
       res => {
         if (res.statusCode !== 200) { res.resume(); return resolve(false); }
         let body = "";

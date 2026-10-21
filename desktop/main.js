@@ -170,6 +170,13 @@ function createWindow() {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: false,
+      // Keep timers running at full speed when the window is covered or
+      // minimised. Chromium otherwise stretches a page's timers to once a
+      // second (and, after a few minutes hidden, once a MINUTE), and the
+      // site check behind "Real surroundings" is built from short waits:
+      // measured with the window hidden, a 1.3 s open took 32-72 s. People
+      // start it and switch to another window while it works.
+      backgroundThrottling: false,
       spellcheck: false
     }
   });

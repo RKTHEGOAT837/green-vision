@@ -183,6 +183,16 @@ function main() {
       throw new Error("engine greenplan has no Overture merge - refusing to ship it");
     console.log("  greenplan synced from the repo");
   }
+  /* The cell pack. Without it every user's first start spends minutes
+     building one, and an engine without CellPack code parses the whole
+     index into gigabytes of memory on every start - the 1.6.1 fault. */
+  if (fs.existsSync(path.join(engineSrc, "data", "osm", "index.slim.jsonl.gz"))) {
+    const osml2 = fs.readFileSync(path.join(gpDst, "osmlocal.py"), "utf8");
+    if (!/class CellPack/.test(osml2))
+      throw new Error("engine greenplan has no CellPack - refusing to ship the slow loader");
+    if (!fs.existsSync(path.join(engineSrc, "data", "osm", "index.cells.pack")))
+      throw new Error("engine/data/osm/index.cells.pack missing - build it with osmlocal.build_pack");
+  }
 
   if (fs.existsSync(path.join(engineSrc, "python", "python.exe"))) {
     copyDir(engineSrc, path.join(OUT, "resources", "engine"));

@@ -33,6 +33,119 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qs
 
+
+# --- the boot listener ---------------------------------------------------------
+#
+# Opened BEFORE the heavy imports below, when this file is run as the server.
+#
+# numpy, pandas, requests, h3 and OpenVINO take 6-11 s to import on an
+# ordinary laptop, and the port stayed closed for all of it: the page saw
+# "connection refused", decided there was no engine, and sent every map read
+# to the public Overpass mirrors - including the 3D builder's real
+# surroundings, which the local index answers in milliseconds and which needs
+# none of those libraries. So the socket is bound here with the standard
+# library alone and starts answering at once: /api/ping says "starting", the
+# local map index answers /api/osm, and everything else is told to come back
+# in a second. When main() has built the real handler it is swapped in on
+# the same socket (socketserver reads RequestHandlerClass per request), so no
+# request is dropped and the address never changes.
+_BOOT_HTTPD = None
+_BOOT_THREAD = None
+
+
+def _boot_listen() -> None:
+    global _BOOT_HTTPD, _BOOT_THREAD
+    ap = argparse.ArgumentParser(add_help=False)
+    ap.add_argument("--host", default="127.0.0.1")
+    ap.add_argument("--port", type=int, default=8000)
+    a, _ = ap.parse_known_args()
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
+    from . import osmlocal as _osm
+    root = Path(__file__).resolve().parent.parent
+    idx_path = None
+    for name in ("index.slim.jsonl.gz", "index.all.jsonl.gz", "index.jsonl.gz"):
+        if (root / "data" / "osm" / name).is_file():
+            idx_path = root / "data" / "osm" / name
+            break
+
+    def _send(h, code: int, body: dict, extra: dict | None = None) -> None:
+        raw = json.dumps(body).encode("utf-8")
+        h.send_response(code)
+        h.send_header("Content-Type", "application/json")
+        h.send_header("Access-Control-Allow-Origin", "*")
+        h.send_header("Content-Length", str(len(raw)))
+        for k, v in (extra or {}).items():
+            h.send_header(k, v)
+        h.end_headers()
+        h.wfile.write(raw)
+
+    class BootHandler(BaseHTTPRequestHandler):
+        def log_message(self, fmt, *args):      # quiet: the real handler logs
+            pass
+
+        def do_OPTIONS(self):
+            self.send_response(204)
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+            self.send_header("Access-Control-Allow-Headers", "Content-Type")
+            self.end_headers()
+
+        def do_GET(self):
+            if self.path.startswith("/api/ping"):
+                _send(self, 200, {"ok": True, "engine": "greenvision", "booting": True,
+                                  "city_ready": False, "osm_ready": _osm.peek() is not None})
+            else:
+                _send(self, 503, {"error": "engine starting", "retry_after": 2},
+                      {"Retry-After": "2"})
+
+        def do_POST(self):
+            n = int(self.headers.get("Content-Length") or 0)
+            raw = self.rfile.read(n).decode("utf-8", "replace") if n else ""
+            if not self.path.startswith("/api/osm"):
+                _send(self, 503, {"error": "engine starting", "retry_after": 2},
+                      {"Retry-After": "2"})
+                return
+            ql = raw
+            if raw.startswith("data="):
+                from urllib.parse import unquote_plus
+                ql = unquote_plus(raw[5:])
+            idx = _osm.peek()
+            res = None
+            if idx is not None:
+                try:
+                    res = idx.query(ql)
+                except Exception as exc:
+                    log.warning("/api/osm (boot) failed: %s", exc)
+            if idx is None:
+                _send(self, 503, {"error": "local index still loading", "warming": True,
+                                  "retry_after": 2}, {"Retry-After": "2"})
+            elif res is None:
+                _send(self, 501, {"error": "not answerable locally"})
+            else:
+                _send(self, 200, res)
+
+    try:
+        httpd = ThreadingHTTPServer((a.host, a.port), BootHandler)
+    except OSError as exc:
+        log.warning("boot listener could not bind %s:%d (%s); the engine will "
+                    "try again once it has loaded", a.host, a.port, exc)
+        return
+    httpd.daemon_threads = True
+    _BOOT_HTTPD = httpd
+    _BOOT_THREAD = threading.Thread(target=httpd.serve_forever, name="http", daemon=True)
+    _BOOT_THREAD.start()
+    log.info("listening on http://%s:%d while the engine loads", a.host, a.port)
+    # Open the map index now - only when a cell pack is there, which opens
+    # in milliseconds. Without one, main() loads it with the cities' focus.
+    if idx_path is not None and _osm.find_pack(idx_path) is not None:
+        threading.Thread(target=lambda: _osm.get(idx_path), name="osm-boot",
+                         daemon=True).start()
+
+
+log = logging.getLogger(__name__)
+if __name__ == "__main__":
+    _boot_listen()
+
 import numpy as np
 
 
@@ -1424,6 +1537,14 @@ def make_handler(registry: CityRegistry):
                 # Which on-device AI jobs can run here. The studio shows the
                 # voice, photo and writing buttons only for what is present.
                 self._json(ai_tools.status())
+            elif path.startswith("/api/ping"):
+                # Never waits on a city being built - see _build_boot_city.
+                # The page uses it to find this server (and so the local map
+                # index) while /api/health is still waiting for the city.
+                self._json({"ok": True, "engine": "greenvision",
+                            "city_ready": bool(registry.default_slug and
+                                               registry.default_slug in registry.loaded),
+                            "osm_ready": osmlocal.peek() is not None})
             elif path.startswith("/api/health"):
                 eng, slug, err = self._pick()
                 if err:
@@ -1644,9 +1765,22 @@ def main() -> None:
     registry = CityRegistry(root / "config", args.config, Engine)
 
     # Build the boot city up front so the first page load is not the one that
-    # pays for it. Every other city is built when someone first clicks in it.
-    if registry.default_slug:
-        registry.engine(registry.default_slug)
+    # pays for it - but on a thread, AFTER the server is listening.
+    #
+    # This used to run before the socket opened, so for the ~20 s it takes
+    # (panel, backtest, recommendation pass) the port refused connections
+    # outright: the map index, which needs none of it, sat unreachable, and
+    # every map read in the app's first twenty seconds went to the public
+    # Overpass mirrors. Requests that DO need the city simply wait on the
+    # registry's per-city lock, exactly as a second city always has, and
+    # /api/ping answers at once so the page can tell "starting" from "absent".
+    def _build_boot_city():
+        try:
+            if registry.default_slug:
+                registry.engine(registry.default_slug)
+        except Exception as exc:
+            log.warning("boot city failed to build (%s); it will be retried "
+                        "on the first request that needs it", exc)
 
     # Every ready city's centre is a focus for the local OSM index, so map
     # features work in all of them rather than only the one the server booted
@@ -1682,6 +1816,12 @@ def main() -> None:
                 return
             t = _time.time()
             got = osmlocal.get(idx, focus=_CITY_FOCUS[0], radius_km=_CITY_FOCUS[1])
+            # Opened by the boot listener before the cities were known: give
+            # it their discs now, so coverage is exactly what it always was.
+            if not got.focus and _CITY_FOCUS[0]:
+                f = _CITY_FOCUS[0]
+                got.focus = [tuple(x) for x in ([f] if isinstance(f, tuple) else f) if x]
+                got.radius_m = float(_CITY_FOCUS[1]) * 1000.0
             if got.ready:
                 log.info("local OSM index warm: %s features across %d cities in %.0fs",
                          f"{got.n:,}", len(got.focus), _time.time() - t)
@@ -1691,7 +1831,14 @@ def main() -> None:
 
     threading.Thread(target=_warm_osm, name="osm-warm", daemon=True).start()
 
-    httpd = ThreadingHTTPServer((args.host, args.port), make_handler(registry))
+    if _BOOT_HTTPD is not None:
+        # Same socket the boot listener opened; from the next request on it is
+        # answered by the full handler.
+        httpd = _BOOT_HTTPD
+        httpd.RequestHandlerClass = make_handler(registry)
+    else:
+        httpd = ThreadingHTTPServer((args.host, args.port), make_handler(registry))
+    threading.Thread(target=_build_boot_city, name="boot-city", daemon=True).start()
     log.info("GreenGrid engine serving on http://%s:%d  (Ctrl+C to stop)", args.host, args.port)
     ready = [c["name"] for c in registry.summary() if c["ready"]]
     log.info("  cities: %s", ", ".join(ready) or "none")
@@ -1699,7 +1846,11 @@ def main() -> None:
     log.info("       add ?city=<slug> or ?lat=&lon= to any of them")
     log.info("  POST /api/recommend  /api/species  /api/assistant  (routed by lat/lon)")
     try:
-        httpd.serve_forever()
+        if _BOOT_THREAD is not None:
+            while _BOOT_THREAD.is_alive():     # already serving; just stay up
+                _BOOT_THREAD.join(1.0)
+        else:
+            httpd.serve_forever()
     except KeyboardInterrupt:
         log.info("shutting down")
         httpd.server_close()

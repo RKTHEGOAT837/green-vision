@@ -262,6 +262,20 @@ def copy_engine(out: Path) -> None:
         log.warning("  %s missing - the app will fall back to public Overpass, "
                     "which is exactly the failure this bundle exists to remove",
                     OSM_INDEX)
+    # Overture's footprints, and the cell pack that lets the engine answer
+    # map queries the moment it starts instead of parsing every record into
+    # memory first (minutes and gigabytes - see CellPack in osmlocal.py).
+    # The pack is only used when it was built from exactly these two files,
+    # so a stale one costs a rebuild into the user's cache, never a wrong map.
+    for extra in ("buildings.overture.jsonl.gz", "index.cells.pack"):
+        f = data_src / "osm" / extra
+        if f.is_file():
+            shutil.copy2(f, data_dst / "osm" / extra)
+            log.info("  %-10s %6.1f MB  (%s)", "osm", f.stat().st_size / 1e6, extra)
+        elif extra == "index.cells.pack":
+            log.warning("  %s missing - build it with: python -c \"from greenplan import "
+                        "osmlocal; osmlocal.build_pack(...)\". Without it every user's "
+                        "first start spends minutes building one.", extra)
     log.info("  %-10s %6.1f MB  (%d csv/json + i18n)", "data",
              dir_size(data_dst) / 1e6, n)
 
