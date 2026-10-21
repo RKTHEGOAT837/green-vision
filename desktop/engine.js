@@ -49,9 +49,72 @@ let starting = false;
 /* Where the bundle is. Packaged: resources/engine beside the binary.
    In development: desktop/engine, exactly what pack.js will ship. */
 function engineDir(app) {
-  return app.isPackaged
+  const real = app.isPackaged
     ? path.join(process.resourcesPath, "engine")
     : path.join(__dirname, "engine");
+  return shortPath(app, real);
+}
+
+/* A SHORT ROUTE TO A DEEP FOLDER (Windows).
+
+   Windows will not load a DLL whose full path passes about 248 characters,
+   and the engine's deepest DLLs sit ~95 characters below resources\engine.
+   Installed somewhere nested - a chosen folder under OneDrive\Desktop\...,
+   or a long user name - the OpenVINO GenAI library failed to import with
+   "The filename or extension is too long", and with it the photo check,
+   voice and every AI-written sentence. Measured: a 178-character engine
+   folder gave 256-character DLL paths and failed; the default locations
+   (45-75 characters) are fine.
+
+   So past 110 characters the engine is started through a directory
+   junction at %APPDATA%\Green Vision\e, which points at the real folder.
+   A junction needs no administrator rights, and Windows resolves the DLLs
+   through the short name. Any failure leaves the real path in use, which is
+   exactly what happened before. */
+/* The junction is not enough for one file. OpenVINO canonicalises an
+   extension's path before loading it, which turns the junction back into
+   the long real path and fails with the same error 206 - measured on the
+   photo check: "Cannot load library ...openvino_tokenizers.dll: 206". So
+   that one library (3.3 MB) is copied to %APPDATA%\Green Vision\ovt and
+   both OpenVINO and OpenVINO GenAI are told to load it from there. Returns
+   the short path, or null when it is not needed or could not be made. */
+function shortTokenizers(app, engineRoot) {
+  if (process.platform !== "win32") return null;
+  try {
+    const real = fs.realpathSync(engineRoot);
+    if (real.length <= 110) return null;
+    const src = path.join(real, "python", "Lib", "site-packages", "openvino_tokenizers",
+                          "lib", "openvino_tokenizers.dll");
+    if (!fs.existsSync(src)) return null;
+    const dstDir = path.join(app.getPath("userData"), "ovt");
+    const dst = path.join(dstDir, "openvino_tokenizers.dll");
+    fs.mkdirSync(dstDir, { recursive: true });
+    let same = false;
+    try { same = fs.statSync(dst).size === fs.statSync(src).size &&
+                 fs.statSync(dst).mtimeMs >= fs.statSync(src).mtimeMs; } catch (e) { same = false; }
+    if (!same) fs.copyFileSync(src, dst);
+    return dst;
+  } catch (e) {
+    return null;
+  }
+}
+
+function shortPath(app, real) {
+  if (process.platform !== "win32" || real.length <= 110) return real;
+  try {
+    const link = path.join(app.getPath("userData"), "e");
+    let ok = false;
+    try { ok = fs.realpathSync(link).toLowerCase() === fs.realpathSync(real).toLowerCase(); }
+    catch (e) { ok = false; }
+    if (!ok) {
+      try { fs.rmSync(link, { recursive: false, force: true }); } catch (e) {}
+      try { fs.unlinkSync(link); } catch (e) {}
+      fs.symlinkSync(real, link, "junction");
+    }
+    return link;
+  } catch (e) {
+    return real;
+  }
 }
 
 /* The interpreter inside the bundle.
@@ -148,6 +211,12 @@ async function start(app, log = () => {}) {
     });
     delete env.PYTHONPATH;
     delete env.PYTHONHOME;
+    const tok = shortTokenizers(app, dir);
+    if (tok) {
+      env.OV_TOKENIZER_PREBUILD_EXTENSION_PATH = tok;   // openvino_tokenizers (Python)
+      env.OPENVINO_TOKENIZERS_PATH_GENAI = tok;         // OpenVINO GenAI (C++)
+      log("long install path: OpenVINO tokenizers loaded from " + tok);
+    }
 
     child = spawn(exe, ["-m", "greenplan.server", "--port", String(port)], {
       cwd: dir,

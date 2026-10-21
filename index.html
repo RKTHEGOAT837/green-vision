@@ -1102,7 +1102,10 @@ GVAI.see = async function (file, body) {
     for (let i = 0, j = 0; i < px.length; i += 4) { rgb[j++] = px[i]; rgb[j++] = px[i + 1]; rgb[j++] = px[i + 2]; }
     let bin = "";
     for (let i = 0; i < rgb.length; i += 0x8000) bin += String.fromCharCode.apply(null, rgb.subarray(i, i + 0x8000));
-    return gvAIPost("/api/ai/see", Object.assign({ rgb: btoa(bin), w, h }, body || {}), 120000);
+    /* 5 minutes, not 2: the FIRST photo of a session loads and compiles the
+       vision model, measured past 120 s on the GPU - the request was given
+       up while the engine finished it, and the next try took 20 s. */
+    return gvAIPost("/api/ai/see", Object.assign({ rgb: btoa(bin), w, h }, body || {}), 300000);
   } finally { URL.revokeObjectURL(url); }
 };
 
@@ -1240,7 +1243,7 @@ document.addEventListener("click", async ev => {
   if (photo) {
     const out = document.getElementById("pExplainOut");
     if (!out) return;
-    out.innerHTML = '<p class="gv-aiwait">Looking at the photo on this computer\u2026 about 20 seconds, longer the first time</p>';
+    out.innerHTML = '<p class="gv-aiwait">Looking at the photo on this computer\u2026 about 20 seconds. The first photo after opening the app also loads the model, which can take two or three minutes</p>';
     const res = await GVAI.see(file, { task: "site" });
     if (!res || !res.ok) { out.innerHTML = '<p class="gv-aitext">Could not read the photo: ' + e((res && res.reason) || "no answer") + ".</p>"; return; }
     const a = res.answers || {};
