@@ -82,6 +82,19 @@ function Stop-GreenVision {
   return $false
 }
 
+# The same folder, spelled without spaces (see the note at the install step).
+function Get-NoSpaceDir($dir) {
+  if ($dir -notmatch ' ') { return $dir }
+  try {
+    New-Item -ItemType Directory -Force $dir -ErrorAction Stop | Out-Null
+    $short = (New-Object -ComObject Scripting.FileSystemObject).GetFolder($dir).ShortPath
+    if ($short -and $short -notmatch ' ') { return $short }
+  } catch {}
+  $fallback = Join-Path $env:SystemDrive "GreenVision"
+  Warn "No space-free name for $dir; installing to $fallback instead."
+  return $fallback
+}
+
 function Write-Utf8NoBom($path, $text) {
   [IO.File]::WriteAllText($path, $text, (New-Object System.Text.UTF8Encoding($false)))
 }
@@ -146,13 +159,21 @@ function Invoke-GvSetup {
     # lives in, so shortcuts and the uninstall entry stay where they were.
     # /D= must be last and unquoted (NSIS reads the rest of the line), so the
     # arguments go as one string rather than an array that would quote it.
-    $instArgs = "/S"
+    #
+    # NO SPACES IN /D. Measured 2026-10-22: given a folder with a space in it
+    # ("C:\Program Files\GreenVision", or anything under a user name like
+    # "Rishabh Khara"), the silent installer cuts the path at the space,
+    # records "C:\Program" as the install folder, removes the old copy and
+    # extracts NOTHING - while still exiting 0. So every /D goes through
+    # Get-NoSpaceDir, which uses the folder's 8.3 short name (C:\PROGRA~1\...)
+    # and, if a short name is unavailable, falls back to C:\GreenVision.
+    $instArgs = "/S /currentuser /D=$(Get-NoSpaceDir (Join-Path $env:LOCALAPPDATA 'Programs\GreenVision'))"
     $elevate = $false
     if ($have) {
       # Same scope as the existing copy (all users or just this one), so the
       # update replaces it instead of installing a second copy beside it.
       $scope = if ($have.AllUsers) { "/allusers" } else { "/currentuser" }
-      $instArgs = "/S $scope /D=$($have.Dir.TrimEnd('\'))"
+      $instArgs = "/S $scope /D=$(Get-NoSpaceDir $have.Dir.TrimEnd('\'))"
       # A copy in Program Files needs an administrator to replace it.
       if ($have.AllUsers) { $elevate = $true }
       $probe = Join-Path $have.Dir ".gv-write-test"
@@ -165,7 +186,11 @@ function Invoke-GvSetup {
     Remove-Item $exe -Force -ErrorAction SilentlyContinue
 
     $have = Find-GreenVision
-    if (-not $have) { Fail "The installer finished but Green Vision could not be found. Open it from the Start menu." }
+    # The installer has been seen to exit 0 having installed nothing, so
+    # success means the app's files are really there.
+    if (-not $have -or -not (Test-Path $have.Exe)) {
+      Fail "The installer reported success but Green Vision's files are not there. Download the installer from https://rkthegoat837.github.io/green-vision-releases/ and run it by double-clicking."
+    }
     Say "Green Vision $($have.Version) is installed."
   }
 
